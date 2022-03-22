@@ -194,9 +194,6 @@ void Ekf::fuseMag(const Vector3f &mag)
 		}
 	}
 
-	// we are no longer using heading fusion so set the reported test level to zero
-	_yaw_test_ratio = 0.0f;
-
 	// if any axis fails, abort the mag fusion
 	if (!all_innovation_checks_passed) {
 		return;
