@@ -33,6 +33,7 @@
 
 #pragma once
 
+#include <memory>
 #include <lib/mathlib/math/Limits.hpp>
 #include <lib/matrix/matrix/math.hpp>
 #include <lib/perf/perf_counter.h>
@@ -48,6 +49,7 @@
 #include <uORB/topics/vehicle_gps_position.h>
 
 #include "gps_blending.hpp"
+#include "../sensor_attack/sensor_attack.h"
 
 using namespace time_literals;
 
@@ -70,6 +72,12 @@ private:
 
 	void ParametersUpdate(bool force = false);
 	void Publish(const sensor_gps_s &gps, uint8_t selected);
+
+	void ConductAttack(vehicle_gps_position_s &gps_position);
+
+    // defines the gps attack mask position for sensor injection attack
+    static constexpr uint8_t ATK_MASK_GPS_POS = (1 << 2);
+    static constexpr uint8_t ATK_MASK_GPS_VEL = (1 << 3);
 
 	// defines used to specify the mask position for use of different accuracy metrics in the GPS blending algorithm
 	static constexpr uint8_t BLEND_MASK_USE_SPD_ACC  = 1;
@@ -94,10 +102,28 @@ private:
 
 	GpsBlending _gps_blending;
 
+    sensor_attack::DeviationParams              _pos_param{};
+	std::unique_ptr<sensor_attack::Deviation>   _pos_deviation = nullptr;
+    sensor_attack::DeviationParams              _vel_param{};
+    std::unique_ptr<sensor_attack::Deviation>   _vel_deviation = nullptr;
+
 	DEFINE_PARAMETERS(
-		(ParamInt<px4::params::SENS_GPS_MASK>) _param_sens_gps_mask,
-		(ParamFloat<px4::params::SENS_GPS_TAU>) _param_sens_gps_tau,
-		(ParamInt<px4::params::SENS_GPS_PRIME>) _param_sens_gps_prime
+		(ParamInt<px4::params::SENS_GPS_MASK>)          _param_sens_gps_mask,
+		(ParamFloat<px4::params::SENS_GPS_TAU>)         _param_sens_gps_tau,
+		(ParamInt<px4::params::SENS_GPS_PRIME>)         _param_sens_gps_prime,
+        (ParamInt<px4::params::ATK_APPLY_TYPE>)         _param_atk_apply_type,
+		(ParamInt<px4::params::ATK_GPS_P_CLS>)          _param_atk_gps_p_cls,
+		(ParamExtFloat<px4::params::ATK_GPS_P_IV>)      _param_atk_gps_p_iv,
+		(ParamExtFloat<px4::params::ATK_GPS_P_RATE>)    _param_atk_gps_p_rate,
+		(ParamExtFloat<px4::params::ATK_GPS_P_CAP>)     _param_atk_gps_p_cap,
+		(ParamExtFloat<px4::params::ATK_GPS_P_HDG>)     _param_atk_gps_p_hdg,
+		(ParamExtFloat<px4::params::ATK_GPS_P_PITCH>)   _param_atk_gps_p_pitch,
+        (ParamInt<px4::params::ATK_GPS_V_CLS>)          _param_atk_gps_v_cls,
+        (ParamExtFloat<px4::params::ATK_GPS_V_IV>)      _param_atk_gps_v_iv,
+        (ParamExtFloat<px4::params::ATK_GPS_V_RATE>)    _param_atk_gps_v_rate,
+        (ParamExtFloat<px4::params::ATK_GPS_V_CAP>)     _param_atk_gps_v_cap,
+        (ParamExtFloat<px4::params::ATK_GPS_V_HDG>)     _param_atk_gps_v_hdg,
+        (ParamExtFloat<px4::params::ATK_GPS_V_PITCH>)   _param_atk_gps_v_pitch
 	)
 };
 }; // namespace sensors
