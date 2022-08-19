@@ -1,6 +1,6 @@
 ############################################################################
 #
-#   Copyright (c) 2015-2019 PX4 Development Team. All rights reserved.
+#   Copyright (c) 2020 PX4 Development Team. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -31,37 +31,11 @@
 #
 ############################################################################
 
-add_subdirectory(data_validator)
+px4_add_library(sensor_attack
+		common.h
+		Deviation.h
+		Deviation.cpp
+		helper_functions.cpp
+)
+target_link_libraries(sensor_attack PRIVATE geo)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-add_subdirectory(vehicle_acceleration)
-add_subdirectory(vehicle_angular_velocity)
-add_subdirectory(vehicle_air_data)
-add_subdirectory(vehicle_gps_position)
-add_subdirectory(vehicle_imu)
-add_subdirectory(vehicle_magnetometer)
-add_subdirectory(sensor_attack)
-
-px4_add_module(
-	MODULE modules__sensors
-	MAIN sensors
-	SRCS
-		sensors.cpp
-		voted_sensors_update.cpp
-		voted_sensors_update.h
-	MODULE_CONFIG
-		module.yaml
-	DEPENDS
-		airspeed
-		conversion
-		data_validator
-		mathlib
-		sensor_calibration
-		vehicle_acceleration
-		vehicle_angular_velocity
-		vehicle_air_data
-		vehicle_gps_position
-		vehicle_imu
-		vehicle_magnetometer
-		sensor_attack
-	)
