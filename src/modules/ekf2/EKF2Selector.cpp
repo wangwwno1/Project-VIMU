@@ -706,6 +706,19 @@ void EKF2Selector::Run()
 		}
 	}
 
+    if (_request_reference.load() != INVALID_INSTANCE) {
+        const uint8_t new_reference = _request_reference.load();
+
+        if (_selected_reference == INVALID_INSTANCE) {
+            PX4_INFO("reference EKF init %" PRIu8 "", new_reference);
+        } else {
+            PX4_INFO("reference EKF changed %" PRIu8 " -> %" PRIu8 "", _selected_reference, new_reference);
+        }
+
+        _selected_reference = new_reference;
+        _request_reference.store(INVALID_INSTANCE);
+    }
+
 	if (updated) {
 		const uint8_t available_instances_prev = _available_instances;
 		const uint8_t selected_instance_prev = _selected_instance;
