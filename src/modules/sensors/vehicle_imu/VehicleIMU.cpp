@@ -352,6 +352,9 @@ bool VehicleIMU::UpdateAccel()
 
 		_accel_calibration.set_device_id(accel.device_id);
 
+        // Validate accelerometer data, simulate sensor attack inside if necessary
+        ValidateAccelData(accel);
+
 		if (accel.error_count != _status.accel_error_count) {
 			_publish_status = true;
 			_status.accel_error_count = accel.error_count;
@@ -507,6 +510,9 @@ bool VehicleIMU::UpdateGyro()
 		_gyro_timestamp_last = gyro.timestamp;
 
 		_gyro_calibration.set_device_id(gyro.device_id);
+
+        // Validate Gyro data, simulate sensor attack inside if necessary
+        ValidateGyroData(gyro);
 
 		if (gyro.error_count != _status.gyro_error_count) {
 			_publish_status = true;

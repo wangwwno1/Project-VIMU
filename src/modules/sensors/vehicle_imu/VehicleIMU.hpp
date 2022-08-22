@@ -35,10 +35,12 @@
 
 #include "Integrator.hpp"
 
+#include <lib/fault_detector/fault_detector.hpp>
 #include <lib/mathlib/math/Limits.hpp>
 #include <lib/mathlib/math/WelfordMean.hpp>
 #include <lib/matrix/matrix/math.hpp>
 #include <lib/perf/perf_counter.h>
+#include <lib/sensor_attack/sensor_attack.hpp>
 #include <lib/sensor_calibration/Accelerometer.hpp>
 #include <lib/sensor_calibration/Gyroscope.hpp>
 #include <px4_platform_common/log.h>
@@ -58,6 +60,7 @@
 #include <uORB/topics/vehicle_imu_status.h>
 
 using namespace time_literals;
+using namespace fault_detector;
 
 namespace sensors
 {
@@ -92,6 +95,14 @@ private:
 	void SensorCalibrationSaveAccel();
 	void SensorCalibrationSaveGyro();
 
+    void ApplyGyroAttack(sensor_gyro_s &gyro);
+    void ApplyGyroAttack(sensor_gyro_s &gyro, const sensor_gyro_s &ref_gyro);
+    void ApplyAccelAttack(sensor_accel_s &accel);
+    void ApplyAccelAttack(sensor_accel_s &accel, const sensor_accel_s &ref_accel);
+
+    void ValidateGyroData(sensor_gyro_s &gyro);
+    void ValidateAccelData(sensor_accel_s &accel);
+
 	uORB::PublicationMulti<vehicle_imu_s> _vehicle_imu_pub{ORB_ID(vehicle_imu)};
 	uORB::PublicationMulti<vehicle_imu_status_s> _vehicle_imu_status_pub{ORB_ID(vehicle_imu_status)};
 
@@ -104,6 +115,21 @@ private:
 	uORB::SubscriptionCallbackWorkItem _sensor_gyro_sub;
 
 	uORB::Subscription _vehicle_control_mode_sub{ORB_ID(vehicle_control_mode)};
+
+    uORB::Subscription _reference_accel_sub{ORB_ID(reference_accel)};
+    uORB::Subscription _reference_gyro_sub{ORB_ID(reference_gyro)};
+
+    EMACuSumParams<float>       _gyro_validator_params{};
+    CuSumParams<float>          _accel_validator_params{};
+    EMACuSumVector3f    _gyro_validator{&_gyro_validator_params};
+    CuSumVector3f       _accel_validator{&_accel_validator_params};
+    Vector3f            _last_gyro_residual{0.f, 0.f, 0.f};
+    Vector3f            _last_accel_residual{0.f, 0.f, 0.f};
+
+
+    // Note: this value is borrowed from data_validator
+    static const constexpr unsigned NORETURN_ERRCOUNT =
+            10000; /**< if the error count reaches this value, return sensor as invalid */
 
 	calibration::Accelerometer _accel_calibration{};
 	calibration::Gyroscope _gyro_calibration{};
@@ -186,7 +212,24 @@ private:
 
 	DEFINE_PARAMETERS(
 		(ParamInt<px4::params::IMU_INTEG_RATE>) _param_imu_integ_rate,
-		(ParamBool<px4::params::SENS_IMU_AUTOCAL>) _param_sens_imu_autocal
+		(ParamBool<px4::params::SENS_IMU_AUTOCAL>) _param_sens_imu_autocal,
+
+        (ParamInt<px4::params::ATK_APPLY_TYPE>) _param_atk_apply_type,
+        (ParamInt<px4::params::ATK_STEALTH_TYPE>) _param_atk_stealth_type,
+        (ParamInt<px4::params::ATK_MULTI_IMU>) _param_atk_multi_imu,
+        (ParamFloat<px4::params::ATK_GYR_BIAS>) _param_atk_gyr_bias,
+
+        (ParamFloat<px4::params::IV_GYR_NOISE>) _param_iv_gyr_noise,
+        (ParamExtFloat <px4::params::IV_GYR_CSUM_H>) _param_iv_gyr_csum_h,
+        (ParamExtFloat <px4::params::IV_GYR_MSHIFT>) _param_iv_gyr_mshift,
+        (ParamExtFloat<px4::params::IV_GYR_EMA_H>) _param_iv_gyr_ema_h,
+        (ParamExtFloat<px4::params::IV_GYR_ALPHA>) _param_iv_gyr_alpha,
+        (ParamExtFloat<px4::params::IV_GYR_EMA_CAP>) _param_iv_gyr_ema_cap,
+
+        (ParamFloat<px4::params::IV_ACC_NOISE>) _param_iv_acc_noise,
+        (ParamExtFloat <px4::params::IV_ACC_CSUM_H>) _param_iv_acc_csum_h,
+        (ParamExtFloat <px4::params::IV_ACC_MSHIFT>) _param_iv_acc_mshift,
+        (ParamInt<px4::params::IV_DEBUG_LOG>) _param_iv_debug_log
 	)
 };
 
