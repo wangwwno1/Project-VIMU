@@ -21,3 +21,5 @@ uint8 accelerometer_clipping            # bitfield indicating if there was any a
 
 uint8 accel_calibration_count  	# Calibration changed counter. Monotonically increases whenever accelermeter calibration changes.
 uint8 gyro_calibration_count   	# Calibration changed counter. Monotonically increases whenever rate gyro calibration changes.
+
+# TOPICS sensor_combined reference_combined
