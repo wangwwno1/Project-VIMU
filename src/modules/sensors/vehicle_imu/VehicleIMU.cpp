@@ -52,7 +52,14 @@ VehicleIMU::VehicleIMU(int instance, uint8_t accel_index, uint8_t gyro_index, co
 	ScheduledWorkItem(MODULE_NAME, config),
 	_sensor_accel_sub(ORB_ID(sensor_accel), accel_index),
 	_sensor_gyro_sub(this, ORB_ID(sensor_gyro), gyro_index),
-	_instance(instance)
+	_instance(instance),
+    _param_iv_gyr_csum_h(_gyro_validator_params.cusum_params.control_limit),
+    _param_iv_gyr_mshift(_gyro_validator_params.cusum_params.mean_shift),
+    _param_iv_gyr_ema_h(_gyro_validator_params.ema_params.control_limit),
+    _param_iv_gyr_alpha(_gyro_validator_params.ema_params.alpha),
+    _param_iv_gyr_ema_cap(_gyro_validator_params.ema_params.cap),
+    _param_iv_acc_csum_h(_accel_validator_params.control_limit),
+    _param_iv_acc_mshift(_accel_validator_params.mean_shift)
 {
 	_imu_integration_interval_us = 1e6f / _param_imu_integ_rate.get();
 
@@ -352,6 +359,9 @@ bool VehicleIMU::UpdateAccel()
 
 		_accel_calibration.set_device_id(accel.device_id);
 
+        // Validate accelerometer data, simulate sensor attack inside if necessary
+        ValidateAccelData(accel);
+
 		if (accel.error_count != _status.accel_error_count) {
 			_publish_status = true;
 			_status.accel_error_count = accel.error_count;
@@ -507,6 +517,9 @@ bool VehicleIMU::UpdateGyro()
 		_gyro_timestamp_last = gyro.timestamp;
 
 		_gyro_calibration.set_device_id(gyro.device_id);
+
+        // Validate Gyro data, simulate sensor attack inside if necessary
+        ValidateGyroData(gyro);
 
 		if (gyro.error_count != _status.gyro_error_count) {
 			_publish_status = true;
