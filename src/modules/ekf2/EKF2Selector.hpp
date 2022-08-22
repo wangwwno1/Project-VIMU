@@ -76,6 +76,8 @@ public:
 
 	void RequestInstance(uint8_t instance) { _request_instance.store(instance); }
 
+    void RequestReference(uint8_t reference)  { _request_reference.store(reference); }
+
 private:
 	static constexpr uint8_t INVALID_INSTANCE{UINT8_MAX};
 	static constexpr uint64_t FILTER_UPDATE_PERIOD{10_ms};
@@ -179,10 +181,15 @@ private:
 	hrt_abstime _last_update_us{0};
 	bool _gyro_fault_detected{false};
 	bool _accel_fault_detected{false};
+    bool _magnetometer_fault_detected{false};  // TODO rename to mag_fault_detected
+    bool _baro_fault_detected{false};
+    bool _gps_fault_detected{false};
 
 	uint8_t _available_instances{0};
 	uint8_t _selected_instance{INVALID_INSTANCE};
+    uint8_t _selected_reference{INVALID_INSTANCE};
 	px4::atomic<uint8_t> _request_instance{INVALID_INSTANCE};
+    px4::atomic<uint8_t> _request_reference{INVALID_INSTANCE};
 
 	uint32_t _instance_changed_count{0};
 	hrt_abstime _last_instance_change{0};
