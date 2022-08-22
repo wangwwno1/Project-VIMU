@@ -27,9 +27,10 @@ PARAM_DEFINE_INT32(ATK_APPLY_TYPE, 0);
  *
  * @group Sensor Attack
  * @min 0
- * @max 3
+ * @max 7
  * @bit 0 Cumulative Sum Detector
  * @bit 1 Exponential Moving Average (used by Gyroscope)
+ * @bit 2 Time-Windowed Detector
  */
 PARAM_DEFINE_INT32(ATK_STEALTH_TYPE, 0);
 
@@ -207,9 +208,9 @@ PARAM_DEFINE_FLOAT(ATK_GPS_V_HDG, 0.0f);
 PARAM_DEFINE_FLOAT(ATK_GPS_V_PITCH, 0.0f);
 
 /**
- * Gyroscope Spoofing Deviation - Bias
+ * Gyroscope Spoofing Deviation - Roll Bias
  *
- * Set the bias of deviation.
+ * Set the bias of deviation at Roll Axis.
  *
  *
  * @group Sensors
@@ -217,3 +218,4 @@ PARAM_DEFINE_FLOAT(ATK_GPS_V_PITCH, 0.0f);
  * @decimal 3
  */
 PARAM_DEFINE_FLOAT(ATK_GYR_BIAS, 0.00f);
+

@@ -34,6 +34,7 @@
 #pragma once
 
 #include <memory>
+#include <lib/sensor_attack/sensor_attack.hpp>
 #include <lib/mathlib/math/Limits.hpp>
 #include <lib/matrix/matrix/math.hpp>
 #include <lib/perf/perf_counter.h>
@@ -49,7 +50,6 @@
 #include <uORB/topics/vehicle_gps_position.h>
 
 #include "gps_blending.hpp"
-#include "../sensor_attack/sensor_attack.h"
 
 using namespace time_literals;
 

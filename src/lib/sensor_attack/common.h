@@ -14,6 +14,17 @@
 namespace sensor_attack {
     using matrix::Vector3f;
 
+    static constexpr uint8_t ATK_MASK_GYRO  = (1 << 0);
+    static constexpr uint8_t ATK_MASK_ACCEL = (1 << 1);
+    static constexpr uint8_t ATK_GPS_POS    = (1 << 2);
+    static constexpr uint8_t ATK_GPS_VEL    = (1 << 3);
+    static constexpr uint8_t BLK_BARO_HGT   = (1 << 2);
+    static constexpr uint8_t BLK_MAG_FUSE   = (1 << 3);
+
+    static constexpr uint8_t DET_CUSUM          = (1 << 0);
+    static constexpr uint8_t DET_EWMA           = (1 << 1);
+    static constexpr uint8_t DET_TIME_WINDOW    = (1 << 2);
+
     enum AttackType {
         Bias = 0,
         Linear = 1,
