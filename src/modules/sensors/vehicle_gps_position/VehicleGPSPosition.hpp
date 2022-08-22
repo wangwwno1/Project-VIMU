@@ -75,10 +75,6 @@ private:
 
 	void ConductAttack(vehicle_gps_position_s &gps_position);
 
-    // defines the gps attack mask position for sensor injection attack
-    static constexpr uint8_t ATK_MASK_GPS_POS = (1 << 2);
-    static constexpr uint8_t ATK_MASK_GPS_VEL = (1 << 3);
-
 	// defines used to specify the mask position for use of different accuracy metrics in the GPS blending algorithm
 	static constexpr uint8_t BLEND_MASK_USE_SPD_ACC  = 1;
 	static constexpr uint8_t BLEND_MASK_USE_HPOS_ACC = 2;
