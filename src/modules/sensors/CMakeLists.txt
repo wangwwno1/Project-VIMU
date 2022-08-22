@@ -40,7 +40,6 @@ add_subdirectory(vehicle_air_data)
 add_subdirectory(vehicle_gps_position)
 add_subdirectory(vehicle_imu)
 add_subdirectory(vehicle_magnetometer)
-add_subdirectory(sensor_attack)
 
 px4_add_module(
 	MODULE modules__sensors
@@ -63,5 +62,5 @@ px4_add_module(
 		vehicle_gps_position
 		vehicle_imu
 		vehicle_magnetometer
-		sensor_attack
+        sensor_attack
 	)

@@ -32,10 +32,15 @@
 ############################################################################
 
 px4_add_library(sensor_attack
-		common.h
-		Deviation.h
-		Deviation.cpp
-		helper_functions.cpp
+        common.h
+        Deviation.h
+        Deviation.cpp
+        helper_functions.cpp
 )
-target_link_libraries(sensor_attack PRIVATE geo)
+
+add_dependencies(sensor_attack prebuild_targets)
+
+set_target_properties(sensor_attack PROPERTIES PUBLIC_HEADER "sensor_attack.hpp")
+set_target_properties(sensor_attack PROPERTIES LINKER_LANGUAGE CXX)
+
 
