@@ -189,7 +189,7 @@ void VehicleGPSPosition::Publish(const sensor_gps_s &gps, uint8_t selected)
 void VehicleGPSPosition::ConductAttack(vehicle_gps_position_s &gps_output)
 {
     // TODO implement stealthy attack - This would locate inside VIMU-EKF
-	if (_param_atk_apply_type.get() & ATK_MASK_GPS_POS) {
+	if (_param_atk_apply_type.get() & sensor_attack::ATK_GPS_POS) {
 		if (!_pos_deviation) {
 			PX4_INFO("Initiate GPS Position Spoofing Attack");
 			_pos_deviation.reset(sensor_attack::CreateAttackInstance(_param_atk_gps_p_cls.get(), &_pos_param));
@@ -213,7 +213,7 @@ void VehicleGPSPosition::ConductAttack(vehicle_gps_position_s &gps_output)
         PX4_INFO("GPS Position Spoofing Stopped");
 	}
 
-    if (_param_atk_apply_type.get() & ATK_MASK_GPS_VEL) {
+    if (_param_atk_apply_type.get() & sensor_attack::ATK_GPS_VEL) {
         if (!_vel_deviation) {
             PX4_INFO("Initiate GPS Velocity Spoofing Attack");
             _vel_deviation.reset(sensor_attack::CreateAttackInstance(_param_atk_gps_v_cls.get(), &_vel_param));
