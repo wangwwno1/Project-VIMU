@@ -45,6 +45,7 @@ static px4::atomic<EKF2 *> _objects[EKF2_MAX_INSTANCES] {};
 static px4::atomic<EKF2Selector *> _ekf2_selector {nullptr};
 #endif // !CONSTRAINED_FLASH
 
+// TODO COMMON introduce attack flags from sensor_attack lib
 EKF2::EKF2(bool multi_mode, const px4::wq_config_t &config, bool replay_mode):
 	ModuleParams(nullptr),
 	ScheduledWorkItem(MODULE_NAME, config),
@@ -269,6 +270,7 @@ void EKF2::Run()
 	if (should_exit()) {
 		_sensor_combined_sub.unregisterCallback();
 		_vehicle_imu_sub.unregisterCallback();
+        // TODO COMMON unregister reference sensor callbacks
 
 		return;
 	}
@@ -359,6 +361,7 @@ void EKF2::Run()
 			}
 		}
 	}
+    // TODO COMMON Check reference subscription?
 
 	bool imu_updated = false;
 	imuSample imu_sample_new {};
@@ -1802,6 +1805,7 @@ void EKF2::UpdateMagSample(ekf2_timestamps_s &ekf2_timestamps)
 			_mag_cal = {};
 		}
 
+        // TODO COMMON Block Attack
 		_ekf.setMagData(magSample{magnetometer.timestamp_sample, Vector3f{magnetometer.magnetometer_ga}});
 
 		ekf2_timestamps.vehicle_magnetometer_timestamp_rel = (int16_t)((int64_t)magnetometer.timestamp / 100 -
@@ -2073,6 +2077,7 @@ int EKF2::task_spawn(int argc, char *argv[])
 			}
 		}
 
+        // TODO COMMON insert reference EKF initialization logic
 		const hrt_abstime time_started = hrt_absolute_time();
 		const int multi_instances = math::min(imu_instances * mag_instances, static_cast<int32_t>(EKF2_MAX_INSTANCES));
 		int multi_instances_allocated = 0;

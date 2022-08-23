@@ -183,6 +183,7 @@ private:
 	VehicleGPSPosition	*_vehicle_gps_position{nullptr};
 
 	VehicleIMU      *_vehicle_imu_list[MAX_SENSOR_COUNT] {};
+    // TODO Insert IMU Detector / VirtualIMU / Software Sensor Here
 
 	uint8_t _n_accel{0};
 	uint8_t _n_baro{0};
