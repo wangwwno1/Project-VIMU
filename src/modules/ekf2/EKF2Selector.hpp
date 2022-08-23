@@ -90,7 +90,7 @@ private:
 	void PrintInstanceChange(const uint8_t old_instance, uint8_t new_instance);
 
 	void PublishEstimatorSelectorStatus();
-    void PublishSensorHealthStatus()
+    void PublishSensorHealthStatus();
 	void PublishVehicleAttitude();
 	void PublishVehicleLocalPosition();
 	void PublishVehicleGlobalPosition();
@@ -228,7 +228,6 @@ private:
             }
 
             for (uint8_t imu = 0; imu < IMU_STATUS_SIZE; ++imu) {
-                imu_test_ratios[imu] = 0.f;
                 accel_device_ids[imu] = 0;
                 gyro_device_ids[imu] = 0;
             }

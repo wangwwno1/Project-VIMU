@@ -474,7 +474,7 @@ bool EKF2Selector::UpdateErrorScores()
                 }
             } else if (PX4_ISFINITE(mag_test_ratios[i])) {
                 instance_is_healthy &= _instance[i].sensor_usage.use_magnetometer && (mag_test_ratios[i] < 1.0f);
-                if (_instance[i].healthy) {
+                if (instance_is_healthy) {
                     best_mag_test_ratio_healthy = fminf(best_mag_test_ratio_healthy, mag_test_ratios[i]);
                 } else {
                     best_mag_test_ratio = fminf(best_mag_test_ratio, mag_test_ratios[i]);
