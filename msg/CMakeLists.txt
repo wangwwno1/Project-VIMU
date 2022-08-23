@@ -68,6 +68,7 @@ set(msg_files
 	estimator_gps_status.msg
 	esc_report.msg
 	esc_status.msg
+    estimator_aero_wrench.msg
 	estimator_baro_bias.msg
 	estimator_event_flags.msg
 	estimator_innovations.msg
