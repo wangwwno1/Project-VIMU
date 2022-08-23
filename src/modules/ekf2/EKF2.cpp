@@ -362,11 +362,13 @@ void EKF2::Run()
 		}
 	}
     // TODO COMMON Check reference subscription?
+    // TODO SOFTSENS Update SoftwareSensor Usage
 
 	bool imu_updated = false;
 	imuSample imu_sample_new {};
 
 	hrt_abstime imu_dt = 0; // for tracking time slip later
+    // TODO SOFTSENS use reference imu only if the current imu is failure (see imu status)
 
 	if (_multi_mode) {
 		const unsigned last_generation = _vehicle_imu_sub.get_last_generation();

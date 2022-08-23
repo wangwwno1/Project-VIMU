@@ -182,6 +182,9 @@ void VehicleGPSPosition::Publish(const sensor_gps_s &gps, uint8_t selected)
 	gps_output.selected = selected;
 
 	ConductAttack(gps_output);
+    // TODO SOFTSENS GPS Detector
+    // TODO SOFTSENS Stealthy Attack
+    // TODO SOFTSENS Replace GPS if it is failed
 
 	_vehicle_gps_position_pub.publish(gps_output);
 }

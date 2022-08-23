@@ -257,6 +257,9 @@ void VehicleAirData::Run()
 						float air_density = pressure_pa / (CONSTANTS_AIR_GAS_CONST * (_air_temperature_celsius -
 										   CONSTANTS_ABSOLUTE_NULL_CELSIUS));
 
+                        // TODO SOFTSENS BARO Detector
+                        // TODO SOFTSENS Replace HGT if it is failed
+
 						// populate vehicle_air_data with and publish
 						vehicle_air_data_s out{};
 						out.timestamp_sample = timestamp_sample;
