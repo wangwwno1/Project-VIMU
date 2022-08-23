@@ -46,6 +46,9 @@ static px4::atomic<EKF2Selector *> _ekf2_selector {nullptr};
 #endif // !CONSTRAINED_FLASH
 
 // TODO COMMON introduce attack flags from sensor_attack lib
+// TODO VIMU/SAVIOR get reference_gyro_noise
+// TODO VIMU/SAVIOR get bunch of validator params
+
 EKF2::EKF2(bool multi_mode, const px4::wq_config_t &config, bool replay_mode):
 	ModuleParams(nullptr),
 	ScheduledWorkItem(MODULE_NAME, config),
@@ -285,6 +288,7 @@ void EKF2::Run()
 		updateParams();
 
 		_ekf.set_min_required_gps_health_time(_param_ekf2_req_gps_h.get() * 1_s);
+        // TODO VIMU/SAVIOR specify enhanced detector usage
 
 		// The airspeed scale factor correcton is only available via parameter as used by the airspeed module
 		param_t param_aspd_scale = param_find("ASPD_SCALE_1");
@@ -368,6 +372,7 @@ void EKF2::Run()
 
 	hrt_abstime imu_dt = 0; // for tracking time slip later
 
+    // TODO VIMU/SAVIOR use reference imu exclusively if set as a reference EKF
 	if (_multi_mode) {
 		const unsigned last_generation = _vehicle_imu_sub.get_last_generation();
 		vehicle_imu_s imu;
@@ -554,6 +559,8 @@ void EKF2::Run()
 					// takeoff
 					_ekf.set_in_air_status(true);
 
+                    // TODO VIMU/SAVIOR Switch to reference imu
+
 					// reset learned sensor calibrations on takeoff
 					_accel_cal = {};
 					_gyro_cal = {};
@@ -562,6 +569,8 @@ void EKF2::Run()
 				} else if (was_in_air && !in_air) {
 					// landed
 					_ekf.set_in_air_status(false);
+
+                    // TODO VIMU/SAVIOR Detach from reference imu
 				}
 			}
 		}
@@ -582,6 +591,16 @@ void EKF2::Run()
 		UpdateBaroSample(ekf2_timestamps);
 		UpdateFlowSample(ekf2_timestamps);
 		UpdateGpsSample(ekf2_timestamps);
+//         TODO VIMU/SAVIOR Magnetometer Switch
+//        if (use_virtual_imu() && !_param_iv_enable_lsm.get()) {
+//            // Attempt to switch magnetometer if is VIMU-EKF and current mag is faulty
+//            float mag_test_ratio;
+//            _ekf.getMagInnovRatio(mag_test_ratio);
+//            if (mag_test_ratio >= 1.0f) {
+//                FindNewMagnetometer(now);
+//            }
+//        }
+
 		UpdateMagSample(ekf2_timestamps);
 		UpdateRangeSample(ekf2_timestamps);
 
@@ -590,6 +609,7 @@ void EKF2::Run()
 
 		// run the EKF update and output
 		const hrt_abstime ekf_update_start = hrt_absolute_time();
+        // TODO VIMU/SAVIOR Publish Aerodynamic Wrench
 
 		if (_ekf.update()) {
 			perf_set_elapsed(_ecl_ekf_update_full_perf, hrt_elapsed_time(&ekf_update_start));
@@ -1146,6 +1166,7 @@ void EKF2::PublishSensorBias(const hrt_abstime &timestamp)
 		bias.timestamp_sample = _ekf.get_imu_sample_delayed().time_us;
 
 		// take device ids from sensor_selection_s if not using specific vehicle_imu_s
+        // TODO VIMU/SAVIOR Publish Bias if using reference imu (with device_id == 0)
 		if (_device_id_gyro != 0) {
 			bias.gyro_device_id = _device_id_gyro;
 			gyro_bias.copyTo(bias.gyro_bias);
@@ -1564,6 +1585,7 @@ void EKF2::UpdateBaroSample(ekf2_timestamps_s &ekf2_timestamps)
 		}
 
 		_ekf.set_air_density(airdata.rho);
+        // TODO VIMU/SAVIOR BARO Block Attack
 
 		_ekf.setBaroData(baroSample{airdata.timestamp_sample, airdata.baro_alt_meter});
 
@@ -2098,6 +2120,7 @@ int EKF2::task_spawn(int argc, char *argv[])
 				uORB::SubscriptionData<vehicle_magnetometer_s> vehicle_mag_sub{ORB_ID(vehicle_magnetometer), mag};
 
 				for (uint8_t imu = 0; imu < imu_instances; imu++) {
+                    // TODO VIMU/SAVIOR check reference imu publish, initialize by reference imu first - mark which instance is used
 
 					uORB::SubscriptionData<vehicle_imu_s> vehicle_imu_sub{ORB_ID(vehicle_imu), imu};
 					vehicle_mag_sub.update();
