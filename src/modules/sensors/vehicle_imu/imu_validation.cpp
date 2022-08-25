@@ -9,9 +9,24 @@ using namespace matrix;
 namespace sensors {
     void VehicleIMU::ValidateGyroData(sensor_gyro_s &gyro) {
         const hrt_abstime interval_us = _imu_integration_interval_us;
+        const hrt_abstime validate_start = hrt_absolute_time();
 
         sensor_gyro_s ref_gyro{};
-        if (_reference_gyro_sub.copy(&ref_gyro) && hrt_elapsed_time(&ref_gyro.timestamp) < interval_us) {
+        if (_reference_gyro_sub.update(&ref_gyro)) {
+            if ((_last_ref_gyro.timestamp_sample == 0) ||
+                (validate_start > (ref_gyro.timestamp_sample + _last_ref_gyro.timestamp_sample) / 2)) {
+                // Use the newest reference as it closer to our current timestamp.
+                _last_ref_gyro = ref_gyro;
+            } else {
+                // Use last reference, then update it
+                sensor_gyro_s tmp;
+                tmp = ref_gyro;
+                ref_gyro = _last_ref_gyro;
+                _last_ref_gyro = tmp;
+            }
+        }
+
+        if (math::isInRange(validate_start, ref_gyro.timestamp_sample - interval_us, ref_gyro.timestamp_sample + interval_us)) {
 
             ApplyGyroAttack(gyro, ref_gyro);
 
@@ -34,9 +49,24 @@ namespace sensors {
 
     void VehicleIMU::ValidateAccelData(sensor_accel_s &accel) {
         const hrt_abstime interval_us = _imu_integration_interval_us;
+        const hrt_abstime validate_start = hrt_absolute_time();
 
         sensor_accel_s ref_accel{};
-        if (_reference_accel_sub.copy(&ref_accel) && hrt_elapsed_time(&ref_gyro.timestamp) < interval_us) {
+        if (_reference_accel_sub.update(&ref_accel)) {
+            if ((_last_ref_accel.timestamp_sample == 0) ||
+                (validate_start > (ref_accel.timestamp_sample + _last_ref_accel.timestamp_sample) / 2)) {
+                // Use the newest reference as it closer to our current timestamp.
+                _last_ref_accel = ref_accel;
+            } else {
+                // Use last reference, then update it
+                sensor_accel_s tmp;
+                tmp = ref_accel;
+                ref_accel = _last_ref_accel;
+                _last_ref_accel = tmp;
+            }
+        }
+
+        if (math::isInRange(validate_start, ref_accel.timestamp_sample - interval_us, ref_accel.timestamp_sample + interval_us)) {
 
             ApplyAccelAttack(accel, ref_accel);
             
