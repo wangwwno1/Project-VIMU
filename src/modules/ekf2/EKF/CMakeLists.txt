@@ -32,6 +32,7 @@
 ############################################################################
 
 add_library(ecl_EKF
+    aero_wrench_estimator.cpp
 	airspeed_fusion.cpp
 	baro_bias_estimator.cpp
 	control.cpp

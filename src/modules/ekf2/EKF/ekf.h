@@ -336,12 +336,24 @@ public:
 
 	const BaroBiasEstimator::status &getBaroBiasEstimatorStatus() const { return _baro_b_est.getStatus(); }
 
+    void getAerodynamicWrench(float drag_accel[3], float drag_ang_accel[3]) const {
+        _drag_acceleration.copyTo(drag_accel);
+        _drag_angular_acceleration.copyTo(drag_ang_accel);
+    }
+
 private:
 
 	// set the internal states and status to their default value
 	void reset();
 
 	bool initialiseTilt();
+
+    // update aerodynamic wrench estimation based on the ground velocity
+    void updateAerodynamicWrench();
+    // Aerodynamic wrench estimation
+    Vector3f _drag_acceleration;
+    Vector3f _drag_angular_acceleration;
+    Vector3f _wind_estimate;
 
 	// check if the EKF is dead reckoning horizontal velocity using inertial data only
 	void update_deadreckoning_status();
@@ -438,7 +450,7 @@ private:
 	float _vert_vel_innov_ratio{0.f};		///< standard deviation of vertical velocity innovation
 	uint64_t _vert_vel_fuse_time_us{0};	///< last system time in usec time vertical velocity measurement fuson was attempted
 
-	Vector3f _gps_vel_innov{};	///< GPS velocity innovations (m/sec)
+    Vector3f _gps_vel_innov{};	///< GPS velocity innovations (m/sec)
 	Vector3f _gps_vel_innov_var{};	///< GPS velocity innovation variances ((m/sec)**2)
 
 	Vector3f _gps_pos_innov{};	///< GPS position innovations (m)
