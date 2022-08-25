@@ -202,6 +202,7 @@ bool EKF2::multi_init(int imu, int mag)
 {
 	// advertise all topics to ensure consistent uORB instance numbering
 	_ekf2_timestamps_pub.advertise();
+    _estimator_aero_wrench_pub.advertise();
 	_estimator_baro_bias_pub.advertise();
 	_estimator_event_flags_pub.advertise();
 	_estimator_gps_status_pub.advertise();
@@ -609,7 +610,6 @@ void EKF2::Run()
 
 		// run the EKF update and output
 		const hrt_abstime ekf_update_start = hrt_absolute_time();
-        // TODO VIMU/SAVIOR Publish Aerodynamic Wrench
 
 		if (_ekf.update()) {
 			perf_set_elapsed(_ecl_ekf_update_full_perf, hrt_elapsed_time(&ekf_update_start));
@@ -642,6 +642,9 @@ void EKF2::Run()
 			perf_set_elapsed(_ecl_ekf_update_perf, hrt_elapsed_time(&ekf_update_start));
 		}
 
+        // publish estimate air drag applied to the vehicle
+        PublishAerodynamicWrench(now);
+
 		// publish external visual odometry after fixed frame alignment if new odometry is received
 		if (new_ev_odom) {
 			PublishOdometryAligned(now, ev_odom);
@@ -653,6 +656,16 @@ void EKF2::Run()
 
 	// re-schedule as backup timeout
 	ScheduleDelayed(100_ms);
+}
+
+void EKF2::PublishAerodynamicWrench(const hrt_abstime &timestamp) {
+    estimator_aero_wrench_s aero_wrench{};
+
+    aero_wrench.timestamp_sample = timestamp;
+    _ekf.getAerodynamicWrench(aero_wrench.acceleration, aero_wrench.angular_acceleration);
+    aero_wrench.timestamp = _replay_mode ? timestamp : hrt_absolute_time();
+
+    _estimator_aero_wrench_pub.publish(aero_wrench);
 }
 
 void EKF2::PublishAttitude(const hrt_abstime &timestamp)
