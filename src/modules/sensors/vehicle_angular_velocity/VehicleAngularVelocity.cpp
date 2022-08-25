@@ -706,6 +706,22 @@ void VehicleAngularVelocity::UpdateDynamicNotchFFT(const hrt_abstime &time_now_u
 #endif // !CONSTRAINED_FLASH
 }
 
+void VehicleAngularVelocity::UpdateImuStatus() {
+    if (_selected_sensor_device_id != 0) {
+        sensors_status_imu_s imu_status{};
+        if (_sensors_status_imu_sub.copy(&imu_status)) {
+            for (uint8_t imu = 0; imu < MAX_SENSOR_COUNT; ++imu) {
+                if (_selected_sensor_device_id == imu_status.gyro_device_ids[imu]) {
+                    _recovery_mode = !imu_status.gyro_healthy[imu];
+                    break;
+                }
+            }
+        }
+    } else {
+        _recovery_mode = false;
+    }
+}
+
 float VehicleAngularVelocity::FilterAngularVelocity(int axis, float data[], int N)
 {
 #if !defined(CONSTRAINED_FLASH)
@@ -800,6 +816,7 @@ void VehicleAngularVelocity::Run()
 
 	UpdateDynamicNotchEscRpm(time_now_us);
 	UpdateDynamicNotchFFT(time_now_us);
+    UpdateImuStatus();
 
 	if (_fifo_available) {
 		// process all outstanding fifo messages
@@ -895,29 +912,41 @@ bool VehicleAngularVelocity::CalibrateAndPublish(const hrt_abstime &timestamp_sa
 		const Vector3f &angular_velocity_uncalibrated, const Vector3f &angular_acceleration_uncalibrated)
 {
 	if (timestamp_sample >= _last_publish + _publish_interval_min_us) {
+        vehicle_angular_acceleration_s v_angular_acceleration;
+        if (_recovery_mode && _reference_angular_acceleration_sub.update(&v_angular_acceleration)) {
+            // Publish vehicle_angular_acceleration from reference
+            v_angular_acceleration.timestamp = hrt_absolute_time();
+            _vehicle_angular_acceleration_pub.publish(v_angular_acceleration);
 
-		// Publish vehicle_angular_acceleration
-		vehicle_angular_acceleration_s v_angular_acceleration;
-		v_angular_acceleration.timestamp_sample = timestamp_sample;
+        } else {
+            // Publish vehicle_angular_acceleration from gyroscope
+            v_angular_acceleration.timestamp_sample = timestamp_sample;
 
-		// Angular acceleration: rotate sensor frame to board, scale raw data to SI, apply any additional configured rotation
-		_angular_acceleration = _calibration.rotation() * angular_acceleration_uncalibrated;
-		_angular_acceleration.copyTo(v_angular_acceleration.xyz);
+            // Angular acceleration: rotate sensor frame to board, scale raw data to SI, apply any additional configured rotation
+            _angular_acceleration = _calibration.rotation() * angular_acceleration_uncalibrated;
+            _angular_acceleration.copyTo(v_angular_acceleration.xyz);
 
-		v_angular_acceleration.timestamp = hrt_absolute_time();
-		_vehicle_angular_acceleration_pub.publish(v_angular_acceleration);
+            v_angular_acceleration.timestamp = hrt_absolute_time();
+            _vehicle_angular_acceleration_pub.publish(v_angular_acceleration);
+        }
 
+        vehicle_angular_velocity_s v_angular_velocity;
+        if (_recovery_mode && _reference_angular_velocity_sub.update(&v_angular_velocity)) {
+            // Publish vehicle_angular_velocity from reference
+            v_angular_velocity.timestamp = hrt_absolute_time();
+            _vehicle_angular_velocity_pub.publish(v_angular_velocity);
 
-		// Publish vehicle_angular_velocity
-		vehicle_angular_velocity_s v_angular_velocity;
-		v_angular_velocity.timestamp_sample = timestamp_sample;
+        } else {
+            // Publish vehicle_angular_velocity from gyroscope
+            v_angular_velocity.timestamp_sample = timestamp_sample;
 
-		// Angular velocity: rotate sensor frame to board, scale raw data to SI, apply calibration, and remove in-run estimated bias
-		_angular_velocity = _calibration.Correct(angular_velocity_uncalibrated) - _bias;
-		_angular_velocity.copyTo(v_angular_velocity.xyz);
+            // Angular velocity: rotate sensor frame to board, scale raw data to SI, apply calibration, and remove in-run estimated bias
+            _angular_velocity = _calibration.Correct(angular_velocity_uncalibrated) - _bias;
+            _angular_velocity.copyTo(v_angular_velocity.xyz);
 
-		v_angular_velocity.timestamp = hrt_absolute_time();
-		_vehicle_angular_velocity_pub.publish(v_angular_velocity);
+            v_angular_velocity.timestamp = hrt_absolute_time();
+            _vehicle_angular_velocity_pub.publish(v_angular_velocity);
+        }
 
 
 		// shift last publish time forward, but don't let it get further behind than the interval
@@ -930,7 +959,7 @@ bool VehicleAngularVelocity::CalibrateAndPublish(const hrt_abstime &timestamp_sa
 	return false;
 }
 
-void VehicleAngularVelocity::PrintStatus()
+    void VehicleAngularVelocity::PrintStatus()
 {
 	PX4_INFO_RAW("[vehicle_angular_velocity] selected sensor: %" PRIu32
 		     ", rate: %.1f Hz %s, estimated bias: [%.5f %.5f %.5f]\n",
