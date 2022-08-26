@@ -55,6 +55,7 @@
 #include <uORB/topics/sensor_gyro_fft.h>
 #include <uORB/topics/sensor_gyro_fifo.h>
 #include <uORB/topics/sensor_selection.h>
+#include <uORB/topics/sensors_status_imu.h>
 #include <uORB/topics/vehicle_angular_acceleration.h>
 #include <uORB/topics/vehicle_angular_velocity.h>
 
@@ -92,6 +93,7 @@ private:
 	void UpdateDynamicNotchEscRpm(const hrt_abstime &time_now_us, bool force = false);
 	void UpdateDynamicNotchFFT(const hrt_abstime &time_now_us, bool force = false);
 	bool UpdateSampleRate();
+    void UpdateImuStatus();
 
 	// scaled appropriately for current sensor
 	matrix::Vector3f GetResetAngularVelocity() const;
@@ -104,6 +106,9 @@ private:
 
 	uORB::Subscription _estimator_selector_status_sub{ORB_ID(estimator_selector_status)};
 	uORB::Subscription _estimator_sensor_bias_sub{ORB_ID(estimator_sensor_bias)};
+    uORB::Subscription _sensors_status_imu_sub{ORB_ID(sensors_status_imu)};
+    uORB::Subscription _reference_angular_acceleration_sub{ORB_ID(reference_angular_acceleration)};
+    uORB::Subscription _reference_angular_velocity_sub{ORB_ID(reference_angular_velocity)};
 #if !defined(CONSTRAINED_FLASH)
 	uORB::Subscription _esc_status_sub {ORB_ID(esc_status)};
 	uORB::Subscription _sensor_gyro_fft_sub {ORB_ID(sensor_gyro_fft)};
@@ -129,6 +134,8 @@ private:
 	hrt_abstime _last_publish{0};
 
 	float _filter_sample_rate_hz{NAN};
+
+    bool _recovery_mode{false};
 
 	// angular velocity filters
 	math::LowPassFilter2p<float> _lp_filter_velocity[3] {};

@@ -119,12 +119,15 @@ private:
     uORB::Subscription _reference_accel_sub{ORB_ID(reference_accel)};
     uORB::Subscription _reference_gyro_sub{ORB_ID(reference_gyro)};
 
+
     EMACuSumParams<float>       _gyro_validator_params{};
     CuSumParams<float>          _accel_validator_params{};
-    EMACuSumVector3f    _gyro_validator{&_gyro_validator_params};
-    CuSumVector3f       _accel_validator{&_accel_validator_params};
-    Vector3f            _last_gyro_residual{0.f, 0.f, 0.f};
-    Vector3f            _last_accel_residual{0.f, 0.f, 0.f};
+    EMACuSumVector3f            _gyro_validator{&_gyro_validator_params};
+    CuSumVector3f               _accel_validator{&_accel_validator_params};
+    Vector3f                    _last_gyro_residual{0.f, 0.f, 0.f};
+    Vector3f                    _last_accel_residual{0.f, 0.f, 0.f};
+    sensor_gyro_s               _last_ref_gyro{};
+    sensor_accel_s              _last_ref_accel{};
 
 
     // Note: this value is borrowed from data_validator

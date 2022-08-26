@@ -39,13 +39,15 @@ using matrix::Eulerf;
 using matrix::Quatf;
 using matrix::Vector3f;
 
+using sensor_attack::BLK_BARO_HGT;
+using sensor_attack::BLK_MAG_FUSE;
+
 pthread_mutex_t ekf2_module_mutex = PTHREAD_MUTEX_INITIALIZER;
 static px4::atomic<EKF2 *> _objects[EKF2_MAX_INSTANCES] {};
 #if !defined(CONSTRAINED_FLASH)
 static px4::atomic<EKF2Selector *> _ekf2_selector {nullptr};
 #endif // !CONSTRAINED_FLASH
 
-// TODO COMMON introduce attack flags from sensor_attack lib
 EKF2::EKF2(bool multi_mode, const px4::wq_config_t &config, bool replay_mode):
 	ModuleParams(nullptr),
 	ScheduledWorkItem(MODULE_NAME, config),
@@ -199,6 +201,7 @@ bool EKF2::multi_init(int imu, int mag)
 {
 	// advertise all topics to ensure consistent uORB instance numbering
 	_ekf2_timestamps_pub.advertise();
+    _estimator_aero_wrench_pub.advertise();
 	_estimator_baro_bias_pub.advertise();
 	_estimator_event_flags_pub.advertise();
 	_estimator_gps_status_pub.advertise();
@@ -240,6 +243,18 @@ bool EKF2::multi_init(int imu, int mag)
 	return false;
 }
 
+
+bool EKF2::multi_init(int imu, int mag, int ref)
+{
+    if (_reference_imu_sub.ChangeInstance(ref)) {
+        _selected_reference = _reference_imu_sub.get_instance();
+
+        return multi_init(imu, mag);
+    }
+
+    return false;
+}
+
 int EKF2::print_status()
 {
 	PX4_INFO_RAW("ekf2:%d EKF dt: %.4fs, IMU dt: %.4fs, attitude: %d, local position: %d, global position: %d\n",
@@ -270,7 +285,7 @@ void EKF2::Run()
 	if (should_exit()) {
 		_sensor_combined_sub.unregisterCallback();
 		_vehicle_imu_sub.unregisterCallback();
-        // TODO COMMON unregister reference sensor callbacks
+        _reference_imu_sub.unregisterCallback();
 
 		return;
 	}
@@ -370,12 +385,13 @@ void EKF2::Run()
 	hrt_abstime imu_dt = 0; // for tracking time slip later
     // TODO SOFTSENS use reference imu only if the current imu is failure (see imu status)
 
-	if (_multi_mode) {
-		const unsigned last_generation = _vehicle_imu_sub.get_last_generation();
-		vehicle_imu_s imu;
-		imu_updated = _vehicle_imu_sub.update(&imu);
+	if (_multi_mode || use_reference()) {
+        uORB::SubscriptionCallbackWorkItem &imu_sub = use_reference() ? _reference_imu_sub : _vehicle_imu_sub;
+        const unsigned last_generation = imu_sub.get_last_generation();
+        vehicle_imu_s imu;
+		imu_updated = imu_sub.update(&imu);
 
-		if (imu_updated && (_vehicle_imu_sub.get_last_generation() != last_generation + 1)) {
+		if (imu_updated && (imu_sub.get_last_generation() != last_generation + 1)) {
 			perf_count(_msg_missed_imu_perf);
 		}
 
@@ -552,6 +568,28 @@ void EKF2::Run()
 				const bool was_in_air = _ekf.control_status_flags().in_air;
 				const bool in_air = !vehicle_land_detected.landed;
 
+                if (has_reference()) {
+                    if (!use_reference() && in_air) {
+                        // We are about to take off, Connect to Reference IMU
+                        vehicle_imu_s ref_imu;
+                        if (_reference_imu_sub.update(&ref_imu) && _reference_imu_sub.registerCallback()) {
+                            _sensor_combined_sub.unregisterCallback();
+                            _vehicle_imu_sub.unregisterCallback();
+                            _ekf.setReferenceImuEnabled(true);
+                            PX4_INFO("%d - Reference IMU synchronized, timestamp: VIMU%d - %" PRIu64 " , IMU - %" PRIu64,
+                                     _instance, _selected_reference , ref_imu.timestamp, imu_sample_new.time_us);
+                        }
+                    } else if (use_reference() && !in_air) {
+                        // We have landed, disconnect from Reference IMU
+                        const bool disconnect = (_multi_mode) ? _vehicle_imu_sub.registerCallback() : _sensor_combined_sub.registerCallback();
+                        if (disconnect) {
+                            _reference_imu_sub.unregisterCallback();
+                            _ekf.setReferenceImuEnabled(false);
+                            PX4_INFO("%d - Vehicle landed, disconnect from reference imu %d", _instance, _selected_reference);
+                        }
+                    }
+                }
+
 				if (!was_in_air && in_air) {
 					// takeoff
 					_ekf.set_in_air_status(true);
@@ -564,6 +602,7 @@ void EKF2::Run()
 				} else if (was_in_air && !in_air) {
 					// landed
 					_ekf.set_in_air_status(false);
+
 				}
 			}
 		}
@@ -581,10 +620,24 @@ void EKF2::Run()
 
 		UpdateAirspeedSample(ekf2_timestamps);
 		UpdateAuxVelSample(ekf2_timestamps);
-		UpdateBaroSample(ekf2_timestamps);
+        if (!(_param_atk_apply_type.get() & BLK_BARO_HGT)) {
+            UpdateBaroSample(ekf2_timestamps);
+        }
 		UpdateFlowSample(ekf2_timestamps);
 		UpdateGpsSample(ekf2_timestamps);
-		UpdateMagSample(ekf2_timestamps);
+//         TODO VIMU/SAVIOR Magnetometer Switch
+//        if (use_virtual_imu() && !_param_iv_enable_lsm.get()) {
+//            // Attempt to switch magnetometer if is VIMU-EKF and current mag is faulty
+//            float mag_test_ratio;
+//            _ekf.getMagInnovRatio(mag_test_ratio);
+//            if (mag_test_ratio >= 1.0f) {
+//                FindNewMagnetometer(now);
+//            }
+//        }
+
+        if (!(_param_atk_apply_type.get() & BLK_MAG_FUSE)) {
+            UpdateMagSample(ekf2_timestamps);
+        }
 		UpdateRangeSample(ekf2_timestamps);
 
 		vehicle_odometry_s ev_odom;
@@ -624,6 +677,9 @@ void EKF2::Run()
 			perf_set_elapsed(_ecl_ekf_update_perf, hrt_elapsed_time(&ekf_update_start));
 		}
 
+        // publish estimate air drag applied to the vehicle
+        PublishAerodynamicWrench(now);
+
 		// publish external visual odometry after fixed frame alignment if new odometry is received
 		if (new_ev_odom) {
 			PublishOdometryAligned(now, ev_odom);
@@ -635,6 +691,16 @@ void EKF2::Run()
 
 	// re-schedule as backup timeout
 	ScheduleDelayed(100_ms);
+}
+
+void EKF2::PublishAerodynamicWrench(const hrt_abstime &timestamp) {
+    estimator_aero_wrench_s aero_wrench{};
+
+    aero_wrench.timestamp_sample = timestamp;
+    _ekf.getAerodynamicWrench(aero_wrench.acceleration, aero_wrench.angular_acceleration);
+    aero_wrench.timestamp = _replay_mode ? timestamp : hrt_absolute_time();
+
+    _estimator_aero_wrench_pub.publish(aero_wrench);
 }
 
 void EKF2::PublishAttitude(const hrt_abstime &timestamp)
@@ -1148,7 +1214,7 @@ void EKF2::PublishSensorBias(const hrt_abstime &timestamp)
 		bias.timestamp_sample = _ekf.get_imu_sample_delayed().time_us;
 
 		// take device ids from sensor_selection_s if not using specific vehicle_imu_s
-		if (_device_id_gyro != 0) {
+		if ((_device_id_gyro != 0) || use_reference()) {
 			bias.gyro_device_id = _device_id_gyro;
 			gyro_bias.copyTo(bias.gyro_bias);
 			bias.gyro_bias_limit = math::radians(20.f); // 20 degrees/s see Ekf::constrainStates()
@@ -1158,7 +1224,7 @@ void EKF2::PublishSensorBias(const hrt_abstime &timestamp)
 			_last_gyro_bias_published = gyro_bias;
 		}
 
-		if ((_device_id_accel != 0) && !(_param_ekf2_aid_mask.get() & MASK_INHIBIT_ACC_BIAS)) {
+		if (((_device_id_accel != 0) || use_reference()) && !(_param_ekf2_aid_mask.get() & MASK_INHIBIT_ACC_BIAS)) {
 			bias.accel_device_id = _device_id_accel;
 			accel_bias.copyTo(bias.accel_bias);
 			bias.accel_bias_limit = _params->acc_bias_lim;
@@ -1807,7 +1873,6 @@ void EKF2::UpdateMagSample(ekf2_timestamps_s &ekf2_timestamps)
 			_mag_cal = {};
 		}
 
-        // TODO COMMON Block Attack
 		_ekf.setMagData(magSample{magnetometer.timestamp_sample, Vector3f{magnetometer.magnetometer_ga}});
 
 		ekf2_timestamps.vehicle_magnetometer_timestamp_rel = (int16_t)((int64_t)magnetometer.timestamp / 100 -
@@ -2079,10 +2144,10 @@ int EKF2::task_spawn(int argc, char *argv[])
 			}
 		}
 
-        // TODO COMMON insert reference EKF initialization logic
 		const hrt_abstime time_started = hrt_absolute_time();
 		const int multi_instances = math::min(imu_instances * mag_instances, static_cast<int32_t>(EKF2_MAX_INSTANCES));
 		int multi_instances_allocated = 0;
+        bool reference_created = false;
 
 		// allocate EKF2 instances until all found or arming
 		uORB::SubscriptionData<vehicle_status_s> vehicle_status_sub{ORB_ID(vehicle_status)};
@@ -2095,6 +2160,49 @@ int EKF2::task_spawn(int argc, char *argv[])
 			   || (vehicle_status_sub.get().hil_state == vehicle_status_s::HIL_STATE_ON))) {
 
 			vehicle_status_sub.update();
+
+            if (!reference_created) {
+                // First create reference EKF
+                const uint8_t mag = 0;
+                const uint8_t imu = 0;
+                const int ref = 0;
+                uORB::SubscriptionData<vehicle_magnetometer_s> vehicle_mag_sub{ORB_ID(vehicle_magnetometer), mag};
+                vehicle_mag_sub.update();
+                uORB::SubscriptionData<vehicle_imu_s> vehicle_imu_sub{ORB_ID(vehicle_imu), imu};
+                uORB::SubscriptionData<vehicle_imu_s> reference_imu_sub{ORB_ID(reference_imu), ref};
+
+                if (vehicle_imu_sub.advertised() && reference_imu_sub.advertised()) {
+                    EKF2 *ekf2_inst = new EKF2(true, px4::ins_instance_to_wq(imu), false);
+
+                    if (ekf2_inst && ekf2_inst->multi_init(imu, mag, ref)) {
+                        int actual_instance = ekf2_inst->instance(); // match uORB instance numbering
+
+                        if ((actual_instance >= 0) && (_objects[actual_instance].load() == nullptr)) {
+                            _objects[actual_instance].store(ekf2_inst);
+                            multi_instances_allocated++;
+
+                            PX4_DEBUG("starting instance %d (Ref), IMU:%" PRIu8 " (%" PRIu32 "), MAG:%" PRIu8 " (%" PRIu32 "), REF:%d",
+                                      actual_instance,
+                                      imu, vehicle_imu_sub.get().accel_device_id,
+                                      mag, vehicle_mag_sub.get().device_id,
+                                      ref);
+
+                            _ekf2_selector.load()->ScheduleNow();
+                            _ekf2_selector.load()->RequestReference(0);
+                            reference_created = true;
+
+                        } else {
+                            PX4_ERR("instance numbering problem instance: %d （Ref)", actual_instance);
+                            delete ekf2_inst;
+                        }
+                    }
+                }
+            }
+
+            if (!reference_created) {
+                px4_usleep(10000);
+                continue;
+            }
 
 			for (uint8_t mag = 0; mag < mag_instances; mag++) {
 				uORB::SubscriptionData<vehicle_magnetometer_s> vehicle_mag_sub{ORB_ID(vehicle_magnetometer), mag};

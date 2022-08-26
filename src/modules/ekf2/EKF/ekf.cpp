@@ -61,6 +61,10 @@ void Ekf::reset()
 	_state.wind_vel.setZero();
 	_state.quat_nominal.setIdentity();
 
+    _drag_acceleration.zero();
+    _drag_angular_acceleration.zero();
+    _wind_estimate.zero();
+
 	// TODO: who resets the output buffer content?
 	_output_new.vel.setZero();
 	_output_new.pos.setZero();
@@ -118,6 +122,7 @@ bool Ekf::update()
 	// the output observer always runs
 	// Use full rate IMU data at the current time horizon
 	calculateOutputStates(_newest_high_rate_imu_sample);
+    updateAerodynamicWrench();
 
 	return updated;
 }

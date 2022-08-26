@@ -52,6 +52,7 @@
 #include <drivers/drv_hrt.h>
 #include <lib/mathlib/mathlib.h>
 #include <lib/perf/perf_counter.h>
+#include <lib/sensor_attack/sensor_attack.hpp>
 #include <px4_platform_common/defines.h>
 #include <px4_platform_common/module.h>
 #include <px4_platform_common/module_params.h>
@@ -67,6 +68,7 @@
 #include <uORB/topics/airspeed_validated.h>
 #include <uORB/topics/distance_sensor.h>
 #include <uORB/topics/ekf2_timestamps.h>
+#include <uORB/topics/estimator_aero_wrench.h>
 #include <uORB/topics/estimator_baro_bias.h>
 #include <uORB/topics/estimator_event_flags.h>
 #include <uORB/topics/estimator_gps_status.h>
@@ -125,8 +127,13 @@ public:
 	static void unlock_module() { pthread_mutex_unlock(&ekf2_module_mutex); }
 
 	bool multi_init(int imu, int mag);
+    bool multi_init(int imu, int mag, int reference);
 
 	int instance() const { return _instance; }
+
+    bool has_reference() const { return _selected_reference >= 0; }
+
+    bool use_reference() const { return has_reference() && _reference_imu_sub.registered(); }
 
 private:
 
@@ -135,6 +142,7 @@ private:
 
 	void Run() override;
 
+    void PublishAerodynamicWrench(const hrt_abstime &timestamp);
 	void PublishAttitude(const hrt_abstime &timestamp);
 	void PublishBaroBias(const hrt_abstime &timestamp);
 	void PublishEventFlags(const hrt_abstime &timestamp);
@@ -178,6 +186,7 @@ private:
 	const bool _replay_mode{false};			///< true when we use replay data from a log
 	const bool _multi_mode;
 	int _instance{0};
+    int _selected_reference{-1};
 
 	px4::atomic_bool _task_should_exit{false};
 
@@ -261,6 +270,7 @@ private:
 
 	uORB::SubscriptionCallbackWorkItem _sensor_combined_sub{this, ORB_ID(sensor_combined)};
 	uORB::SubscriptionCallbackWorkItem _vehicle_imu_sub{this, ORB_ID(vehicle_imu)};
+    uORB::SubscriptionCallbackWorkItem _reference_imu_sub{this, ORB_ID(reference_imu)};
 
 	uORB::SubscriptionMultiArray<distance_sensor_s> _distance_sensor_subs{ORB_ID::distance_sensor};
 	int _distance_sensor_selected{-1}; // because we can have several distance sensor instances with different orientations
@@ -284,6 +294,7 @@ private:
 	uint32_t _filter_information_event_changes{0};
 
 	uORB::PublicationMulti<ekf2_timestamps_s>            _ekf2_timestamps_pub{ORB_ID(ekf2_timestamps)};
+    uORB::PublicationMulti<estimator_aero_wrench_s>      _estimator_aero_wrench_pub{ORB_ID(estimator_aero_wrench)};
 	uORB::PublicationMulti<estimator_baro_bias_s>        _estimator_baro_bias_pub{ORB_ID(estimator_baro_bias)};
 	uORB::PublicationMultiData<estimator_event_flags_s>  _estimator_event_flags_pub{ORB_ID(estimator_event_flags)};
 	uORB::PublicationMulti<estimator_gps_status_s>       _estimator_gps_status_pub{ORB_ID(estimator_gps_status)};
@@ -543,8 +554,11 @@ private:
 
 		// Used by EKF-GSF experimental yaw estimator
 		(ParamExtFloat<px4::params::EKF2_GSF_TAS>)
-		_param_ekf2_gsf_tas_default	///< default value of true airspeed assumed during fixed wing operation
+		_param_ekf2_gsf_tas_default,	///< default value of true airspeed assumed during fixed wing operation
 
+        // TODO Put these input inside EKF?
+        (ParamInt<px4::params::ATK_APPLY_TYPE>)      _param_atk_apply_type,		///< bitmasked integer that selects which of the sensor will be jammed (only affect magnetometer and barometer)
+        (ParamInt<px4::params::ATK_STEALTH_TYPE>)    _param_atk_stealth_type		///< bitmasked integer that selects which of the sensor will be jammed (only affect magnetometer and barometer)
 	)
 };
 #endif // !EKF2_HPP
