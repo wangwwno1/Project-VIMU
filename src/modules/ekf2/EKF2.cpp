@@ -39,13 +39,15 @@ using matrix::Eulerf;
 using matrix::Quatf;
 using matrix::Vector3f;
 
+using sensor_attack::BLK_BARO_HGT;
+using sensor_attack::BLK_MAG_FUSE;
+
 pthread_mutex_t ekf2_module_mutex = PTHREAD_MUTEX_INITIALIZER;
 static px4::atomic<EKF2 *> _objects[EKF2_MAX_INSTANCES] {};
 #if !defined(CONSTRAINED_FLASH)
 static px4::atomic<EKF2Selector *> _ekf2_selector {nullptr};
 #endif // !CONSTRAINED_FLASH
 
-// TODO COMMON introduce attack flags from sensor_attack lib
 // TODO VIMU/SAVIOR get reference_gyro_noise
 // TODO VIMU/SAVIOR get bunch of validator params
 
@@ -619,7 +621,9 @@ void EKF2::Run()
 
 		UpdateAirspeedSample(ekf2_timestamps);
 		UpdateAuxVelSample(ekf2_timestamps);
-		UpdateBaroSample(ekf2_timestamps);
+        if (!(_param_atk_apply_type.get() & BLK_BARO_HGT)) {
+            UpdateBaroSample(ekf2_timestamps);
+        }
 		UpdateFlowSample(ekf2_timestamps);
 		UpdateGpsSample(ekf2_timestamps);
 //         TODO VIMU/SAVIOR Magnetometer Switch
@@ -632,7 +636,9 @@ void EKF2::Run()
 //            }
 //        }
 
-		UpdateMagSample(ekf2_timestamps);
+        if (!(_param_atk_apply_type.get() & BLK_MAG_FUSE)) {
+            UpdateMagSample(ekf2_timestamps);
+        }
 		UpdateRangeSample(ekf2_timestamps);
 
 		vehicle_odometry_s ev_odom;
@@ -1627,7 +1633,6 @@ void EKF2::UpdateBaroSample(ekf2_timestamps_s &ekf2_timestamps)
 		}
 
 		_ekf.set_air_density(airdata.rho);
-        // TODO VIMU/SAVIOR BARO Block Attack
 
 		_ekf.setBaroData(baroSample{airdata.timestamp_sample, airdata.baro_alt_meter});
 
@@ -1869,7 +1874,6 @@ void EKF2::UpdateMagSample(ekf2_timestamps_s &ekf2_timestamps)
 			_mag_cal = {};
 		}
 
-        // TODO COMMON Block Attack
 		_ekf.setMagData(magSample{magnetometer.timestamp_sample, Vector3f{magnetometer.magnetometer_ga}});
 
 		ekf2_timestamps.vehicle_magnetometer_timestamp_rel = (int16_t)((int64_t)magnetometer.timestamp / 100 -

@@ -52,6 +52,7 @@
 #include <drivers/drv_hrt.h>
 #include <lib/mathlib/mathlib.h>
 #include <lib/perf/perf_counter.h>
+#include <lib/sensor_attack/sensor_attack.hpp>
 #include <px4_platform_common/defines.h>
 #include <px4_platform_common/module.h>
 #include <px4_platform_common/module_params.h>
@@ -553,8 +554,42 @@ private:
 
 		// Used by EKF-GSF experimental yaw estimator
 		(ParamExtFloat<px4::params::EKF2_GSF_TAS>)
-		_param_ekf2_gsf_tas_default	///< default value of true airspeed assumed during fixed wing operation
+		_param_ekf2_gsf_tas_default,	///< default value of true airspeed assumed during fixed wing operation
 
+        // TODO Put these input inside EKF?
+        (ParamInt<px4::params::ATK_APPLY_TYPE>)      _param_atk_apply_type,		///< bitmasked integer that selects which of the sensor will be jammed (only affect magnetometer and barometer)
+        (ParamInt<px4::params::ATK_STEALTH_TYPE>)    _param_atk_stealth_type		///< bitmasked integer that selects which of the sensor will be jammed (only affect magnetometer and barometer)
+
+        // TODO VIMU/SAVIOR Integrate Detectors & Stealthy Attacks
+//        (ParamInt<px4::params::IV_APPLY_TO_EKF>)        _param_iv_apply_to_ekf,		///< enables use of the enhanced detector for EKF instances other than VIMU-EKF
+//
+//        (ParamExtFloat<px4::params::IV_GPS_P_CSUM_H>)   _param_iv_gps_p_csum_h,
+//        (ParamExtFloat<px4::params::IV_GPS_P_MSHIFT>)   _param_iv_gps_p_mshift,
+//        (ParamExtFloat<px4::params::IV_GPS_V_CSUM_H>)   _param_iv_gps_v_csum_h,
+//        (ParamExtFloat<px4::params::IV_GPS_V_MSHIFT>)   _param_iv_gps_v_mshift,
+//        (ParamExtFloat<px4::params::IV_GPS_EMA_H>)      _param_iv_gps_ema_h,
+//        (ParamExtFloat<px4::params::IV_GPS_ALPHA>)      _param_iv_gps_alpha,
+//        (ParamExtFloat<px4::params::IV_GPS_EMA_CAP>)    _param_iv_gps_ema_cap,
+//
+//        (ParamExtFloat<px4::params::IV_EV_P_CSUM_H>)    _param_iv_ev_p_csum_h,
+//        (ParamExtFloat<px4::params::IV_EV_P_MSHIFT>)    _param_iv_ev_p_mshift,
+//        (ParamExtFloat<px4::params::IV_EV_V_CSUM_H>)    _param_iv_ev_v_csum_h,
+//        (ParamExtFloat<px4::params::IV_EV_V_MSHIFT>)    _param_iv_ev_v_mshift,
+//
+//        (ParamExtFloat<px4::params::IV_BARO_CSUM_H>)    _param_iv_baro_csum_h,
+//        (ParamExtFloat<px4::params::IV_BARO_MSHIFT>)    _param_iv_baro_mshift,
+//
+//        (ParamExtFloat<px4::params::IV_RNG_CSUM_H>)     _param_iv_rng_csum_h,
+//        (ParamExtFloat<px4::params::IV_RNG_MSHIFT>)     _param_iv_rng_mshift,
+//
+//        (ParamExtFloat<px4::params::IV_HDG_CSUM_H>)     _param_iv_hdg_csum_h,
+//        (ParamExtFloat<px4::params::IV_HDG_MSHIFT>)     _param_iv_hdg_mshift,
+//
+//        (ParamExtFloat<px4::params::IV_MAG_CSUM_H>)     _param_iv_mag_csum_h,
+//        (ParamExtFloat<px4::params::IV_MAG_MSHIFT>)     _param_iv_mag_mshift,
+//
+//        (ParamExtFloat<px4::params::IV_AUX_V_CSUM_H>)   _param_iv_aux_v_csum_h,
+//        (ParamExtFloat<px4::params::IV_AUX_V_MSHIFT>)   _param_iv_aux_v_mshift,
 	)
 };
 #endif // !EKF2_HPP
