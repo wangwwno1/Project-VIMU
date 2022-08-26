@@ -69,7 +69,7 @@ namespace sensors {
         if (math::isInRange(validate_start, ref_accel.timestamp_sample - interval_us, ref_accel.timestamp_sample + interval_us)) {
 
             ApplyAccelAttack(accel, ref_accel);
-            
+
             _last_accel_residual(0) = accel.x - ref_accel.x;
             _last_accel_residual(1) = accel.y - ref_accel.y;
             _last_accel_residual(2) = accel.z - ref_accel.z;
