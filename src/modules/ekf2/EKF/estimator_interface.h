@@ -260,12 +260,16 @@ public:
 	float gps_vertical_position_drift_rate_m_s() const { return _gps_vertical_position_drift_rate_m_s; }
 	float gps_filtered_horizontal_velocity_m_s() const { return _gps_filtered_horizontal_velocity_m_s; }
 
+    void setReferenceImuEnabled(bool enabled) { _use_reference_imu = enabled; }
+
 protected:
 
 	EstimatorInterface() = default;
 	virtual ~EstimatorInterface();
 
 	virtual bool init(uint64_t timestamp) = 0;
+
+    bool _use_reference_imu{false};
 
 	parameters _params{};		// filter parameters
 

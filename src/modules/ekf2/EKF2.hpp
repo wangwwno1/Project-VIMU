@@ -126,8 +126,13 @@ public:
 	static void unlock_module() { pthread_mutex_unlock(&ekf2_module_mutex); }
 
 	bool multi_init(int imu, int mag);
+    bool multi_init(int imu, int mag, int reference);
 
 	int instance() const { return _instance; }
+
+    bool has_reference() const { return _selected_reference >= 0; }
+
+    bool use_reference() const { return has_reference() && _reference_imu_sub.registered(); }
 
 private:
 
@@ -180,6 +185,7 @@ private:
 	const bool _replay_mode{false};			///< true when we use replay data from a log
 	const bool _multi_mode;
 	int _instance{0};
+    int _selected_reference{-1};
 
 	px4::atomic_bool _task_should_exit{false};
 
@@ -263,6 +269,7 @@ private:
 
 	uORB::SubscriptionCallbackWorkItem _sensor_combined_sub{this, ORB_ID(sensor_combined)};
 	uORB::SubscriptionCallbackWorkItem _vehicle_imu_sub{this, ORB_ID(vehicle_imu)};
+    uORB::SubscriptionCallbackWorkItem _reference_imu_sub{this, ORB_ID(reference_imu)};
 
 	uORB::SubscriptionMultiArray<distance_sensor_s> _distance_sensor_subs{ORB_ID::distance_sensor};
 	int _distance_sensor_selected{-1}; // because we can have several distance sensor instances with different orientations
