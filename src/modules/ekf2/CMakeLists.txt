@@ -47,6 +47,7 @@ px4_add_module(
 	STACK_MAX
 		3600
 	SRCS
+        EKF/aero_wrench_estimator.cpp
 		EKF/airspeed_fusion.cpp
 		EKF/baro_bias_estimator.cpp
 		EKF/control.cpp
