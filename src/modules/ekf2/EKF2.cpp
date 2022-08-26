@@ -244,6 +244,18 @@ bool EKF2::multi_init(int imu, int mag)
 	return false;
 }
 
+
+bool EKF2::multi_init(int imu, int mag, int ref)
+{
+    if (_reference_imu_sub.ChangeInstance(ref)) {
+        _selected_reference = _reference_imu_sub.get_instance();
+
+        return multi_init(imu, mag);
+    }
+
+    return false;
+}
+
 int EKF2::print_status()
 {
 	PX4_INFO_RAW("ekf2:%d EKF dt: %.4fs, IMU dt: %.4fs, attitude: %d, local position: %d, global position: %d\n",
@@ -274,7 +286,7 @@ void EKF2::Run()
 	if (should_exit()) {
 		_sensor_combined_sub.unregisterCallback();
 		_vehicle_imu_sub.unregisterCallback();
-        // TODO COMMON unregister reference sensor callbacks
+        _reference_imu_sub.unregisterCallback();
 
 		return;
 	}
@@ -366,20 +378,19 @@ void EKF2::Run()
 			}
 		}
 	}
-    // TODO COMMON Check reference subscription?
 
 	bool imu_updated = false;
 	imuSample imu_sample_new {};
 
 	hrt_abstime imu_dt = 0; // for tracking time slip later
 
-    // TODO VIMU/SAVIOR use reference imu exclusively if set as a reference EKF
-	if (_multi_mode) {
-		const unsigned last_generation = _vehicle_imu_sub.get_last_generation();
-		vehicle_imu_s imu;
-		imu_updated = _vehicle_imu_sub.update(&imu);
+	if (_multi_mode || use_reference()) {
+        uORB::SubscriptionCallbackWorkItem &imu_sub = use_reference() ? _reference_imu_sub : _vehicle_imu_sub;
+        const unsigned last_generation = imu_sub.get_last_generation();
+        vehicle_imu_s imu;
+		imu_updated = imu_sub.update(&imu);
 
-		if (imu_updated && (_vehicle_imu_sub.get_last_generation() != last_generation + 1)) {
+		if (imu_updated && (imu_sub.get_last_generation() != last_generation + 1)) {
 			perf_count(_msg_missed_imu_perf);
 		}
 
@@ -556,11 +567,31 @@ void EKF2::Run()
 				const bool was_in_air = _ekf.control_status_flags().in_air;
 				const bool in_air = !vehicle_land_detected.landed;
 
+                if (has_reference()) {
+                    if (!use_reference() && in_air) {
+                        // We are about to take off, Connect to Reference IMU
+                        vehicle_imu_s ref_imu;
+                        if (_reference_imu_sub.update(&ref_imu) && _reference_imu_sub.registerCallback()) {
+                            _sensor_combined_sub.unregisterCallback();
+                            _vehicle_imu_sub.unregisterCallback();
+                            _ekf.setReferenceImuEnabled(true);
+                            PX4_INFO("%d - Reference IMU synchronized, timestamp: VIMU%d - %" PRIu64 " , IMU - %" PRIu64,
+                                     _instance, _selected_reference , ref_imu.timestamp, imu_sample_new.time_us);
+                        }
+                    } else if (use_reference() && !in_air) {
+                        // We have landed, disconnect from Reference IMU
+                        const bool disconnect = (_multi_mode) ? _vehicle_imu_sub.registerCallback() : _sensor_combined_sub.registerCallback();
+                        if (disconnect) {
+                            _reference_imu_sub.unregisterCallback();
+                            _ekf.setReferenceImuEnabled(false);
+                            PX4_INFO("%d - Vehicle landed, disconnect from reference imu %d", _instance, _selected_reference);
+                        }
+                    }
+                }
+
 				if (!was_in_air && in_air) {
 					// takeoff
 					_ekf.set_in_air_status(true);
-
-                    // TODO VIMU/SAVIOR Switch to reference imu
 
 					// reset learned sensor calibrations on takeoff
 					_accel_cal = {};
@@ -571,7 +602,6 @@ void EKF2::Run()
 					// landed
 					_ekf.set_in_air_status(false);
 
-                    // TODO VIMU/SAVIOR Detach from reference imu
 				}
 			}
 		}
@@ -1179,8 +1209,7 @@ void EKF2::PublishSensorBias(const hrt_abstime &timestamp)
 		bias.timestamp_sample = _ekf.get_imu_sample_delayed().time_us;
 
 		// take device ids from sensor_selection_s if not using specific vehicle_imu_s
-        // TODO VIMU/SAVIOR Publish Bias if using reference imu (with device_id == 0)
-		if (_device_id_gyro != 0) {
+		if ((_device_id_gyro != 0) || use_reference()) {
 			bias.gyro_device_id = _device_id_gyro;
 			gyro_bias.copyTo(bias.gyro_bias);
 			bias.gyro_bias_limit = math::radians(20.f); // 20 degrees/s see Ekf::constrainStates()
@@ -1190,7 +1219,7 @@ void EKF2::PublishSensorBias(const hrt_abstime &timestamp)
 			_last_gyro_bias_published = gyro_bias;
 		}
 
-		if ((_device_id_accel != 0) && !(_param_ekf2_aid_mask.get() & MASK_INHIBIT_ACC_BIAS)) {
+		if (((_device_id_accel != 0) || use_reference()) && !(_param_ekf2_aid_mask.get() & MASK_INHIBIT_ACC_BIAS)) {
 			bias.accel_device_id = _device_id_accel;
 			accel_bias.copyTo(bias.accel_bias);
 			bias.accel_bias_limit = _params->acc_bias_lim;
@@ -2112,10 +2141,10 @@ int EKF2::task_spawn(int argc, char *argv[])
 			}
 		}
 
-        // TODO COMMON insert reference EKF initialization logic
 		const hrt_abstime time_started = hrt_absolute_time();
 		const int multi_instances = math::min(imu_instances * mag_instances, static_cast<int32_t>(EKF2_MAX_INSTANCES));
 		int multi_instances_allocated = 0;
+        bool reference_created = false;
 
 		// allocate EKF2 instances until all found or arming
 		uORB::SubscriptionData<vehicle_status_s> vehicle_status_sub{ORB_ID(vehicle_status)};
@@ -2129,11 +2158,53 @@ int EKF2::task_spawn(int argc, char *argv[])
 
 			vehicle_status_sub.update();
 
+            if (!reference_created) {
+                // First create reference EKF
+                const uint8_t mag = 0;
+                const uint8_t imu = 0;
+                const int ref = 0;
+                uORB::SubscriptionData<vehicle_magnetometer_s> vehicle_mag_sub{ORB_ID(vehicle_magnetometer), mag};
+                vehicle_mag_sub.update();
+                uORB::SubscriptionData<vehicle_imu_s> vehicle_imu_sub{ORB_ID(vehicle_imu), imu};
+                uORB::SubscriptionData<vehicle_imu_s> reference_imu_sub{ORB_ID(reference_imu), ref};
+
+                if (vehicle_imu_sub.advertised() && reference_imu_sub.advertised()) {
+                    EKF2 *ekf2_inst = new EKF2(true, px4::ins_instance_to_wq(imu), false);
+
+                    if (ekf2_inst && ekf2_inst->multi_init(imu, mag, ref)) {
+                        int actual_instance = ekf2_inst->instance(); // match uORB instance numbering
+
+                        if ((actual_instance >= 0) && (_objects[actual_instance].load() == nullptr)) {
+                            _objects[actual_instance].store(ekf2_inst);
+                            multi_instances_allocated++;
+
+                            PX4_DEBUG("starting instance %d (Ref), IMU:%" PRIu8 " (%" PRIu32 "), MAG:%" PRIu8 " (%" PRIu32 "), REF:%d",
+                                      actual_instance,
+                                      imu, vehicle_imu_sub.get().accel_device_id,
+                                      mag, vehicle_mag_sub.get().device_id,
+                                      ref);
+
+                            _ekf2_selector.load()->ScheduleNow();
+                            _ekf2_selector.load()->RequestReference(0);
+                            reference_created = true;
+
+                        } else {
+                            PX4_ERR("instance numbering problem instance: %d （Ref)", actual_instance);
+                            delete ekf2_inst;
+                        }
+                    }
+                }
+            }
+
+            if (!reference_created) {
+                px4_usleep(10000);
+                continue;
+            }
+
 			for (uint8_t mag = 0; mag < mag_instances; mag++) {
 				uORB::SubscriptionData<vehicle_magnetometer_s> vehicle_mag_sub{ORB_ID(vehicle_magnetometer), mag};
 
 				for (uint8_t imu = 0; imu < imu_instances; imu++) {
-                    // TODO VIMU/SAVIOR check reference imu publish, initialize by reference imu first - mark which instance is used
 
 					uORB::SubscriptionData<vehicle_imu_s> vehicle_imu_sub{ORB_ID(vehicle_imu), imu};
 					vehicle_mag_sub.update();
