@@ -39,7 +39,6 @@ using matrix::Eulerf;
 using matrix::Quatf;
 using matrix::Vector3f;
 
-using sensor_attack::BLK_BARO_HGT;
 using sensor_attack::BLK_MAG_FUSE;
 
 pthread_mutex_t ekf2_module_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -166,7 +165,9 @@ EKF2::EKF2(bool multi_mode, const px4::wq_config_t &config, bool replay_mode):
 	_param_ekf2_pcoef_z(_params->static_pressure_coef_z),
 	_param_ekf2_mag_check(_params->check_mag_strength),
 	_param_ekf2_synthetic_mag_z(_params->synthesize_mag_z),
-	_param_ekf2_gsf_tas_default(_params->EKFGSF_tas_default)
+	_param_ekf2_gsf_tas_default(_params->EKFGSF_tas_default),
+    _param_iv_mag_csum_h(_params->mag_csum_param.control_limit),
+    _param_iv_mag_mshift(_params->mag_csum_param.mean_shift)
 {
 	// advertise expected minimal topic set immediately to ensure logging
 	_attitude_pub.advertise();
@@ -246,6 +247,10 @@ bool EKF2::multi_init(int imu, int mag)
 
 bool EKF2::multi_init(int imu, int mag, int ref)
 {
+    // advertise all topics to ensure consistent uORB instance numbering
+    // _vehicle_reference_states_pub.advertise();  // Controlled at SoftwareSensor
+    _vehicle_offset_states_pub.advertise();
+
     if (_reference_imu_sub.ChangeInstance(ref)) {
         _selected_reference = _reference_imu_sub.get_instance();
 
@@ -376,14 +381,65 @@ void EKF2::Run()
 			}
 		}
 	}
-    // TODO COMMON Check reference subscription?
-    // TODO SOFTSENS Update SoftwareSensor Usage
+
+    // Check if current IMU is faulty, switch to reference if necessary
+    if (has_reference() && _sensors_status_imu_sub.updated()) {
+        sensors_status_imu_s  imu_status{};
+        _sensors_status_imu_sub.copy(&imu_status);
+
+        uint32_t device_gyro_id{0}, device_accel_id{0};
+        if (_multi_mode) {
+            vehicle_imu_s imu;
+            if (_vehicle_imu_sub.copy(&imu)) {
+                device_accel_id = imu.accel_device_id;
+                device_gyro_id = imu.gyro_device_id;
+            }
+        } else {
+            sensor_combined_s sensor_combined;
+            if (_sensor_combined_sub.copy(&sensor_combined)) {
+                device_accel_id = sensor_combined.accel_device_id;
+                device_gyro_id = sensor_combined.gyro_device_id;
+            }
+        }
+
+        bool healthy = false;
+        if ((device_gyro_id != 0) && (device_accel_id != 0)) {
+            bool accel_healthy{false}, gyro_healthy{false};
+            for (uint8_t uorb_idx = 0; uorb_idx < MAX_NUM_IMUS; ++uorb_idx) {
+                if (device_accel_id == imu_status.accel_device_ids[uorb_idx]) {
+                    accel_healthy = imu_status.accel_healthy[uorb_idx];
+                }
+
+                if (device_gyro_id == imu_status.gyro_device_ids[uorb_idx]) {
+                    gyro_healthy = imu_status.gyro_healthy[uorb_idx];
+                }
+            }
+            healthy = accel_healthy && gyro_healthy;
+        }
+
+        if (_ekf.control_status_flags().in_air) {
+            if (!healthy && !use_reference() && _reference_imu_sub.registerCallback()) {
+                _sensor_combined_sub.unregisterCallback();
+                _vehicle_imu_sub.unregisterCallback();
+                _ekf.setReferenceImuEnabled(true);
+                PX4_INFO("%d - Reference IMU synchronized, timestamp: VIMU%d - %" PRIu64 " , IMU - %" PRIu64,
+                         _instance, _selected_reference , ref_imu.timestamp, imu_sample_new.time_us);
+            } else if (healthy && use_reference()) {
+                // We have landed, disconnect from Reference IMU
+                const bool disconnect = (_multi_mode) ? _vehicle_imu_sub.registerCallback() : _sensor_combined_sub.registerCallback();
+                if (disconnect) {
+                    _reference_imu_sub.unregisterCallback();
+                    _ekf.setReferenceImuEnabled(false);
+                    PX4_INFO("%d - IMU back to normal, disconnect from reference imu %d", _instance, _selected_reference);
+                }
+            }
+        }
+    }
 
 	bool imu_updated = false;
 	imuSample imu_sample_new {};
 
 	hrt_abstime imu_dt = 0; // for tracking time slip later
-    // TODO SOFTSENS use reference imu only if the current imu is failure (see imu status)
 
 	if (_multi_mode || use_reference()) {
         uORB::SubscriptionCallbackWorkItem &imu_sub = use_reference() ? _reference_imu_sub : _vehicle_imu_sub;
@@ -568,25 +624,13 @@ void EKF2::Run()
 				const bool was_in_air = _ekf.control_status_flags().in_air;
 				const bool in_air = !vehicle_land_detected.landed;
 
-                if (has_reference()) {
-                    if (!use_reference() && in_air) {
-                        // We are about to take off, Connect to Reference IMU
-                        vehicle_imu_s ref_imu;
-                        if (_reference_imu_sub.update(&ref_imu) && _reference_imu_sub.registerCallback()) {
-                            _sensor_combined_sub.unregisterCallback();
-                            _vehicle_imu_sub.unregisterCallback();
-                            _ekf.setReferenceImuEnabled(true);
-                            PX4_INFO("%d - Reference IMU synchronized, timestamp: VIMU%d - %" PRIu64 " , IMU - %" PRIu64,
-                                     _instance, _selected_reference , ref_imu.timestamp, imu_sample_new.time_us);
-                        }
-                    } else if (use_reference() && !in_air) {
-                        // We have landed, disconnect from Reference IMU
-                        const bool disconnect = (_multi_mode) ? _vehicle_imu_sub.registerCallback() : _sensor_combined_sub.registerCallback();
-                        if (disconnect) {
-                            _reference_imu_sub.unregisterCallback();
-                            _ekf.setReferenceImuEnabled(false);
-                            PX4_INFO("%d - Vehicle landed, disconnect from reference imu %d", _instance, _selected_reference);
-                        }
+                if (use_reference() && !in_air) {
+                    // We have landed, disconnect from Reference IMU
+                    const bool disconnect = (_multi_mode) ? _vehicle_imu_sub.registerCallback() : _sensor_combined_sub.registerCallback();
+                    if (disconnect) {
+                        _reference_imu_sub.unregisterCallback();
+                        _ekf.setReferenceImuEnabled(false);
+                        PX4_INFO("%d - Vehicle landed, disconnect from reference imu %d", _instance, _selected_reference);
                     }
                 }
 
@@ -602,7 +646,6 @@ void EKF2::Run()
 				} else if (was_in_air && !in_air) {
 					// landed
 					_ekf.set_in_air_status(false);
-
 				}
 			}
 		}
@@ -620,20 +663,26 @@ void EKF2::Run()
 
 		UpdateAirspeedSample(ekf2_timestamps);
 		UpdateAuxVelSample(ekf2_timestamps);
-        if (!(_param_atk_apply_type.get() & BLK_BARO_HGT)) {
-            UpdateBaroSample(ekf2_timestamps);
-        }
+        UpdateBaroSample(ekf2_timestamps);
 		UpdateFlowSample(ekf2_timestamps);
 		UpdateGpsSample(ekf2_timestamps);
-//         TODO VIMU/SAVIOR Magnetometer Switch
-//        if (use_virtual_imu() && !_param_iv_enable_lsm.get()) {
-//            // Attempt to switch magnetometer if is VIMU-EKF and current mag is faulty
-//            float mag_test_ratio;
-//            _ekf.getMagInnovRatio(mag_test_ratio);
-//            if (mag_test_ratio >= 1.0f) {
-//                FindNewMagnetometer(now);
-//            }
-//        }
+        // Attempt to switch magnetometer if is VIMU-EKF and current mag is faulty
+        if (has_reference()) {
+            float mag_test_ratio = NAN;
+            if (_ekf.control_status_flags().mag_hdg) {
+                _ekf.getHeadingInnovRatio(mag_test_ratio);
+            } else if (_ekf.control_status_flags().mag_3D) {
+                _ekf.getMagInnovRatio(mag_test_ratio);
+            }
+
+            if (PX4_ISFINITE(mag_test_ratio) && (mag_test_ratio >= 1.f)) {
+                const uint8_t mag_uorb_idx = _magnetometer_sub.get_instance();
+                if (mag_uorb_idx < MAX_NUM_MAGS) {
+                    _last_mag_faulty_time[mag_uorb_idx] = hrt_absolute_time();
+                }
+                FindNewMagnetometer(ekf2_timestamps);
+            }
+        }
 
         if (!(_param_atk_apply_type.get() & BLK_MAG_FUSE)) {
             UpdateMagSample(ekf2_timestamps);
@@ -663,6 +712,7 @@ void EKF2::Run()
 			PublishInnovationVariances(now);
 			PublishOpticalFlowVel(now);
 			PublishStates(now);
+            PublishOffsetStates(now);
 			PublishStatus(now);
 			PublishStatusFlags(now);
 			PublishYawEstimatorStatus(now);
@@ -1261,6 +1311,24 @@ void EKF2::PublishStates(const hrt_abstime &timestamp)
 	_ekf.covariances_diagonal().copyTo(states.covariances);
 	states.timestamp = _replay_mode ? timestamp : hrt_absolute_time();
 	_estimator_states_pub.publish(states);
+
+    // Inhibit publish because it will be published at SoftwareSensor
+//    if (use_reference()) {
+//        _vehicle_reference_states_pub.publish(states);
+//    }
+}
+
+void EKF2::PublishOffsetStates(const hrt_abstime &timestamp)
+{
+    // publish estimator states for detector state correction
+    estimator_offset_states_s offset_states{};
+    offset_states.timestamp_sample = _ekf.get_imu_sample_delayed().time_us;
+    _ekf.get_ang_rate_delayed_raw(offset_states.ang_rate_delayed_raw);
+    offset_states.dt_ekf_avg = _ekf.get_dt_ekf_avg();
+    offset_states.dt_imu_avg = _ekf.get_dt_imu_avg();
+    offset_states.baro_hgt_offset = _ekf.get_baro_hgt_offset();
+    offset_states.timestamp = _replay_mode ? timestamp : hrt_absolute_time();
+    _vehicle_offset_states_pub.publish(offset_states);
 }
 
 void EKF2::PublishStatus(const hrt_abstime &timestamp)
@@ -1833,6 +1901,25 @@ void EKF2::UpdateGpsSample(ekf2_timestamps_s &ekf2_timestamps)
 		_gps_time_usec = gps_msg.time_usec;
 		_gps_alttitude_ellipsoid = vehicle_gps_position.alt_ellipsoid;
 	}
+}
+
+void EKF2::FindNewMagnetometer(const hrt_abstime &timestamp) {
+    // Iteratively select new magnetometer
+    for (uint8_t idx = 0; idx < MAX_MAG_COUNT; ++idx) {
+        uORB::SubscriptionData<vehicle_magnetometer_s> mag_sub{ORB_ID(vehicle_magnetometer), idx};
+        mag_sub.update();
+        if (mag_sub.advertised()) {
+            if (mag_sub.get().device_id == _device_id_mag) {
+                continue;
+            }
+
+            if ((hrt_elapsed_time(&_last_mag_faulty_time[idx]) > 5_s) && _magnetometer_sub.ChangeInstance(idx)) {
+                // Clear all previous mag samples
+                _ekf.resetMagBuffer();
+                break;
+            }
+        }
+    }
 }
 
 void EKF2::UpdateMagSample(ekf2_timestamps_s &ekf2_timestamps)

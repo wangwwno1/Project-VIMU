@@ -73,6 +73,7 @@
 #include <uORB/topics/estimator_event_flags.h>
 #include <uORB/topics/estimator_gps_status.h>
 #include <uORB/topics/estimator_innovations.h>
+#include <uORB/topics/estimator_offset_states.h>
 #include <uORB/topics/estimator_optical_flow_vel.h>
 #include <uORB/topics/estimator_sensor_bias.h>
 #include <uORB/topics/estimator_states.h>
@@ -83,6 +84,7 @@
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/sensor_combined.h>
 #include <uORB/topics/sensor_selection.h>
+#include <uORB/topics/sensors_status_imu.h>
 #include <uORB/topics/vehicle_air_data.h>
 #include <uORB/topics/vehicle_attitude.h>
 #include <uORB/topics/vehicle_command.h>
@@ -157,6 +159,7 @@ private:
 	void PublishOpticalFlowVel(const hrt_abstime &timestamp);
 	void PublishSensorBias(const hrt_abstime &timestamp);
 	void PublishStates(const hrt_abstime &timestamp);
+    void PublishOffsetStates(const hrt_abstime &timestamp);
 	void PublishStatus(const hrt_abstime &timestamp);
 	void PublishStatusFlags(const hrt_abstime &timestamp);
 	void PublishWindEstimate(const hrt_abstime &timestamp);
@@ -175,6 +178,7 @@ private:
 	void UpdateGyroCalibration(const hrt_abstime &timestamp);
 	void UpdateMagCalibration(const hrt_abstime &timestamp);
 
+    void FindNewMagnetometer(const hrt_abstime &timestamp);
 
 	/*
 	 * Calculate filtered WGS84 height from estimated AMSL height
@@ -263,10 +267,11 @@ private:
 	uORB::Subscription _magnetometer_sub{ORB_ID(vehicle_magnetometer)};
 	uORB::Subscription _optical_flow_sub{ORB_ID(optical_flow)};
 	uORB::Subscription _sensor_selection_sub{ORB_ID(sensor_selection)};
-	uORB::Subscription _status_sub{ORB_ID(vehicle_status)};
-	uORB::Subscription _vehicle_command_sub{ORB_ID(vehicle_command)};
-	uORB::Subscription _vehicle_gps_position_sub{ORB_ID(vehicle_gps_position)};
-	uORB::Subscription _vehicle_land_detected_sub{ORB_ID(vehicle_land_detected)};
+    uORB::Subscription _sensors_status_imu_sub{ORB_ID(sensors_status_imu)};
+    uORB::Subscription _status_sub{ORB_ID(vehicle_status)};
+    uORB::Subscription _vehicle_command_sub{ORB_ID(vehicle_command)};
+    uORB::Subscription _vehicle_gps_position_sub{ORB_ID(vehicle_gps_position)};
+    uORB::Subscription _vehicle_land_detected_sub{ORB_ID(vehicle_land_detected)};
 
 	uORB::SubscriptionCallbackWorkItem _sensor_combined_sub{this, ORB_ID(sensor_combined)};
 	uORB::SubscriptionCallbackWorkItem _vehicle_imu_sub{this, ORB_ID(vehicle_imu)};
@@ -282,6 +287,8 @@ private:
 	hrt_abstime _last_status_flags_publish{0};
 
 	hrt_abstime _last_range_sensor_update{0};
+
+    hrt_abstime _last_mag_faulty_time[MAX_NUM_MAGS]{0};
 
 	uint32_t _filter_control_status{0};
 	uint32_t _filter_fault_status{0};
@@ -304,7 +311,7 @@ private:
 	uORB::PublicationMulti<estimator_optical_flow_vel_s> _estimator_optical_flow_vel_pub{ORB_ID(estimator_optical_flow_vel)};
 	uORB::PublicationMulti<estimator_sensor_bias_s>      _estimator_sensor_bias_pub{ORB_ID(estimator_sensor_bias)};
 	uORB::PublicationMulti<estimator_states_s>           _estimator_states_pub{ORB_ID(estimator_states)};
-	uORB::PublicationMulti<estimator_status_flags_s>     _estimator_status_flags_pub{ORB_ID(estimator_status_flags)};
+    uORB::PublicationMulti<estimator_status_flags_s>     _estimator_status_flags_pub{ORB_ID(estimator_status_flags)};
 	uORB::PublicationMulti<estimator_status_s>           _estimator_status_pub{ORB_ID(estimator_status)};
 	uORB::PublicationMulti<vehicle_odometry_s>           _estimator_visual_odometry_aligned_pub{ORB_ID(estimator_visual_odometry_aligned)};
 	uORB::PublicationMulti<yaw_estimator_status_s>       _yaw_est_pub{ORB_ID(yaw_estimator_status)};
@@ -315,6 +322,10 @@ private:
 	uORB::PublicationMulti<vehicle_global_position_s>    _global_position_pub;
 	uORB::PublicationMulti<vehicle_odometry_s>           _odometry_pub;
 	uORB::PublicationMulti<wind_s>              _wind_pub;
+
+    // Topics for non-imu sensor detection - TODO: Extend to multi-reference case
+//    uORB::Publication<estimator_states_s>           _vehicle_reference_states_pub{ORB_ID(vehicle_reference_states)};
+    uORB::Publication<estimator_offset_states_s>    _vehicle_offset_states_pub{ORB_ID(vehicle_offset_states)};
 
 
 	PreFlightChecker _preflt_checker;
@@ -556,9 +567,10 @@ private:
 		(ParamExtFloat<px4::params::EKF2_GSF_TAS>)
 		_param_ekf2_gsf_tas_default,	///< default value of true airspeed assumed during fixed wing operation
 
-        // TODO Put these input inside EKF?
-        (ParamInt<px4::params::ATK_APPLY_TYPE>)      _param_atk_apply_type,		///< bitmasked integer that selects which of the sensor will be jammed (only affect magnetometer and barometer)
-        (ParamInt<px4::params::ATK_STEALTH_TYPE>)    _param_atk_stealth_type		///< bitmasked integer that selects which of the sensor will be jammed (only affect magnetometer and barometer)
+        (ParamInt<px4::params::ATK_APPLY_TYPE>)      _param_atk_apply_type,		///< bitmasked integer that selects which of the sensor will be spoofed (gps, imu) or jammed (only affect magnetometer and barometer)
+        (ParamInt<px4::params::ATK_STEALTH_TYPE>)    _param_atk_stealth_type,		///< bitmasked integer that determine the stealthy attack type
+        (ParamExtFloat<px4::params::IV_MAG_CSUM_H>)     _param_iv_mag_csum_h,
+        (ParamExtFloat<px4::params::IV_MAG_MSHIFT>)     _param_iv_mag_mshift
 	)
 };
 #endif // !EKF2_HPP
