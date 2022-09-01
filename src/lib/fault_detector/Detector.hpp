@@ -21,6 +21,7 @@ namespace fault_detector {
         uint32_t state() const { return _error_mask; }
 
         virtual const Type test_ratio() const = 0;
+        virtual const VectorN test_ratios() const = 0;
 
     protected:
         uint32_t _error_mask;
