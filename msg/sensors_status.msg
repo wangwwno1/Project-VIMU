@@ -13,3 +13,4 @@ bool[4] enabled
 bool[4] external
 
 # TOPICS sensors_status sensors_status_baro sensors_status_mag
+# TOPICS sensors_status_baro_error_ratios sensors_status_baro_test_ratios
