@@ -83,16 +83,7 @@ void EKF2Selector::PrintInstanceChange(const uint8_t old_instance, uint8_t new_i
 	} else if (_accel_fault_detected) {
 		old_reason = " (accel fault)";
 
-    } else if (_mag_fault_detected) {
-        old_reason = " (mag fault)";
-
-    } else if (_baro_fault_detected) {
-        old_reason = " (baro fault)";
-
-    } else if (_gps_fault_detected) {
-        old_reason = " (gps fault)";
-
-	} else if (!_instance[_selected_instance].healthy.get_state() && (_instance[_selected_instance].healthy_count > 0)) {
+    } else if (!_instance[_selected_instance].healthy.get_state() && (_instance[_selected_instance].healthy_count > 0)) {
 		// skipped if previous instance was never healthy in the first place (eg initialization)
 		old_reason = " (unhealthy)";
 	}
@@ -160,9 +151,6 @@ bool EKF2Selector::UpdateErrorScores()
 	uint32_t faulty_gyro_id = 0;
 	_accel_fault_detected = false;
 	uint32_t faulty_accel_id = 0;
-    _mag_fault_detected = false;
-    _gps_fault_detected = false;
-    _baro_fault_detected = false;
 
 	if (_sensors_status_imu.updated()) {
 		sensors_status_imu_s sensors_status_imu;
@@ -277,11 +265,8 @@ bool EKF2Selector::UpdateErrorScores()
 	const hrt_abstime status_timeout = 50_ms;
 
 	// calculate individual error scores
-    bool prev_healthy[EKF2_MAX_INSTANCES];
-    float mag_test_ratios[EKF2_MAX_INSTANCES];
 	for (uint8_t i = 0; i < EKF2_MAX_INSTANCES; i++) {
-		prev_healthy[i] = _instance[i].healthy.get_state();
-        mag_test_ratios[i] = NAN;
+		const bool prev_healthy = _instance[i].healthy.get_state();
 
 		estimator_status_s status;
 
@@ -293,23 +278,9 @@ bool EKF2Selector::UpdateErrorScores()
 			_instance[i].gyro_device_id = status.gyro_device_id;
 			_instance[i].baro_device_id = status.baro_device_id;
 			_instance[i].mag_device_id = status.mag_device_id;
-            mag_test_ratios[i] = status.mag_test_ratio;
 
 			if ((i + 1) > _available_instances) {
 				_available_instances = i + 1;
-
-                // Everytime we find a new instance, we register its magnetometer device id to the sensor_health_status
-                for (uint8_t mag = 0; mag < MAG_SENSOR_COUNT; ++mag) {
-                    if ((_sensor_health_status.mag_device_ids[mag] == 0) && (_instance[i].mag_device_id != 0)) {
-                        // Fill the new magnetometer id into the empty slot
-                        _sensor_health_status.mag_device_ids[mag] = _instance[i].mag_device_id;
-                        break;
-                    } else if (_sensor_health_status.mag_device_ids[mag] == _instance[i].mag_device_id) {
-                        // Already filled
-                        break;
-                    }
-                }
-
 				updated = true;
 			}
 
@@ -349,65 +320,45 @@ bool EKF2Selector::UpdateErrorScores()
 				_instance[i].relative_test_ratio = 0;
 			}
 
-            if (i == _selected_reference) {
-                // Update test ratios of mag, gps, and barometer.
-                _selected_mag_test_ratio = mag_test_ratios[i];
-                if (_selected_mag_device_id != _instance[i].mag_device_id) {
-                    _selected_mag_device_id = _instance[i].mag_device_id;
-                    _sensor_status_publish = true;
-                }
-
-                estimator_innovations_s test_ratios{};
-                if (_instance[i].estimator_innovation_test_ratios_sub.copy(&test_ratios)) {
-                    _sensor_health_status.gps_test_ratio = fmaxf(fmaxf(test_ratios.gps_hvel[0], test_ratios.gps_vvel),
-                                                                 fmaxf(test_ratios.gps_hpos[0], test_ratios.gps_vpos));
-                    _sensor_health_status.baro_hgt_test_ratio = test_ratios.baro_vpos;
-
-                    // Test ratio should be greater than zero, else there is a failure.
-                    // Ignore baro hgt because its test ratio could be smaller than zero due to float precision
-                    if (_sensor_health_status.gps_test_ratio <= 0.f) {
-                        _sensor_health_status.gps_test_ratio = 1.f;
-                    }
-                }
-            }
-
 		} else if (!_instance[i].timeout && (hrt_elapsed_time(&_instance[i].timestamp_last) > status_timeout)) {
 			_instance[i].healthy.set_state_and_update(false, hrt_absolute_time());
 			_instance[i].timeout = true;
 		}
 
         if (_selected_reference != INVALID_INSTANCE) {
-            // Enable Multi-IMU fault detection if we have reference EKF
-            bool gyro_checked = false;
-            bool accel_checked = false;
-            for (int imu = 0; imu < IMU_STATUS_SIZE; ++imu) {
+            if (i != _selected_instance) {
+                // Enable Multi-IMU fault detection if we have reference EKF
+                bool gyro_checked = false;
+                bool accel_checked = false;
+                for (int imu = 0; imu < IMU_STATUS_SIZE; ++imu) {
 
-                const uint32_t gyro_device_id = _sensor_health_status.gyro_device_ids[imu];
-                const uint32_t accel_device_id = _sensor_health_status.accel_device_ids[imu];
+                    const uint32_t gyro_device_id = _sensor_health_status.gyro_device_ids[imu];
+                    const uint32_t accel_device_id = _sensor_health_status.accel_device_ids[imu];
 
-                if ((gyro_checked && accel_checked) || ((gyro_device_id == 0) && (accel_device_id == 0))) {
-                    // We have checked the EKF or all IMU instance, stop further checking
-                    break;
-                }
-
-                if (_instance[i].gyro_device_id == gyro_device_id) {
-                    gyro_checked = true;
-                    if (!_sensor_health_status.gyro_healthy[imu]){
-                        _instance[i].healthy.set_state_and_update(false, hrt_absolute_time());
-                        _gyro_fault_detected = true;
+                    if ((gyro_checked && accel_checked) || ((gyro_device_id == 0) && (accel_device_id == 0))) {
+                        // We have checked the EKF or all IMU instance, stop further checking
                         break;
                     }
-                }
 
-                if (_instance[i].accel_device_id == accel_device_id) {
-                    accel_checked = true;
-                    if (!_sensor_health_status.accel_healthy[imu]) {
-                        _instance[i].healthy.set_state_and_update(false, hrt_absolute_time());
-                        _accel_fault_detected = true;
-                        break;
+                    if (_instance[i].gyro_device_id == gyro_device_id) {
+                        gyro_checked = true;
+                        if (!_sensor_health_status.gyro_healthy[imu]){
+                            _instance[i].healthy.set_state_and_update(false, hrt_absolute_time());
+                            _gyro_fault_detected = true;
+                            break;
+                        }
+                    }
+
+                    if (_instance[i].accel_device_id == accel_device_id) {
+                        accel_checked = true;
+                        if (!_sensor_health_status.accel_healthy[imu]) {
+                            _instance[i].healthy.set_state_and_update(false, hrt_absolute_time());
+                            _accel_fault_detected = true;
+                            break;
+                        }
                     }
                 }
-            }
+            }  // Skip reference imu detection
 
         } else {
             // Fallback to Triple-Redundancy Detection in original Firmware
@@ -421,95 +372,16 @@ bool EKF2Selector::UpdateErrorScores()
                 _instance[i].healthy.set_state_and_update(false, hrt_absolute_time());
             }
         }
-	}
 
-    // Check Magnetometer health status
-    for (uint8_t mag = 0; mag < MAG_SENSOR_COUNT; ++mag) {
-        // Reset status at each update
-        _sensor_health_status.healthy_ekf_for_mag[mag] = false;
-        const uint32_t target_device_id = _sensor_health_status.mag_device_ids[mag];
-
-        if (target_device_id == 0) {
-            // Continue until we checked all mag instances
-            // Do not break here as we need to update healthy_ekf_for_mag flags
-            continue;
-        }
-
-        float best_mag_test_ratio = INFINITY;
-        float best_mag_test_ratio_healthy = INFINITY;
-        for (uint8_t i = 0; i < _available_instances; ++i) {
-            if (_instance[i].mag_device_id != target_device_id){
-                // Skip instances that are not match
-                continue;
-            }
-
-            bool instance_is_healthy = _instance[i].healthy.get_state();
-            // Update sensor usage status
-            estimator_status_flags_s status_flags;
-            if (_instance[i].estimator_status_flags_sub.update(&status_flags)) {
-                _instance[i].sensor_usage.use_gps = (status_flags.cs_gps || status_flags.cs_gps_yaw || status_flags.cs_gps_hgt);
-                _instance[i].sensor_usage.use_barometer = status_flags.cs_baro_hgt;
-                _instance[i].sensor_usage.use_magnetometer = (status_flags.cs_mag_hdg || status_flags.cs_mag_3d || status_flags.cs_mag_dec);
-            }
-
-            // Update GPS & BARO status for EKF instances other than reference EKF
-            if (i != _selected_reference && instance_is_healthy) {
-                if (_instance[i].sensor_usage.use_gps && (_sensor_health_status.gps_test_ratio >= 1.0f)) {
-                    _instance[i].healthy.set_state_and_update(false, hrt_absolute_time());
-                    instance_is_healthy = false;
-                    _gps_fault_detected = true;
-                } else if (_instance[i].sensor_usage.use_barometer && (_sensor_health_status.baro_hgt_test_ratio >= 1.0f)) {
-                    _instance[i].healthy.set_state_and_update(false, hrt_absolute_time());
-                    instance_is_healthy = false;
-                    _baro_fault_detected = true;
-                }
-            }
-
-            if (target_device_id == _selected_mag_device_id) {
-                best_mag_test_ratio = best_mag_test_ratio_healthy = _selected_mag_test_ratio;
-                if (_instance[i].sensor_usage.use_magnetometer && instance_is_healthy && (_selected_mag_test_ratio >= 1.0f)) {
-                    _instance[i].healthy.set_state_and_update(false, hrt_absolute_time());
-                    instance_is_healthy = false;
-                    _mag_fault_detected = true;
-                }
-            } else if (PX4_ISFINITE(mag_test_ratios[i])) {
-                instance_is_healthy &= _instance[i].sensor_usage.use_magnetometer && (mag_test_ratios[i] < 1.0f);
-                if (instance_is_healthy) {
-                    best_mag_test_ratio_healthy = fminf(best_mag_test_ratio_healthy, mag_test_ratios[i]);
-                } else {
-                    best_mag_test_ratio = fminf(best_mag_test_ratio, mag_test_ratios[i]);
-                }
-            }
-
-            if (instance_is_healthy) {
-                _sensor_health_status.healthy_ekf_for_mag[mag] = true;
-            }
-
-        }  // end inner for
-
-        if (_sensor_health_status.healthy_ekf_for_mag[mag] && PX4_ISFINITE(best_mag_test_ratio_healthy)) {
-            _sensor_health_status.mag_test_ratios[mag] = best_mag_test_ratio_healthy;
-        } else if (PX4_ISFINITE(best_mag_test_ratio)) {
-            _sensor_health_status.mag_test_ratios[mag] = best_mag_test_ratio;
-        }
-
-        if (_sensor_health_status.mag_test_ratios[mag] >= 1.0f) {
-            _sensor_health_status.last_mag_faulty[mag] = hrt_absolute_time();
-        }
-    }
-
-    // Compare health status changes
-    for (uint8_t i = 0; i < _available_instances; i++) {
-        if (prev_healthy[i] != _instance[i].healthy.get_state()) {
+		if (prev_healthy != _instance[i].healthy.get_state()) {
             updated = true;
             _selector_status_publish = true;
-            _sensor_status_publish = true;
 
-            if (!prev_healthy[i]) {
+			if (!prev_healthy) {
                 _instance[i].healthy_count++;
             }
         }
-    }
+	}
 
 	// update relative test ratios if primary has updated
 	if (primary_updated) {
@@ -858,8 +730,6 @@ void EKF2Selector::Run()
 
 		// update parameters from storage
 		updateParams();
-
-        filter_update_period_us = _param_ekf2_predict_us.get();
 	}
 
 	// update combined test ratio for all estimators
@@ -989,12 +859,6 @@ void EKF2Selector::Run()
 			PublishEstimatorSelectorStatus();
 			_selector_status_publish = false;
 		}
-
-        if (_sensor_status_publish || _param_iv_debug_log.get() || hrt_elapsed_time(&_last_sensor_status_publish) > 1_s) {
-            PublishSensorHealthStatus();
-            _sensor_status_publish = false;
-        }
-
 	}
 
 	// republish selected estimator data for system
@@ -1005,7 +869,7 @@ void EKF2Selector::Run()
 	PublishWindEstimate();
 
 	// re-schedule as backup timeout
-	ScheduleDelayed(filter_update_period_us);
+	ScheduleDelayed(FILTER_UPDATE_PERIOD);
 }
 
 void EKF2Selector::PublishEstimatorSelectorStatus()
@@ -1036,24 +900,6 @@ void EKF2Selector::PublishEstimatorSelectorStatus()
 	selector_status.timestamp = hrt_absolute_time();
 	_estimator_selector_status_pub.publish(selector_status);
 	_last_status_publish = selector_status.timestamp;
-}
-
-void EKF2Selector::PublishSensorHealthStatus()
-{
-    sensor_health_status_s sensor_status{};
-
-    sensor_status.gps_test_ratio = _sensor_health_status.gps_test_ratio;
-    sensor_status.baro_hgt_test_ratio = _sensor_health_status.baro_hgt_test_ratio;
-    for (uint8_t mag = 0; mag < MAG_SENSOR_COUNT; ++mag) {
-        sensor_status.mag_test_ratios[mag] = _sensor_health_status.mag_test_ratios[mag];
-        sensor_status.mag_device_ids[mag] = _sensor_health_status.mag_device_ids[mag];
-        sensor_status.healthy_ekf_for_mag[mag] = _sensor_health_status.healthy_ekf_for_mag[mag];
-        sensor_status.last_mag_faulty[mag] = _sensor_health_status.last_mag_faulty[mag];
-    }
-
-    sensor_status.timestamp = hrt_absolute_time();
-    _sensor_health_status_pub.publish(sensor_status);
-    _last_sensor_status_publish = sensor_status.timestamp;
 }
 
 void EKF2Selector::PrintStatus()

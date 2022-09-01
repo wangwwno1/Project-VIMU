@@ -46,11 +46,8 @@
 #include <uORB/SubscriptionCallback.hpp>
 #include <uORB/Publication.hpp>
 #include <uORB/topics/estimator_selector_status.h>
-#include <uORB/topics/estimator_innovations.h>
 #include <uORB/topics/estimator_status.h>
-#include <uORB/topics/estimator_status_flags.h>
 #include <uORB/topics/parameter_update.h>
-#include <uORB/topics/sensor_health_status.h>
 #include <uORB/topics/sensor_selection.h>
 #include <uORB/topics/sensors_status_imu.h>
 #include <uORB/topics/vehicle_attitude.h>
@@ -83,15 +80,14 @@ public:
 
 private:
 	static constexpr uint8_t INVALID_INSTANCE{UINT8_MAX};
-    uint64_t filter_update_period_us{10_ms};
+	static constexpr uint64_t FILTER_UPDATE_PERIOD{10_ms};
 
 	void Run() override;
 
 	void PrintInstanceChange(const uint8_t old_instance, uint8_t new_instance);
 
 	void PublishEstimatorSelectorStatus();
-    void PublishSensorHealthStatus();
-	void PublishVehicleAttitude();
+    void PublishVehicleAttitude();
 	void PublishVehicleLocalPosition();
 	void PublishVehicleGlobalPosition();
 	void PublishVehicleOdometry();
@@ -101,13 +97,6 @@ private:
 
 	// Update the error scores for all available instances
 	bool UpdateErrorScores();
-
-    // Control Status for instance
-    struct EstimatorSensorUsage {
-        bool use_gps{false};
-        bool use_barometer{false};
-        bool use_magnetometer{false};
-    };
 
 	// Subscriptions (per estimator instance)
 	struct EstimatorInstance {
@@ -119,8 +108,6 @@ private:
 			estimator_global_position_sub{ORB_ID(estimator_global_position), i},
 			estimator_odometry_sub{ORB_ID(estimator_odometry), i},
 			estimator_wind_sub{ORB_ID(estimator_wind), i},
-            estimator_innovation_test_ratios_sub{ORB_ID(estimator_innovation_test_ratios), i},
-            estimator_status_flags_sub{ORB_ID(estimator_status_flags), i},
 			instance(i)
 		{
 			healthy.set_hysteresis_time_from(false, 1_s);
@@ -133,8 +120,6 @@ private:
 		uORB::Subscription estimator_global_position_sub;
 		uORB::Subscription estimator_odometry_sub;
 		uORB::Subscription estimator_wind_sub;
-        uORB::Subscription estimator_innovation_test_ratios_sub;
-        uORB::Subscription estimator_status_flags_sub;
 
 		uint64_t timestamp_last{0};
 
@@ -156,9 +141,6 @@ private:
 		bool timeout{false};
 
 		uint8_t healthy_count{0};
-
-        // Sensor usage status
-        EstimatorSensorUsage sensor_usage{};
 
 		const uint8_t instance;
 	};
@@ -193,16 +175,12 @@ private:
 	static_assert(EKF2_MAX_INSTANCES <= sizeof(estimator_selector_status_s::combined_test_ratio) / sizeof(
 			      estimator_selector_status_s::combined_test_ratio[0]),
 		      "increase estimator_selector_status_s::combined_test_ratio size");
-    static constexpr uint8_t MAG_SENSOR_COUNT = IMU_STATUS_SIZE;
 
 	float _accumulated_gyro_error[IMU_STATUS_SIZE] {};
 	float _accumulated_accel_error[IMU_STATUS_SIZE] {};
 	hrt_abstime _last_update_us{0};
 	bool _gyro_fault_detected{false};
 	bool _accel_fault_detected{false};
-    bool _mag_fault_detected{false};
-    bool _baro_fault_detected{false};
-    bool _gps_fault_detected{false};
 
 	uint8_t _available_instances{0};
 	uint8_t _selected_instance{INVALID_INSTANCE};
@@ -220,27 +198,13 @@ private:
     // TODO Make a special case for heading source
     struct SensorHealthStatus {
         SensorHealthStatus() {
-            for (uint8_t mag = 0; mag < MAG_SENSOR_COUNT; ++mag) {
-                mag_test_ratios[mag] = 0.f;
-                mag_device_ids[mag] = 0;
-                healthy_ekf_for_mag[mag] = false;
-                last_mag_faulty[mag] = 0;
-            }
-
             for (uint8_t imu = 0; imu < IMU_STATUS_SIZE; ++imu) {
                 accel_device_ids[imu] = 0;
+                accel_healthy[imu] = false;
                 gyro_device_ids[imu] = 0;
+                gyro_healthy[imu] = false;
             }
         }
-
-        float gps_test_ratio{0.f};
-        float baro_hgt_test_ratio{0.f};
-
-        float mag_test_ratios[MAG_SENSOR_COUNT];
-        uint32_t mag_device_ids[MAG_SENSOR_COUNT];
-        bool  healthy_ekf_for_mag[MAG_SENSOR_COUNT];
-        hrt_abstime last_mag_faulty[MAG_SENSOR_COUNT];
-
         bool accel_healthy[IMU_STATUS_SIZE];
         bool gyro_healthy[IMU_STATUS_SIZE];
         uint32_t accel_device_ids[IMU_STATUS_SIZE];
@@ -248,10 +212,6 @@ private:
     };
 
     SensorHealthStatus _sensor_health_status{};
-    hrt_abstime _last_sensor_status_publish{0};
-    uint32_t    _selected_mag_device_id{0};
-    float       _selected_mag_test_ratio{0.f};
-    bool        _sensor_status_publish{false};
 
 	// vehicle_attitude: reset counters
 	vehicle_attitude_s _attitude_last{};
@@ -296,7 +256,6 @@ private:
 
 	// Publications
 	uORB::Publication<estimator_selector_status_s> _estimator_selector_status_pub{ORB_ID(estimator_selector_status)};
-    uORB::Publication<sensor_health_status_s>      _sensor_health_status_pub{ORB_ID(sensor_health_status)};
 	uORB::Publication<sensor_selection_s>          _sensor_selection_pub{ORB_ID(sensor_selection)};
 	uORB::Publication<vehicle_attitude_s>          _vehicle_attitude_pub{ORB_ID(vehicle_attitude)};
 	uORB::Publication<vehicle_global_position_s>   _vehicle_global_position_pub{ORB_ID(vehicle_global_position)};
@@ -305,14 +264,11 @@ private:
 	uORB::Publication<wind_s>                      _wind_pub{ORB_ID(wind)};
 
 	DEFINE_PARAMETERS(
-        (ParamInt<px4::params::EKF2_PREDICT_US>)    _param_ekf2_predict_us,
 		(ParamFloat<px4::params::EKF2_SEL_ERR_RED>) _param_ekf2_sel_err_red,
 		(ParamFloat<px4::params::EKF2_SEL_IMU_RAT>) _param_ekf2_sel_imu_angle_rate,
 		(ParamFloat<px4::params::EKF2_SEL_IMU_ANG>) _param_ekf2_sel_imu_angle,
 		(ParamFloat<px4::params::EKF2_SEL_IMU_ACC>) _param_ekf2_sel_imu_accel,
 		(ParamFloat<px4::params::EKF2_SEL_IMU_VEL>) _param_ekf2_sel_imu_velocity,
-
-        (ParamInt<px4::params::IV_DEBUG_LOG>)       _param_iv_debug_log
 	)
 };
 #endif // !EKF2SELECTOR_HPP
