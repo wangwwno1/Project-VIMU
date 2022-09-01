@@ -3,14 +3,6 @@
 //
 
 /**
- * Enable Linear State Model Prediction
- *
- * @group Innovation Validator
- * @boolean
- */
-PARAM_DEFINE_INT32(IV_ENABLE_LSM, 0);
-
-/**
  * Force the usage of software sensor, use for debug only.
  *
  * Set bits in the following positions to set which software sensor is applied. Set to zero to disable.
@@ -35,3 +27,4 @@ PARAM_DEFINE_INT32(IV_SOFTSENS_MASK, 0);
  * @unit ms
  */
 PARAM_DEFINE_INT32(IV_LSM_T_WINDOW, 575);
+
