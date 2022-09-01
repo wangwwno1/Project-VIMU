@@ -78,6 +78,7 @@
 #include "vehicle_gps_position/VehicleGPSPosition.hpp"
 #include "vehicle_imu/VehicleIMU.hpp"
 #include "vehicle_magnetometer/VehicleMagnetometer.hpp"
+#include "software_sensor/SoftwareSensor.h"
 
 using namespace sensors;
 using namespace time_literals;
@@ -183,6 +184,8 @@ private:
 	VehicleGPSPosition	*_vehicle_gps_position{nullptr};
 
 	VehicleIMU      *_vehicle_imu_list[MAX_SENSOR_COUNT] {};
+    // Insert IMU Detector / VirtualIMU / Software Sensor Here
+    SoftwareSensor      *_software_sensor{nullptr};
 
 	uint8_t _n_accel{0};
 	uint8_t _n_baro{0};
@@ -220,6 +223,7 @@ private:
 	void		InitializeVehicleGPSPosition();
 	void		InitializeVehicleIMU();
 	void		InitializeVehicleMagnetometer();
+    void        InitializeReferenceIMU();
 
 	DEFINE_PARAMETERS(
 		(ParamBool<px4::params::SYS_HAS_BARO>) _param_sys_has_baro,
@@ -267,6 +271,7 @@ Sensors::Sensors(bool hil_enabled) :
 
 	InitializeVehicleAirData();
 	InitializeVehicleGPSPosition();
+    InitializeReferenceIMU();
 	InitializeVehicleIMU();
 	InitializeVehicleMagnetometer();
 }
@@ -302,6 +307,11 @@ Sensors::~Sensors()
 			delete vehicle_imu;
 		}
 	}
+
+    if (_software_sensor) {
+        _software_sensor->Stop();
+        delete _software_sensor;
+    }
 
 	perf_free(_loop_perf);
 }
@@ -624,6 +634,21 @@ void Sensors::InitializeVehicleIMU()
 	}
 }
 
+void Sensors::InitializeReferenceIMU() {
+    if (_software_sensor == nullptr) {
+        SoftwareSensor *imu = new SoftwareSensor();
+
+        if (imu != nullptr) {
+            // instance 0 is Primary reference
+            if (imu->multi_init(0)) {
+                _software_sensor = imu;
+            } else {
+                delete imu;
+            }
+        }
+    }
+}
+
 void Sensors::InitializeVehicleMagnetometer()
 {
 	if (_param_sys_has_mag.get()) {
@@ -682,7 +707,8 @@ void Sensors::Run()
 
 		// sensor device id (not just orb_group_count) must be populated before IMU init can succeed
 		_voted_sensors_update.initializeSensors();
-		InitializeVehicleIMU();
+        InitializeReferenceIMU();
+        InitializeVehicleIMU();
 
 		_last_config_update = hrt_absolute_time();
 
@@ -799,6 +825,11 @@ int Sensors::print_status()
 			i->PrintStatus();
 		}
 	}
+
+    PX4_INFO_RAW("\n");
+    if (_software_sensor) {
+        _software_sensor->PrintStatus();
+    }
 
 	return 0;
 }
