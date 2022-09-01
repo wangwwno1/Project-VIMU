@@ -78,8 +78,7 @@
 #include "vehicle_gps_position/VehicleGPSPosition.hpp"
 #include "vehicle_imu/VehicleIMU.hpp"
 #include "vehicle_magnetometer/VehicleMagnetometer.hpp"
-#include "virtual_imu/VirtualIMU.hpp"
-// TODO: SOFTSENS Replace VirtualIMU ptr with SoftwareSensor
+#include "software_sensor/SoftwareSensor.h"
 
 using namespace sensors;
 using namespace time_literals;
@@ -185,8 +184,8 @@ private:
 	VehicleGPSPosition	*_vehicle_gps_position{nullptr};
 
 	VehicleIMU      *_vehicle_imu_list[MAX_SENSOR_COUNT] {};
-    // TODO Insert IMU Detector / VirtualIMU / Software Sensor Here
-    VirtualIMU      *_virtual_imu{nullptr};
+    // Insert IMU Detector / VirtualIMU / Software Sensor Here
+    SoftwareSensor      *_software_sensor{nullptr};
 
 	uint8_t _n_accel{0};
 	uint8_t _n_baro{0};
@@ -309,9 +308,9 @@ Sensors::~Sensors()
 		}
 	}
 
-    if (_virtual_imu) {
-        _virtual_imu->Stop();
-        delete _virtual_imu;
+    if (_software_sensor) {
+        _software_sensor->Stop();
+        delete _software_sensor;
     }
 
 	perf_free(_loop_perf);
@@ -636,13 +635,13 @@ void Sensors::InitializeVehicleIMU()
 }
 
 void Sensors::InitializeReferenceIMU() {
-    if (_virtual_imu == nullptr) {
-        VirtualIMU *imu = new VirtualIMU();
+    if (_software_sensor == nullptr) {
+        SoftwareSensor *imu = new SoftwareSensor();
 
         if (imu != nullptr) {
             // instance 0 is Primary reference
             if (imu->multi_init(0)) {
-                _virtual_imu = imu;
+                _software_sensor = imu;
             } else {
                 delete imu;
             }
@@ -828,8 +827,8 @@ int Sensors::print_status()
 	}
 
     PX4_INFO_RAW("\n");
-    if (_virtual_imu) {
-        _virtual_imu->PrintStatus();
+    if (_software_sensor) {
+        _software_sensor->PrintStatus();
     }
 
 	return 0;
