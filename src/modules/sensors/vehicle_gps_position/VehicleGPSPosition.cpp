@@ -42,16 +42,26 @@ namespace sensors
 VehicleGPSPosition::VehicleGPSPosition() :
 	ModuleParams(nullptr),
 	ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::nav_and_controllers),
-    _param_atk_gps_p_iv(_pos_param.initial_value),
-    _param_atk_gps_p_rate(_pos_param.rate_of_rise),
-    _param_atk_gps_p_cap(_pos_param.max_deviation),
-    _param_atk_gps_p_hdg(_pos_param.heading_deg),
-    _param_atk_gps_p_pitch(_pos_param.pitch_deg),
-    _param_atk_gps_v_iv(_vel_param.initial_value),
-    _param_atk_gps_v_rate(_vel_param.rate_of_rise),
-    _param_atk_gps_v_cap(_vel_param.max_deviation),
-    _param_atk_gps_v_hdg(_vel_param.heading_deg),
-    _param_atk_gps_v_pitch(_vel_param.pitch_deg)
+    _param_ekf2_gps_pos_x(_gps_pos_body(0)),
+    _param_ekf2_gps_pos_y(_gps_pos_body(1)),
+    _param_ekf2_gps_pos_z(_gps_pos_body(2)),
+    _param_iv_gps_p_csum_h(_pos_validator_params.control_limit),
+    _param_iv_gps_p_mshift(_pos_validator_params.mean_shift),
+    _param_iv_gps_v_csum_h(_vel_validator_params.cusum_params.control_limit),
+    _param_iv_gps_v_mshift(_vel_validator_params.cusum_params.mean_shift),
+    _param_iv_gps_ema_h(_vel_validator_params.ema_params.control_limit),
+    _param_iv_gps_alpha(_vel_validator_params.ema_params.alpha),
+    _param_iv_gps_ema_cap(_vel_validator_params.ema_params.cap),
+    _param_atk_gps_p_iv(_pos_atk_params.initial_value),
+    _param_atk_gps_p_rate(_pos_atk_params.rate_of_rise),
+    _param_atk_gps_p_cap(_pos_atk_params.max_deviation),
+    _param_atk_gps_p_hdg(_pos_atk_params.heading_deg),
+    _param_atk_gps_p_pitch(_pos_atk_params.pitch_deg),
+    _param_atk_gps_v_iv(_vel_atk_params.initial_value),
+    _param_atk_gps_v_rate(_vel_atk_params.rate_of_rise),
+    _param_atk_gps_v_cap(_vel_atk_params.max_deviation),
+    _param_atk_gps_v_hdg(_vel_atk_params.heading_deg),
+    _param_atk_gps_v_pitch(_vel_atk_params.pitch_deg)
 {
 	_vehicle_gps_position_pub.advertise();
 }
@@ -76,7 +86,13 @@ void VehicleGPSPosition::Stop()
 {
 	Deinit();
 
+    if (_ref_gps_buffer) {
+        delete _ref_gps_buffer;
+        _ref_gps_buffer = nullptr;
+    }
+
 	// clear all registered callbacks
+    _reference_states_sub.unregisterCallback();
 	for (auto &sub : _sensor_gps_sub) {
 		sub.unregisterCallback();
 	}
@@ -135,11 +151,15 @@ void VehicleGPSPosition::Run()
 		}
 	}
 
+    UpdateReferenceState();
+
 	if (any_gps_updated) {
 		_gps_blending.update(hrt_absolute_time());
 
 		if (_gps_blending.isNewOutputDataAvailable()) {
-			Publish(_gps_blending.getOutputGpsData(), _gps_blending.getSelectedGps());
+            sensor_gps_s gps_data = _gps_blending.getOutputGpsData();
+            ValidateGpsData(gps_data);
+			Publish(gps_data, _gps_blending.getSelectedGps());
 		}
 	}
 
@@ -184,58 +204,6 @@ void VehicleGPSPosition::Publish(const sensor_gps_s &gps, uint8_t selected)
 	ConductAttack(gps_output);
 
 	_vehicle_gps_position_pub.publish(gps_output);
-}
-
-void VehicleGPSPosition::ConductAttack(vehicle_gps_position_s &gps_output)
-{
-    // TODO implement stealthy attack - This would locate inside VIMU-EKF
-	if (_param_atk_apply_type.get() & sensor_attack::ATK_GPS_POS) {
-		if (!_pos_deviation) {
-			PX4_INFO("Initiate GPS Position Spoofing Attack");
-			_pos_deviation.reset(sensor_attack::CreateAttackInstance(_param_atk_gps_p_cls.get(), &_pos_param));
-
-            const float time_to_max_deviation_s = (*_pos_deviation).time_to_max_deviation();
-            if (PX4_ISFINITE(time_to_max_deviation_s)) {
-                PX4_INFO("Time to Max Deviation is: %.3f sec", (double)time_to_max_deviation_s);
-            } else {
-                PX4_WARN("INFINITE time to max deviation, please check attack parameter setting!");
-            }
-
-		}
-
-		if (_pos_deviation) {
-			const Vector3f deviation = (*_pos_deviation).calculate_deviation(gps_output.timestamp);
-            sensor_attack::gps_position_spoofing(gps_output, deviation);
-		}
-
-	} else if (_pos_deviation) {
-		_pos_deviation.reset();
-        PX4_INFO("GPS Position Spoofing Stopped");
-	}
-
-    if (_param_atk_apply_type.get() & sensor_attack::ATK_GPS_VEL) {
-        if (!_vel_deviation) {
-            PX4_INFO("Initiate GPS Velocity Spoofing Attack");
-            _vel_deviation.reset(sensor_attack::CreateAttackInstance(_param_atk_gps_v_cls.get(), &_vel_param));
-
-            const float time_to_max_deviation_s = (*_vel_deviation).time_to_max_deviation();
-            if (PX4_ISFINITE(time_to_max_deviation_s)) {
-                PX4_INFO("Time to Max Deviation is: %.3f sec", (double)time_to_max_deviation_s);
-            } else {
-                PX4_WARN("INFINITE time to max deviation, please check attack parameter setting!");
-            }
-
-        }
-
-        if (_vel_deviation) {
-            const Vector3f deviation = (*_vel_deviation).calculate_deviation(gps_output.timestamp);
-            sensor_attack::gps_velocity_spoofing(gps_output, deviation);
-        }
-
-    } else if (_vel_deviation) {
-        _vel_deviation.reset();
-        PX4_INFO("GPS Velocity Spoofing Stopped");
-    }
 }
 
 void VehicleGPSPosition::PrintStatus()

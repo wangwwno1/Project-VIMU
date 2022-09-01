@@ -8,7 +8,7 @@
 namespace sensor_attack {
     using matrix::Vector3f;
 
-    void gps_position_spoofing(vehicle_gps_position_s &gps_output, const Vector3f &actual_deviation) {
+    void gps_position_spoofing(sensor_gps_s &gps_output, const Vector3f &actual_deviation) {
         // Actual Deviation is opposite to signal deviation.
         float north_m = -actual_deviation(0), east_m = -actual_deviation(1), down_m = -actual_deviation(2);
 
@@ -36,7 +36,7 @@ namespace sensor_attack {
         }
     }
 
-    void gps_velocity_spoofing(vehicle_gps_position_s &gps_output, const Vector3f &actual_deviation) {
+    void gps_velocity_spoofing(sensor_gps_s &gps_output, const Vector3f &actual_deviation) {
         // Actual Deviation is opposite to signal deviation.
         if (actual_deviation.norm_squared() > 0.f) {
             float north_m_s = -actual_deviation(0), east_m_s = -actual_deviation(1), down_m_s = -actual_deviation(2);
