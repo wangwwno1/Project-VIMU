@@ -395,10 +395,10 @@ void EKF2::Run()
                 device_gyro_id = imu.gyro_device_id;
             }
         } else {
-            sensor_combined_s sensor_combined;
-            if (_sensor_combined_sub.copy(&sensor_combined)) {
-                device_accel_id = sensor_combined.accel_device_id;
-                device_gyro_id = sensor_combined.gyro_device_id;
+            sensor_selection_s sensor_selection;
+            if (_sensor_selection_sub.copy(&sensor_selection)) {
+                device_accel_id = sensor_selection.accel_device_id;
+                device_gyro_id = sensor_selection.gyro_device_id;
             }
         }
 
