@@ -204,9 +204,9 @@ private:
         (ParamExtFloat<px4::params::IV_GPS_P_MSHIFT>)   _param_iv_gps_p_mshift,
         (ParamExtFloat<px4::params::IV_GPS_V_CSUM_H>)   _param_iv_gps_v_csum_h,
         (ParamExtFloat<px4::params::IV_GPS_V_MSHIFT>)   _param_iv_gps_v_mshift,
-        (ParamExtFloat<px4::params::IV_GPS_EMA_H>)      _param_iv_gps_ema_h,
-        (ParamExtFloat<px4::params::IV_GPS_ALPHA>)      _param_iv_gps_alpha,
-        (ParamExtFloat<px4::params::IV_GPS_EMA_CAP>)    _param_iv_gps_ema_cap
+        (ParamExtFloat<px4::params::IV_GPS_V_EMA_H>)    _param_iv_gps_v_ema_h,
+        (ParamExtFloat<px4::params::IV_GPS_V_ALPHA>)    _param_iv_gps_v_alpha,
+        (ParamExtFloat<px4::params::IV_GPS_V_EMA_CAP>)  _param_iv_gps_v_ema_cap
 	)
 };
 }; // namespace sensors
