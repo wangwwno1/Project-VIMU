@@ -45,8 +45,11 @@
 
 #include "estimator_interface.h"
 
+#include <lib/fault_detector/fault_detector.hpp>
 #include "EKFGSF_yaw.h"
 #include "baro_bias_estimator.hpp"
+
+using fault_detector::CuSumVector3f;
 
 class Ekf final : public EstimatorInterface
 {
@@ -341,6 +344,18 @@ public:
         _drag_angular_acceleration.copyTo(drag_ang_accel);
     }
 
+    void get_ang_rate_delayed_raw(float delayed_rate[3]) const {
+        _ang_rate_delayed_raw.copyTo(delayed_rate);
+    }
+
+    float get_baro_hgt_offset() const { return _baro_hgt_offset; }
+
+    void resetMagBuffer() {
+        magSample mag_sample;
+        _mag_buffer->pop_first_older_than(_mag_buffer->get_newest().time_us, &mag_sample);
+        _mag_validator.reset();
+    }
+
 private:
 
 	// set the internal states and status to their default value
@@ -476,6 +491,7 @@ private:
 
 	Vector3f _mag_innov{};		///< earth magnetic field innovations (Gauss)
 	Vector3f _mag_innov_var{};	///< earth magnetic field innovation variance (Gauss**2)
+	CuSumVector3f _mag_validator{&_params.mag_csum_param};  ///< magnetometer validator, use for MagHdg & Mag3D fusion
 
 	Vector2f _drag_innov{};		///< multirotor drag measurement innovation (m/sec**2)
 	Vector2f _drag_innov_var{};	///< multirotor drag measurement innovation variance ((m/sec**2)**2)

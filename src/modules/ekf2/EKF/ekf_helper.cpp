@@ -1596,6 +1596,7 @@ void Ekf::startGpsYawFusion()
 		stopEvYawFusion();
 		stopMagHdgFusion();
 		stopMag3DFusion();
+        _mag_validator.reset();  // Reset validator status because we are switching to other heading sources
 		_control_status.flags.gps_yaw = true;
 	}
 
@@ -1630,6 +1631,7 @@ void Ekf::startEvYawFusion()
 
 	stopMagHdgFusion();
 	stopMag3DFusion();
+    _mag_validator.reset();  // Reset validator status because we are switching to other heading sources
 
 	_information_events.flags.starting_vision_yaw_fusion = true;
 	ECL_INFO("starting vision yaw fusion");
