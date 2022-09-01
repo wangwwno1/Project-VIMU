@@ -36,12 +36,15 @@ px4_add_library(vehicle_gps_position
 	VehicleGPSPosition.hpp
 	gps_blending.cpp
 	gps_blending.hpp
+    gps_attack.cpp
+    gps_validation.cpp
 )
 target_link_libraries(vehicle_gps_position
 	PRIVATE
 		geo
 		px4_work_queue
 		sensor_attack
+        fault_detector
 )
 
 px4_add_unit_gtest(SRC gps_blending_test.cpp LINKLIBS vehicle_gps_position)

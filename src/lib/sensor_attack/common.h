@@ -9,7 +9,7 @@
 #include <lib/geo/geo.h>
 #include <lib/mathlib/mathlib.h>
 #include <lib/matrix/matrix/math.hpp>
-#include <uORB/topics/vehicle_gps_position.h>
+#include <uORB/topics/sensor_gps.h>
 
 namespace sensor_attack {
     using matrix::Vector3f;
@@ -21,6 +21,7 @@ namespace sensor_attack {
     static constexpr uint8_t BLK_BARO_HGT   = (1 << 2);
     static constexpr uint8_t BLK_MAG_FUSE   = (1 << 3);
 
+    static constexpr uint8_t NO_STEALTHY        = 0;
     static constexpr uint8_t DET_CUSUM          = (1 << 0);
     static constexpr uint8_t DET_EWMA           = (1 << 1);
     static constexpr uint8_t DET_TIME_WINDOW    = (1 << 2);
@@ -39,7 +40,7 @@ namespace sensor_attack {
         float pitch_deg     = 0.f;
     };
 
-    void gps_position_spoofing(vehicle_gps_position_s &gps_output, const Vector3f &actual_deviation);
+    void gps_position_spoofing(sensor_gps_s &gps_output, const Vector3f &actual_deviation);
 
-    void gps_velocity_spoofing(vehicle_gps_position_s &gps_output, const Vector3f &actual_deviation);
+    void gps_velocity_spoofing(sensor_gps_s &gps_output, const Vector3f &actual_deviation);
 }
