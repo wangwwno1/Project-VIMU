@@ -34,6 +34,7 @@
 add_subdirectory(data_validator)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+add_subdirectory(software_sensor)
 add_subdirectory(vehicle_acceleration)
 add_subdirectory(vehicle_angular_velocity)
 add_subdirectory(vehicle_air_data)
@@ -62,4 +63,5 @@ px4_add_module(
 		vehicle_gps_position
 		vehicle_imu
 		vehicle_magnetometer
+        SoftwareSensor
 	)
