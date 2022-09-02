@@ -383,7 +383,7 @@ void EKF2::Run()
 	}
 
     // Check if current IMU is faulty, switch to reference if necessary
-    if (has_reference() && _sensors_status_imu_sub.updated()) {
+    if (has_reference() && _ekf.control_status_flags().in_air && _sensors_status_imu_sub.updated()) {
         sensors_status_imu_s  imu_status{};
         _sensors_status_imu_sub.copy(&imu_status);
 
@@ -2231,7 +2231,7 @@ int EKF2::task_spawn(int argc, char *argv[])
 		}
 
 		const hrt_abstime time_started = hrt_absolute_time();
-		const int multi_instances = math::min(imu_instances * mag_instances, static_cast<int32_t>(EKF2_MAX_INSTANCES));
+		const int multi_instances = math::min(imu_instances * mag_instances + 1, static_cast<int32_t>(EKF2_MAX_INSTANCES));
 		int multi_instances_allocated = 0;
         bool reference_created = false;
 
@@ -2273,7 +2273,7 @@ int EKF2::task_spawn(int argc, char *argv[])
                                       mag, vehicle_mag_sub.get().device_id,
                                       ref);
 
-                            _ekf2_selector.load()->ScheduleNow();
+                            // Postpone schedule selector until first real EKF initiated.
                             _ekf2_selector.load()->RequestReference(0);
                             reference_created = true;
 
