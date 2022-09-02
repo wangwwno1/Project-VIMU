@@ -417,20 +417,18 @@ void EKF2::Run()
             healthy = accel_healthy && gyro_healthy;
         }
 
-        if (_ekf.control_status_flags().in_air) {
-            if (!healthy && !use_reference() && _reference_imu_sub.registerCallback()) {
-                _sensor_combined_sub.unregisterCallback();
-                _vehicle_imu_sub.unregisterCallback();
-                _ekf.setReferenceImuEnabled(true);
-                PX4_INFO("%d - IMU faulty detected, switch to reference imu %d", _instance, _selected_reference);
-            } else if (healthy && use_reference()) {
-                // We have landed, disconnect from Reference IMU
-                const bool disconnect = (_multi_mode) ? _vehicle_imu_sub.registerCallback() : _sensor_combined_sub.registerCallback();
-                if (disconnect) {
-                    _reference_imu_sub.unregisterCallback();
-                    _ekf.setReferenceImuEnabled(false);
-                    PX4_INFO("%d - IMU back to normal, disconnect from reference imu %d", _instance, _selected_reference);
-                }
+        if (!healthy && !use_reference() && _reference_imu_sub.registerCallback()) {
+            _sensor_combined_sub.unregisterCallback();
+            _vehicle_imu_sub.unregisterCallback();
+            _ekf.setReferenceImuEnabled(true);
+            PX4_INFO("%d - IMU faulty detected, switch to reference imu %d", _instance, _selected_reference);
+        } else if (healthy && use_reference()) {
+            // We have landed, disconnect from Reference IMU
+            const bool disconnect = (_multi_mode) ? _vehicle_imu_sub.registerCallback() : _sensor_combined_sub.registerCallback();
+            if (disconnect) {
+                _reference_imu_sub.unregisterCallback();
+                _ekf.setReferenceImuEnabled(false);
+                PX4_INFO("%d - IMU back to normal, disconnect from reference imu %d", _instance, _selected_reference);
             }
         }
     }
