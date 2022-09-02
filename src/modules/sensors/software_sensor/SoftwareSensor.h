@@ -5,6 +5,7 @@
 #ifndef PX4_SOFTWARESENSOR_H
 #define PX4_SOFTWARESENSOR_H
 
+#include <drivers/drv_hrt.h>
 #include <px4_platform_common/defines.h>
 #include <px4_platform_common/module.h>
 #include <px4_platform_common/module_params.h>
@@ -30,6 +31,8 @@
 #include <uORB/topics/vehicle_land_detected.h>
 #include <uORB/topics/vehicle_imu.h>
 
+#include <uORB/topics/actuator_outputs.h>
+#include <uORB/topics/parameter_update.h>
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/vehicle_local_position_setpoint.h>
 #include <uORB/topics/vehicle_attitude.h>
@@ -47,6 +50,7 @@ using matrix::Quatf;
 using matrix::Vector3f;
 using lsm::LinearStateModel;
 using namespace lsm_params;
+using namespace time_literals;
 
 class SoftwareSensor : public ModuleParams, public px4::ScheduledWorkItem
 {
@@ -65,7 +69,7 @@ public:
     static constexpr uint8_t REFERENCE_UORB_ID = 0;
 
 private:
-    uint64_t _filter_update_period_us{10_ms};
+    hrt_abstime _filter_update_period_us{10_ms};
     float    _filter_update_period{_filter_update_period_us * 1e-6f};
 
     void Run() override;
@@ -161,7 +165,7 @@ private:
     uORB::PublicationMulti<estimator_states_s>               _reference_state_pub{ORB_ID(vehicle_reference_states)};
 
     // Subscriptions
-    uORB::SubscriptionCallbackWorkItem                  _actuator_outputs_sub{this, ORB_ID(actuator_outputs)};      // subscription that schedules VirtualIMU when updated
+    uORB::SubscriptionCallbackWorkItem                  _actuator_outputs_sub{this, ORB_ID(actuator_outputs)};      // subscription that schedules SoftwareSensor when updated
     uORB::SubscriptionInterval                          _parameter_update_sub{ORB_ID(parameter_update), 1_s};       // subscription limited to 1 Hz updates
     uORB::Subscription                                  _estimator_states_sub{ORB_ID(estimator_states), REFERENCE_UORB_ID};
     uORB::Subscription                                  _local_pos_sub{ORB_ID(vehicle_local_position)};
