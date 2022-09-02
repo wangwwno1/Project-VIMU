@@ -326,7 +326,7 @@ bool EKF2Selector::UpdateErrorScores()
 		}
 
         if (_selected_reference != INVALID_INSTANCE) {
-            if (i != _selected_instance) {
+            if (i != _selected_reference) {
                 // Enable Multi-IMU fault detection if we have reference EKF
                 bool gyro_checked = false;
                 bool accel_checked = false;
