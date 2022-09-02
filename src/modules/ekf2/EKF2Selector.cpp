@@ -905,6 +905,7 @@ void EKF2Selector::PublishEstimatorSelectorStatus()
 void EKF2Selector::PrintStatus()
 {
 	PX4_INFO("available instances: %" PRIu8, _available_instances);
+    PX4_INFO("selected reference: %d", _selected_reference);
 
 	if (_selected_instance == INVALID_INSTANCE) {
 		PX4_WARN("selected instance: None");
@@ -913,10 +914,11 @@ void EKF2Selector::PrintStatus()
 	for (int i = 0; i < _available_instances; i++) {
 		const EstimatorInstance &inst = _instance[i];
 
-		PX4_INFO("%" PRIu8 ": ACC: %" PRIu32 ", GYRO: %" PRIu32 ", MAG: %" PRIu32 ", %s, test ratio: %.7f (%.5f) %s",
+		PX4_INFO("%" PRIu8 ": ACC: %" PRIu32 ", GYRO: %" PRIu32 ", MAG: %" PRIu32 ", %s, test ratio: %.7f (%.5f) %s%s",
 			 inst.instance, inst.accel_device_id, inst.gyro_device_id, inst.mag_device_id,
 			 inst.healthy.get_state() ? "healthy" : "unhealthy",
 			 (double)inst.combined_test_ratio, (double)inst.relative_test_ratio,
+             (_selected_reference == i) ? "R" : "",
 			 (_selected_instance == i) ? "*" : "");
 	}
 }
