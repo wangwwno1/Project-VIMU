@@ -386,53 +386,58 @@ void EKF2::Run()
 		}
 	}
 
-    // Check if current IMU is faulty, switch to reference if necessary
-    if (has_reference() && _ekf.control_status_flags().in_air && _sensors_status_imu_sub.updated()) {
-        sensors_status_imu_s  imu_status{};
-        _sensors_status_imu_sub.copy(&imu_status);
+    // Only check reference if - 1. we have one; 2. we are not in rest and in air; 3. imu status has updated
+    if (has_reference() &&
+        (hrt_elapsed_time(&_start_time_us) > 3_s) &&
+        (!_ekf.control_status_flags().vehicle_at_rest && _ekf.control_status_flags().in_air)) {
 
-        uint32_t device_gyro_id{0}, device_accel_id{0};
-        if (_multi_mode) {
-            vehicle_imu_s imu;
-            if (_vehicle_imu_sub.copy(&imu)) {
-                device_accel_id = imu.accel_device_id;
-                device_gyro_id = imu.gyro_device_id;
+        // Check if current IMU is faulty, switch to reference if necessary
+        sensors_status_imu_s  imu_status;
+        if (_sensors_status_imu_sub.update(&imu_status)) {
+            // Retrieve device id
+            uint32_t device_gyro_id{0};
+            uint32_t device_accel_id{0};
+            // We do not use Subscription here because it would set updated flag as false
+            if (_multi_mode) {
+                uORB::SubscriptionData<vehicle_imu_s> vehicle_imu_sub{ORB_ID(vehicle_imu), _vehicle_imu_sub.get_instance()};
+                device_accel_id = vehicle_imu_sub.get().accel_device_id;
+                device_gyro_id = vehicle_imu_sub.get().gyro_device_id;
+            } else {
+                uORB::SubscriptionData<sensor_selection_s> sensor_selection_sub{ORB_ID(sensor_selection)};
+                device_accel_id = sensor_selection_sub.get().accel_device_id;
+                device_gyro_id = sensor_selection_sub.get().gyro_device_id;
             }
-        } else {
-            sensor_selection_s sensor_selection;
-            if (_sensor_selection_sub.copy(&sensor_selection)) {
-                device_accel_id = sensor_selection.accel_device_id;
-                device_gyro_id = sensor_selection.gyro_device_id;
-            }
-        }
 
-        bool healthy = false;
-        if ((device_gyro_id != 0) && (device_accel_id != 0)) {
-            bool accel_healthy{false}, gyro_healthy{false};
-            for (uint8_t uorb_idx = 0; uorb_idx < MAX_NUM_IMUS; ++uorb_idx) {
-                if (device_accel_id == imu_status.accel_device_ids[uorb_idx]) {
-                    accel_healthy = imu_status.accel_healthy[uorb_idx];
+            // Check imu health status
+            bool healthy = false;
+            if ((device_gyro_id != 0) && (device_accel_id != 0)) {
+                bool accel_healthy{false}, gyro_healthy{false};
+                for (uint8_t uorb_idx = 0; uorb_idx < MAX_NUM_IMUS; ++uorb_idx) {
+                    if (device_accel_id == imu_status.accel_device_ids[uorb_idx]) {
+                        accel_healthy = imu_status.accel_healthy[uorb_idx];
+                    }
+
+                    if (device_gyro_id == imu_status.gyro_device_ids[uorb_idx]) {
+                        gyro_healthy = imu_status.gyro_healthy[uorb_idx];
+                    }
                 }
+                healthy = accel_healthy && gyro_healthy;
 
-                if (device_gyro_id == imu_status.gyro_device_ids[uorb_idx]) {
-                    gyro_healthy = imu_status.gyro_healthy[uorb_idx];
+                if (!healthy && !use_reference() && _reference_imu_sub.registerCallback()) {
+                    // Switch to reference imu, detach from hardware imu
+                    _sensor_combined_sub.unregisterCallback();
+                    _vehicle_imu_sub.unregisterCallback();
+                    _ekf.setReferenceImuEnabled(true);
+                    PX4_WARN("%d - IMU faulty detected, switch to reference imu %d", _instance, _selected_reference);
+                } else if (healthy && use_reference()) {
+                    // Hardware imu is OK, disconnect from Reference IMU
+                    const bool disconnect = (_multi_mode) ? _vehicle_imu_sub.registerCallback() : _sensor_combined_sub.registerCallback();
+                    if (disconnect) {
+                        _reference_imu_sub.unregisterCallback();
+                        _ekf.setReferenceImuEnabled(false);
+                        PX4_INFO("%d - IMU back to normal, disconnect from reference imu %d", _instance, _selected_reference);
+                    }
                 }
-            }
-            healthy = accel_healthy && gyro_healthy;
-        }
-
-        if (!healthy && !use_reference() && _reference_imu_sub.registerCallback()) {
-            _sensor_combined_sub.unregisterCallback();
-            _vehicle_imu_sub.unregisterCallback();
-            _ekf.setReferenceImuEnabled(true);
-            PX4_INFO("%d - IMU faulty detected, switch to reference imu %d", _instance, _selected_reference);
-        } else if (healthy && use_reference()) {
-            // We have landed, disconnect from Reference IMU
-            const bool disconnect = (_multi_mode) ? _vehicle_imu_sub.registerCallback() : _sensor_combined_sub.registerCallback();
-            if (disconnect) {
-                _reference_imu_sub.unregisterCallback();
-                _ekf.setReferenceImuEnabled(false);
-                PX4_INFO("%d - IMU back to normal, disconnect from reference imu %d", _instance, _selected_reference);
             }
         }
     }
@@ -2275,8 +2280,8 @@ int EKF2::task_spawn(int argc, char *argv[])
                                       mag, vehicle_mag_sub.get().device_id,
                                       ref);
 
-                            // Postpone schedule selector until first real EKF initiated.
                             _ekf2_selector.load()->RequestReference(0);
+                            _ekf2_selector.load()->ScheduleNow();
                             reference_created = true;
 
                         } else {
@@ -2288,7 +2293,7 @@ int EKF2::task_spawn(int argc, char *argv[])
             }
 
             if (!reference_created) {
-                px4_usleep(10000);
+                px4_usleep(1000);
                 continue;
             }
 
