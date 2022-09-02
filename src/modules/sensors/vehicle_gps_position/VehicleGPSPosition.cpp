@@ -45,13 +45,6 @@ VehicleGPSPosition::VehicleGPSPosition() :
     _param_ekf2_gps_pos_x(_gps_pos_body(0)),
     _param_ekf2_gps_pos_y(_gps_pos_body(1)),
     _param_ekf2_gps_pos_z(_gps_pos_body(2)),
-    _param_iv_gps_p_csum_h(_pos_validator_params.control_limit),
-    _param_iv_gps_p_mshift(_pos_validator_params.mean_shift),
-    _param_iv_gps_v_csum_h(_vel_validator_params.cusum_params.control_limit),
-    _param_iv_gps_v_mshift(_vel_validator_params.cusum_params.mean_shift),
-    _param_iv_gps_v_ema_h(_vel_validator_params.ema_params.control_limit),
-    _param_iv_gps_v_alpha(_vel_validator_params.ema_params.alpha),
-    _param_iv_gps_v_ema_cap(_vel_validator_params.ema_params.cap),
     _param_atk_gps_p_iv(_pos_atk_params.initial_value),
     _param_atk_gps_p_rate(_pos_atk_params.rate_of_rise),
     _param_atk_gps_p_cap(_pos_atk_params.max_deviation),
@@ -61,7 +54,14 @@ VehicleGPSPosition::VehicleGPSPosition() :
     _param_atk_gps_v_rate(_vel_atk_params.rate_of_rise),
     _param_atk_gps_v_cap(_vel_atk_params.max_deviation),
     _param_atk_gps_v_hdg(_vel_atk_params.heading_deg),
-    _param_atk_gps_v_pitch(_vel_atk_params.pitch_deg)
+    _param_atk_gps_v_pitch(_vel_atk_params.pitch_deg),
+    _param_iv_gps_p_csum_h(_pos_validator_params.control_limit),
+    _param_iv_gps_p_mshift(_pos_validator_params.mean_shift),
+    _param_iv_gps_v_csum_h(_vel_validator_params.cusum_params.control_limit),
+    _param_iv_gps_v_mshift(_vel_validator_params.cusum_params.mean_shift),
+    _param_iv_gps_v_ema_h(_vel_validator_params.ema_params.control_limit),
+    _param_iv_gps_v_alpha(_vel_validator_params.ema_params.alpha),
+    _param_iv_gps_v_ema_cap(_vel_validator_params.ema_params.cap)
 {
 	_vehicle_gps_position_pub.advertise();
 }
