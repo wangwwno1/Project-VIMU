@@ -63,11 +63,6 @@ VehicleAirData::~VehicleAirData()
 
 bool VehicleAirData::Start()
 {
-    // Also publish baro test ratios for debug
-    for (int sensor_index = 0; sensor_index < MAX_SENSOR_COUNT; sensor_index++) {
-        _baro_test_ratios[sensor_index] = NAN;
-    }
-
 	ScheduleNow();
 	return true;
 }
