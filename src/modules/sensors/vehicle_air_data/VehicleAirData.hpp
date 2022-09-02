@@ -134,7 +134,7 @@ private:
 
     bool                        _forced_using_soft_baro{false};
     CuSumf::ParamStruct         _baro_hgt_params{};
-    CuSumf                      *_baro_validators[MAX_SENSOR_COUNT];
+    CuSumf                      *_baro_validators[MAX_SENSOR_COUNT] {nullptr};
     float                       _baro_test_ratios[MAX_SENSOR_COUNT] {0};
     RefBaroSample               _ref_baro_delayed{};
     RingBuffer<RefBaroSample>   *_ref_baro_buffer{nullptr};
