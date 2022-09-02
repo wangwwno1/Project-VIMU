@@ -153,7 +153,7 @@ namespace sensors
                 _global_origin.reproject(horz_pos(0), horz_pos(1), lat, lon);
                 gps_position.lat = (int) (lat * 1e7);
                 gps_position.lon = (int) (lon * 1e7);
-                gps_position.alt = (int) ((relative_alt + _gps_alt_ref) * 1e3);
+                gps_position.alt = (int) ((relative_alt + _gps_alt_ref) * 1e3f);
                 attack_applied = true;
             }
         }

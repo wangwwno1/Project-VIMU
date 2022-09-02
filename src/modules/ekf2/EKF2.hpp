@@ -178,7 +178,7 @@ private:
 	void UpdateGyroCalibration(const hrt_abstime &timestamp);
 	void UpdateMagCalibration(const hrt_abstime &timestamp);
 
-    void FindNewMagnetometer(const hrt_abstime &timestamp);
+    void FindNewMagnetometer();
 
 	/*
 	 * Calculate filtered WGS84 height from estimated AMSL height
