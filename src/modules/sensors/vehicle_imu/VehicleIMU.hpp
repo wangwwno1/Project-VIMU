@@ -231,8 +231,7 @@ private:
 
         (ParamFloat<px4::params::IV_ACC_NOISE>) _param_iv_acc_noise,
         (ParamExtFloat <px4::params::IV_ACC_CSUM_H>) _param_iv_acc_csum_h,
-        (ParamExtFloat <px4::params::IV_ACC_MSHIFT>) _param_iv_acc_mshift,
-        (ParamInt<px4::params::IV_DEBUG_LOG>) _param_iv_debug_log
+        (ParamExtFloat <px4::params::IV_ACC_MSHIFT>) _param_iv_acc_mshift
 	)
 };
 

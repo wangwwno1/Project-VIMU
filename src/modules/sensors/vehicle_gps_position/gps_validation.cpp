@@ -16,9 +16,9 @@ namespace sensors
             }
 
             if (_ref_gps_buffer == nullptr) {
-                const uint8_t buffer_length = roundf(_param_ekf2_gps_delay.get() * 1.5f / (_param_ekf2_predict_us.get() * 1.e-3f));
+                const uint8_t buffer_length = ceilf(_param_ekf2_gps_delay.get() * 1.5f / (_param_ekf2_predict_us.get() * 1.e-3f));
                 
-                _ref_gps_buffer = new RingBuffer<RefGpsSample> (math::max(buffer_length, 1));
+                _ref_gps_buffer = new RingBuffer<RefGpsSample> (buffer_length);
                 if (_ref_gps_buffer == nullptr || !_ref_gps_buffer->valid()) {
                     delete _ref_gps_buffer;
                     _ref_gps_buffer = nullptr;
@@ -69,10 +69,10 @@ namespace sensors
                 sample_delayed.pos_var(1) = ref_states.covariances[8];
                 sample_delayed.pos_var(2) = ref_states.covariances[9];
 
-                sample_delayed.ang_rates_delayed_raw = Vector3f(
-                        offset_states.ang_rates_delayed_raw[0],
-                        offset_states.ang_rates_delayed_raw[1],
-                        offset_states.ang_rates_delayed_raw[2]
+                sample_delayed.ang_rate_delayed_raw = Vector3f(
+                        offset_states.ang_rate_delayed_raw[0],
+                        offset_states.ang_rate_delayed_raw[1],
+                        offset_states.ang_rate_delayed_raw[2]
                 );
                 sample_delayed.dt_ekf_avg = offset_states.dt_ekf_avg;
 
@@ -90,15 +90,17 @@ namespace sensors
             if (hrt_elapsed_time(&_last_reference_timestamp) > 1_s) {
                 // reset validators and buffer
                 _ref_gps_buffer->pop_first_older_than(_ref_gps_buffer->get_newest().time_us, &_ref_gps_delayed);
+                _ref_gps_delayed.time_us = 0;
                 _last_pos_error.zero();
                 _last_vel_error.zero();
                 _pos_validator.reset();
                 _vel_validator.reset();
             }
 
+            const float dt_ekf_avg = (_ref_gps_delayed.time_us == 0) ? _ref_gps_delayed.dt_ekf_avg : 0.f;
             hrt_abstime actual_timestamp = gps_position.timestamp;
-            actual_timestamp -= static_cast<hrt_abstime>(_param_ekf2_gps_delay.get() * 1e3);
-            actual_timestamp -= static_cast<hrt_abstime>(offset_states.dt_ekf_avg * 5e5f);
+            actual_timestamp -= static_cast<hrt_abstime>(_param_ekf2_gps_delay.get() * 1e3f);
+            actual_timestamp -= static_cast<hrt_abstime>(dt_ekf_avg * 5e5f);
             const bool ref_gps_ready = _ref_gps_buffer->pop_first_older_than(gps_position.timestamp, &_ref_gps_delayed);
 
             if (_global_origin.isInitialized() && ref_gps_ready) {
@@ -121,15 +123,16 @@ namespace sensors
                 // Convert Reference GPS from NED frame to sensor board frame
                 // Calculate rotation matrix for position correction
                 const Dcmf R_to_earth{_ref_gps_delayed.q};
-                const Vector3f vel_offset_body = _ref_gps_delayed.ang_rates_delayed_raw % _gps_pos_body;
+                const Vector3f vel_offset_body = _ref_gps_delayed.ang_rate_delayed_raw % _gps_pos_body;
                 const Vector3f vel_offset_earth = R_to_earth * vel_offset_body;
                 const Vector3f ref_vel_board = _ref_gps_delayed.vel + vel_offset_earth;
 
                 // Convert reference GPS to board frame - the reverse of gps correction
                 const Vector3f pos_offset_earth = R_to_earth * _gps_pos_body;
                 Vector3f ref_pos_board{};
-                ref_pos_board.xy() = _ref_gps_delayed.pos.xy() + pos_offset_earth.xy();
-                ref_pos_board(2) = _ref_gps_delayed.pos(2) - pos_offset_earth(2);
+                ref_pos_board(0) = _ref_gps_delayed.pos(0) + pos_offset_earth(0);
+                ref_pos_board(0) = _ref_gps_delayed.pos(1) + pos_offset_earth(1);
+                ref_pos_board(2) = _ref_gps_delayed.pos(2) - pos_offset_earth(2);  // z-offset is down axis
 
                 // Attempt to apply Stealthy Attack, if failed, fallback to overt attack
                 if (!ConductPositionSpoofing(gps_position, ref_pos_board)) {
@@ -149,7 +152,7 @@ namespace sensors
                 double lat = gps_position.lat * 1.e-7;
                 double lon = gps_position.lon * 1.e-7;
                 // horizontal position innovations
-                _last_pos_error.xy() = ref_pos_board.xy() - _global_origin.project(lat, lon);
+                _last_pos_error.xy() = Vector2f(ref_pos_board.xy()) - _global_origin.project(lat, lon);
                 // vertical position innovation - gps measurement has opposite sign to earth z axis
                 _last_pos_error(2) = ref_pos_board(2) + (gps_position.alt * 1.e-3f - _gps_alt_ref);
 
@@ -174,7 +177,7 @@ namespace sensors
 
         bool healthy = (_pos_validator.test_ratio() < 1.f) && (_vel_validator.test_ratio() < 1.f);
         if ((healthy != _last_healthy) || (hrt_elapsed_time(&_last_health_status_publish) > 1_s)) {
-            sensors_status_gps status{};
+            sensors_status_gps_s status{};
             status.pos_test_ratio = _pos_validator.test_ratio();
             status.vel_test_ratio = _vel_validator.test_ratio();
             status.test_ratio = fmaxf(_pos_validator.test_ratio(), _vel_validator.test_ratio());
@@ -199,21 +202,21 @@ namespace sensors
 
     void VehicleGPSPosition::PublishErrorStatus() {
         // Publish error between sensor and reference
-        sensor_gps_error gps_error{};
+        sensor_gps_error_s gps_error{};
         _last_pos_error.copyTo(gps_error.position_error);
         _last_vel_error.copyTo(gps_error.velocity_error);
         gps_error.timestamp = hrt_absolute_time();
         _sensor_gps_error_pub.publish(gps_error);
 
         // Publish variances from reference estimator
-        sensor_gps_error gps_variances{};
+        sensor_gps_error_s gps_variances{};
         _last_pos_vars.copyTo(gps_variances.position_error);
         _last_vel_vars.copyTo(gps_variances.velocity_error);
         gps_variances.timestamp = hrt_absolute_time();
         _sensor_gps_error_variances_pub.publish(gps_variances);
 
         // Publish test ratios = error / variances
-        sensor_gps_error gps_test_ratios{};
+        sensor_gps_error_s gps_test_ratios{};
         _last_pos_error.edivide(_last_pos_vars).copyTo(gps_test_ratios.position_error);
         _last_vel_error.edivide(_last_vel_vars).copyTo(gps_test_ratios.velocity_error);
         gps_test_ratios.timestamp = hrt_absolute_time();

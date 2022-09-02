@@ -422,8 +422,7 @@ void EKF2::Run()
                 _sensor_combined_sub.unregisterCallback();
                 _vehicle_imu_sub.unregisterCallback();
                 _ekf.setReferenceImuEnabled(true);
-                PX4_INFO("%d - Reference IMU synchronized, timestamp: VIMU%d - %" PRIu64 " , IMU - %" PRIu64,
-                         _instance, _selected_reference , ref_imu.timestamp, imu_sample_new.time_us);
+                PX4_INFO("%d - IMU faulty detected, switch to reference imu %d", _instance, _selected_reference);
             } else if (healthy && use_reference()) {
                 // We have landed, disconnect from Reference IMU
                 const bool disconnect = (_multi_mode) ? _vehicle_imu_sub.registerCallback() : _sensor_combined_sub.registerCallback();
@@ -680,7 +679,7 @@ void EKF2::Run()
                 if (mag_uorb_idx < MAX_NUM_MAGS) {
                     _last_mag_faulty_time[mag_uorb_idx] = hrt_absolute_time();
                 }
-                FindNewMagnetometer(ekf2_timestamps);
+                FindNewMagnetometer();
             }
         }
 
@@ -1903,9 +1902,9 @@ void EKF2::UpdateGpsSample(ekf2_timestamps_s &ekf2_timestamps)
 	}
 }
 
-void EKF2::FindNewMagnetometer(const hrt_abstime &timestamp) {
+void EKF2::FindNewMagnetometer() {
     // Iteratively select new magnetometer
-    for (uint8_t idx = 0; idx < MAX_MAG_COUNT; ++idx) {
+    for (uint8_t idx = 0; idx < MAX_NUM_MAGS; ++idx) {
         uORB::SubscriptionData<vehicle_magnetometer_s> mag_sub{ORB_ID(vehicle_magnetometer), idx};
         mag_sub.update();
         if (mag_sub.advertised()) {
