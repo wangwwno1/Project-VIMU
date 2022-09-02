@@ -25,8 +25,6 @@ bool SoftwareSensor::multi_init(int instance) {
     _reference_gyro_pub.advertise();
     _reference_imu_pub.advertise();
     _reference_combined_pub.advertise();
-    _reference_gps_pub.advertise();
-    _reference_baro_pub.advertise();
     _reference_state_pub.advertise();
 
     const int status_instance = _reference_imu_pub.get_instance();
@@ -149,7 +147,6 @@ void SoftwareSensor::UpdateCopterStatus() {
 }
 
 void SoftwareSensor::UpdatePosVelState() {
-    // TODO Publish gps & baro when position updated
     if (_local_pos_sub.updated()) {
         // adjust existing (or older) offsets with EKF reset deltas
         AdjustOffsetAndGlobalOrigin();
@@ -354,7 +351,6 @@ void SoftwareSensor::PublishReferenceIMU() {
 void SoftwareSensor::PublishReferenceState() {
     if (_estimator_states_sub.update(&_reference_states)) {
         // Replace internal states
-        // TODO Add RingBuffer to Store internal state
         // Attitude Quaternion
         const Quatf q{_state.att};
         _reference_states.states[0] = q(0);

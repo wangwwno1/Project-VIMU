@@ -15,7 +15,6 @@
 #include <lib/matrix/matrix/math.hpp>
 #include <lib/mathlib/math/filter/AlphaFilter.hpp>
 #include <lib/geo/geo.h>
-//#include <lib/mathlib/math/WelfordMean.hpp>
 #include <lib/perf/perf_counter.h>
 
 #include <uORB/PublicationMulti.hpp>
@@ -25,7 +24,6 @@
 #include <uORB/topics/estimator_states.h>
 #include <uORB/topics/sensor_accel.h>
 #include <uORB/topics/sensor_combined.h>
-#include <uORB/topics/sensor_gps.h>
 #include <uORB/topics/sensor_gyro.h>
 #include <uORB/topics/vehicle_angular_velocity.h>
 #include <uORB/topics/vehicle_angular_acceleration.h>
@@ -123,7 +121,6 @@ private:
     Vector3f                _avg_acceleration{0.f, 0.f, 0.f};
     Vector3f                _delta_vel{0.f, 0.f, 0.f};
     AlphaFilter<Vector3f>   _angular_accel_filter{0.2f};  // TODO determine the best weight
-    Vector3f                _avg_accel{0.f, 0.f, 0.f};
 
     struct LocalPosVelOffset {
         hrt_abstime timestamp{0};
@@ -161,8 +158,6 @@ private:
     uORB::PublicationMulti<sensor_gyro_s>                    _reference_gyro_pub{ORB_ID(reference_gyro)};
     uORB::PublicationMulti<sensor_combined_s>                _reference_combined_pub{ORB_ID(reference_combined)};
     uORB::PublicationMulti<vehicle_imu_s>                    _reference_imu_pub{ORB_ID(reference_imu)};
-    uORB::PublicationMulti<sensor_gps_s>                     _reference_gps_pub{ORB_ID(reference_gps)};
-    uORB::PublicationMulti<sensor_baro_s>                    _reference_baro_pub{ORB_ID(reference_baro)};
     uORB::PublicationMulti<estimator_states_s>               _reference_state_pub{ORB_ID(vehicle_reference_states)};
 
     // Subscriptions
