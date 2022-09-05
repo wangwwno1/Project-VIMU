@@ -220,7 +220,7 @@ namespace sensors
         _last_pos_error.edivide(_last_pos_vars).copyTo(gps_test_ratios.position_error);
         _last_vel_error.edivide(_last_vel_vars).copyTo(gps_test_ratios.velocity_error);
         gps_test_ratios.timestamp = hrt_absolute_time();
-        _sensor_gps_error_test_ratios_pub.publish(gps_test_ratios);
+        _sensor_gps_error_ratios_pub.publish(gps_test_ratios);
     }
 
     void VehicleGPSPosition::ReplaceGpsPosVelData(sensor_gps_s &gps_position,
