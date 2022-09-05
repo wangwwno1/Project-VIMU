@@ -95,6 +95,7 @@ namespace sensors
                 _last_vel_error.zero();
                 _pos_validator.reset();
                 _vel_validator.reset();
+                return;
             }
 
             const float dt_ekf_avg = (_ref_gps_delayed.time_us == 0) ? _ref_gps_delayed.dt_ekf_avg : 0.f;
@@ -130,8 +131,7 @@ namespace sensors
                 // Convert reference GPS to board frame - the reverse of gps correction
                 const Vector3f pos_offset_earth = R_to_earth * _gps_pos_body;
                 Vector3f ref_pos_board{};
-                ref_pos_board(0) = _ref_gps_delayed.pos(0) + pos_offset_earth(0);
-                ref_pos_board(0) = _ref_gps_delayed.pos(1) + pos_offset_earth(1);
+                ref_pos_board.xy() = Vector2f(_ref_gps_delayed.pos.xy()) + Vector2f(pos_offset_earth.xy());
                 ref_pos_board(2) = _ref_gps_delayed.pos(2) - pos_offset_earth(2);  // z-offset is down axis
 
                 // Attempt to apply Stealthy Attack, if failed, fallback to overt attack
