@@ -154,7 +154,7 @@ private:
     EMACuSumVector3f        _vel_validator{&_vel_validator_params};
 
     hrt_abstime         _last_health_status_publish{0};
-    hrt_abstime         _last_healthy{false};
+    hrt_abstime         _last_healthy{true};
 
     RingBuffer<RefGpsSample> *_ref_gps_buffer{nullptr};
     RefGpsSample        _ref_gps_delayed{};
