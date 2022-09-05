@@ -258,7 +258,7 @@ void SoftwareSensor::PublishAngularVelocityAndAcceleration() {
     // Publish vehicle_angular_velocity
     vehicle_angular_velocity_s v_angular_velocity;
     v_angular_velocity.timestamp_sample = _last_update_us;
-    _rate_model.getOutputState().copyTo(v_angular_velocity.xyz);
+    _state.rates.copyTo(v_angular_velocity.xyz);
     v_angular_velocity.timestamp = hrt_absolute_time();
     _reference_angular_velocity_pub.publish(v_angular_velocity);
 }
@@ -349,12 +349,11 @@ void SoftwareSensor::PublishReferenceGyroAndAccelerometer() {
     ref_accel.timestamp = hrt_absolute_time();
     _reference_accel_pub.publish(ref_accel);
 
-    const Vector3f rates = _rate_model.getState();
     sensor_gyro_s ref_gyro{};
     ref_gyro.timestamp_sample = _last_update_us;
-    ref_gyro.x = rates(0);
-    ref_gyro.y = rates(1);
-    ref_gyro.z = rates(2);
+    ref_gyro.x = _state.rates(0);
+    ref_gyro.y = _state.rates(1);
+    ref_gyro.z = _state.rates(2);
     ref_gyro.samples = 1;
     ref_gyro.timestamp = hrt_absolute_time();
     _reference_gyro_pub.publish(ref_gyro);
