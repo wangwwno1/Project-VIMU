@@ -120,8 +120,7 @@ namespace sensors
             float max_deviation = NAN;
 
             // TODO consider time window attack
-            if (_param_iv_gps_p_mshift.get() > 0.f &&
-                (_param_atk_stealth_type.get() & sensor_attack::DET_CUSUM)) {
+            if (_param_iv_gps_p_mshift.get() > 0.f && (_param_atk_stealth_type.get() & sensor_attack::DET_CUSUM)) {
                 max_deviation = _param_iv_gps_p_mshift.get();
             }
 
