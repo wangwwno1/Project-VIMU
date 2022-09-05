@@ -39,6 +39,7 @@ add_library(fault_detector
 		EMAVector.hpp
 		EMACuSumVector.hpp
 		HorzVertDetector.hpp
+        AbsErrorTimeWindowVector.hpp
 )
 
 add_dependencies(fault_detector prebuild_targets)
