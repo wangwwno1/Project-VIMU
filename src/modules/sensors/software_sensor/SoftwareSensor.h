@@ -124,7 +124,7 @@ private:
 
     Vector3f                _avg_acceleration{0.f, 0.f, 0.f};
     Vector3f                _delta_vel{0.f, 0.f, 0.f};
-    AlphaFilter<Vector3f>   _angular_accel_filter{0.2f};  // TODO determine the best weight
+    AlphaFilter<Vector3f>   _angular_accel_filter{0.2f};
 
     struct LocalPosVelOffset {
         hrt_abstime timestamp{0};

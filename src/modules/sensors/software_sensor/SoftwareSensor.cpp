@@ -115,7 +115,6 @@ void SoftwareSensor::Run() {
 
 void SoftwareSensor::UpdateCopterStatus() {
     // TODO How to detect landing and detach from software sensor?
-    // TODO Postpone publish until all state are synchronized at least once
     vehicle_land_detected_s vehicle_land_detected;
     if (_vehicle_land_detected_sub.update(&vehicle_land_detected)) {
         if (!vehicle_land_detected.at_rest && vehicle_land_detected.landed) {
@@ -134,15 +133,15 @@ void SoftwareSensor::UpdateCopterStatus() {
         _copter_status.in_air = false;
         _copter_status.publish = false;
         reset();
-        PX4_INFO("Vehicle landed, disarm virtual imu");
+        PX4_INFO("Vehicle landed, disarm software sensor");
 
     } else if (!_copter_status.in_air && !(_copter_status.at_rest || _copter_status.landed)){
         _copter_status.in_air = true;
         _last_takeoff_us = hrt_absolute_time();
-        PX4_INFO("Takeoff confirmed, start publish reference sensors 5 second later");
-    } else if (!_copter_status.publish && _copter_status.in_air && hrt_elapsed_time(&_last_takeoff_us) > 5_s) {
-        // TODO Check Whether Error is smaller than Threshold before start publish
+        PX4_INFO("Takeoff confirmed, start publish reference sensors 30 second later");
+    } else if (!_copter_status.publish && _copter_status.in_air && hrt_elapsed_time(&_last_takeoff_us) > 30_s) {
         _copter_status.publish = true;
+        PX4_INFO("Start publish software sensor reference!");
     }
 }
 
@@ -213,7 +212,7 @@ void SoftwareSensor::UpdateAttitude() {
         _att_model.setTargetState(target);
     }
 
-    // FIXME Linear Model cannot handle yaw warping at -pi and +pi
+    // Note Linear Model cannot handle yaw warping at -pi and +pi
     _att_model.update();
     _state.att = _att_model.getOutputState();
     _state.att(2) = wrap_pi(_state.att(2));
