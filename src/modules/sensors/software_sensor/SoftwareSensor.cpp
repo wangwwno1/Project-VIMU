@@ -149,7 +149,7 @@ void SoftwareSensor::UpdateCopterStatus() {
 void SoftwareSensor::UpdatePosVelState() {
     if (_local_pos_sub.updated()) {
         // adjust existing (or older) offsets with EKF reset deltas
-        AdjustOffsetAndGlobalOrigin();
+        AdjustOffset();
 
         vehicle_local_position_setpoint_s lpos_sp{};
         if (_local_pos_sp_sub.update(&lpos_sp)) {
@@ -174,7 +174,7 @@ void SoftwareSensor::UpdatePosVelState() {
     }
 }
 
-void SoftwareSensor::AdjustOffsetAndGlobalOrigin() {
+void SoftwareSensor::AdjustOffset() {
     vehicle_local_position_s local_pos{};
     if (_local_pos_sub.update(&local_pos)) {
         if (_offsets.timestamp < local_pos.timestamp) {
@@ -200,12 +200,6 @@ void SoftwareSensor::AdjustOffsetAndGlobalOrigin() {
 //                if (local_pos.heading_reset_counter != _heading_reset_counter) {
 //                    _setpoint.yaw += local_pos.delta_heading;
 //                }
-        }
-
-        if (local_pos.ref_timestamp != _global_origin.getProjectionReferenceTimestamp()) {
-            // Update reference origin
-            _global_origin.initReference(local_pos.ref_lat, local_pos.ref_lon, local_pos.ref_timestamp);
-            _gps_alt_ref = local_pos.ref_alt;
         }
     }
 }

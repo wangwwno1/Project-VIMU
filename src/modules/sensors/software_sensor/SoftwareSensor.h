@@ -147,10 +147,6 @@ private:
 
     VehicleState    _state{};
 
-
-    MapProjection   _global_origin{};
-    float           _gps_alt_ref{0.f};
-
     int _instance{0};
 
     estimator_states_s      _reference_states{};
@@ -183,7 +179,7 @@ private:
             (ParamInt<px4::params::IMU_GYRO_RATEMAX>)       _param_imu_gyro_ratemax
     )
 
-    void AdjustOffsetAndGlobalOrigin();
+    void AdjustOffset();
 };
 
 #endif //PX4_SOFTWARESENSOR_H
