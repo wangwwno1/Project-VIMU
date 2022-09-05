@@ -58,8 +58,11 @@ void SoftwareSensor::Stop() {
 }
 
 void SoftwareSensor::reset() {
-    // TODO Reset vehicle state, offsets, etc.
-
+    _pos_model.reset_state();
+    _vel_model.reset_state();
+    _att_model.reset_state();
+    _rate_model.reset_state();
+    _angular_accel_filter.reset();
 }
 
 void SoftwareSensor::Run() {
