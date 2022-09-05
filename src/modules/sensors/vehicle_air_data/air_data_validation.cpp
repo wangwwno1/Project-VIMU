@@ -64,7 +64,7 @@ namespace sensors {
         ref_timestamp -= static_cast<uint64_t>(dt_ekf_avg * 5e5f); // seconds to microseconds divided by 2
 
         const bool ref_baro_ready = _ref_baro_buffer->pop_first_older_than(ref_timestamp, &_ref_baro_delayed) ||
-                                    (ref_timestamp <= _ref_baro_delayed.time_us + 1_s);
+                                    ((_ref_baro_delayed.time_us != 0) && (ref_timestamp <= _ref_baro_delayed.time_us + 1_s));
 
         if (ref_baro_ready) {
             float pressure_pa = _data_sum[instance] / _data_sum_count[instance];
