@@ -485,7 +485,8 @@ void VehicleAirData::UpdateStatus()
 		sensors_status.timestamp = hrt_absolute_time();
 		_sensors_status_baro_pub.publish(sensors_status);
 
-        if (_reference_states_sub.advertised() && hrt_elapsed_time(&_ref_baro_delayed.time_us) < 1_s) {
+        if (_reference_states_sub.advertised() && (_ref_baro_delayed.time_us != 0) &&
+            hrt_elapsed_time(&_ref_baro_delayed.time_us) < 1_s) {
             // publish baro test ratios for debug
             for (int sensor_index = 0; sensor_index < MAX_SENSOR_COUNT; sensor_index++) {
                 if (_baro_validators[sensor_index]) {
