@@ -43,18 +43,15 @@ namespace sensors
             float max_deviation = NAN;
 
             // TODO consider time window attack
-            if (_vel_validator_params.cusum_params.mean_shift > 0.f &&
-                (_param_atk_stealth_type.get() & sensor_attack::DET_CUSUM)) {
-                max_deviation = _vel_validator_params.cusum_params.mean_shift;
+            if (_param_iv_gps_v_mshift.get() > 0.f && (_param_atk_stealth_type.get() & sensor_attack::DET_CUSUM)) {
+                max_deviation = _param_iv_gps_v_mshift.get();
             }
 
-            if (_vel_validator_params.ema_params.control_limit > 0.f &&
-                (_param_atk_stealth_type.get() & sensor_attack::DET_EWMA)) {
+            if (_param_iv_gps_v_ema_h.get() > 0.f && (_param_atk_stealth_type.get() & sensor_attack::DET_EWMA)) {
                 // Consider set the max deviation to EMA if we attempt to circumvent them
                 // If not (stealthy_attack_flag & sensor_attack::DET_CUSUM) then we replace cusum limit with ema
                 max_deviation = (PX4_ISFINITE(max_deviation)) ?
-                                fminf(max_deviation, _vel_validator_params.ema_params.control_limit) :
-                                _vel_validator_params.ema_params.control_limit;
+                                fminf(max_deviation, _param_iv_gps_v_ema_h.get()) : _param_iv_gps_v_ema_h.get();
             }
 
             max_deviation *= _param_ekf2_gps_v_noise.get();
@@ -123,9 +120,9 @@ namespace sensors
             float max_deviation = NAN;
 
             // TODO consider time window attack
-            if (_pos_validator_params.mean_shift > 0.f &&
+            if (_param_iv_gps_p_mshift.get() > 0.f &&
                 (_param_atk_stealth_type.get() & sensor_attack::DET_CUSUM)) {
-                max_deviation = _pos_validator_params.mean_shift;
+                max_deviation = _param_iv_gps_p_mshift.get();
             }
 
             max_deviation *= _param_ekf2_gps_p_noise.get();
