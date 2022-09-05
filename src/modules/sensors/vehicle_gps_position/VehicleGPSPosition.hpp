@@ -123,7 +123,7 @@ private:
     // TODO Remove debug topics
     uORB::Publication<sensor_gps_error_s>     _sensor_gps_error_pub{ORB_ID(sensor_gps_error)};
     uORB::Publication<sensor_gps_error_s>     _sensor_gps_error_variances_pub{ORB_ID(sensor_gps_error_variances)};
-    uORB::Publication<sensor_gps_error_s>     _sensor_gps_error_test_ratios_pub{ORB_ID(sensor_gps_error_test_ratios)};
+    uORB::Publication<sensor_gps_error_s>     _sensor_gps_error_ratios_pub{ORB_ID(sensor_gps_error_ratios)};
     uORB::Publication<sensors_status_gps_s>   _sensors_status_gps_pub{ORB_ID(sensors_status_gps)};
 
 	uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
