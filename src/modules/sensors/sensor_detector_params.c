@@ -4,7 +4,7 @@
 
 
 /**
- * Control limit for CuScore validation of the gps horizontal position innovation, expressed in standard deviations. Set zero to inhibit validation.
+ * Control limit for CuScore validation of the gps position innovation, expressed in standard deviations. Set zero to inhibit validation.
  *
  * @group Innovation Validator
  * @min 0.0
@@ -79,6 +79,48 @@ PARAM_DEFINE_FLOAT(IV_GPS_V_ALPHA, 1.f);
 PARAM_DEFINE_FLOAT(IV_GPS_V_EMA_CAP, 0.f);
 
 /**
+ * Control limit for Absolute Error Time Window (L1TW) validation of the gps position innovation, expressed in standard deviations.
+ *
+ * Set zero to inhibit validation.
+ *
+ * @group Innovation Validator
+ * @min 0.0
+ * @reboot_required true
+ * @decimal 4
+ */
+PARAM_DEFINE_FLOAT(IV_GPS_P_L1TW_H, 0.f);
+
+/**
+ * Control limit for Absolute Error Time Window (L1TW) validation of the gps velocity innovation, expressed in standard deviations.
+ *
+ * Set zero to inhibit validation.
+ *
+ * @group Innovation Validator
+ * @min 0.0
+ * @reboot_required true
+ * @decimal 4
+ */
+PARAM_DEFINE_FLOAT(IV_GPS_V_L1TW_H, 0.f);
+
+/**
+ * Minimum samples required before reset gps L1TW detector.
+ *
+ * @group Innovation Validator
+ * @min 1
+ * @reboot_required true
+ */
+PARAM_DEFINE_INT32(IV_GPS_RST_CNT, 1);
+
+/**
+ * Minimum consecutive normal samples before declare the sensor is normal.
+ *
+ * @group Innovation Validator
+ * @min 1
+ * @reboot_required true
+ */
+PARAM_DEFINE_INT32(IV_GPS_SAFE_CNT, 1);
+
+/**
  * Control limit for CuScore validation of the barometer height innovation.
  *
  * Expressed in standard deviations when the respective quadratic ratio is equal to zero, or variances if the ratio is set to one.
@@ -128,3 +170,137 @@ PARAM_DEFINE_FLOAT(IV_MAG_CSUM_H, 0.f);
  * @decimal 4
  */
 PARAM_DEFINE_FLOAT(IV_MAG_MSHIFT, 1.f);
+
+/**
+ * Accelerometer noise for innovation validation, it is equal to the standard deviation of the residual between the virtual and real sensor.
+ *
+ * @group Innovation Validator
+ * @min 0.01
+ * @max 1.0
+ * @unit m/s^2
+ * @decimal 2
+ */
+PARAM_DEFINE_FLOAT(IV_ACC_NOISE, 3.5e-1f);
+
+/**
+ * Control limit for CuScore validation of the accelerometer delta velocity error.
+ *
+ * Expressed in standard deviations when the respective quadratic ratio is equal to zero,
+ * or variances if the ratio is set to one.
+ * Set zero to inhibit validation.
+ *
+ * @group Innovation Validator
+ * @min 0.0
+ * @decimal 4
+ */
+PARAM_DEFINE_FLOAT(IV_ACC_CSUM_H, 0.f);
+
+/**
+ * Minimum detectable mean shift for CuScore validation of the accelerometer delta velocity error.
+ *
+ * Expressed in standard deviations when the respective quadratic ratio is equal to zero.
+ * or variances if the ratio is set to one.
+ *
+ * @group Innovation Validator
+ * @min 0.0001
+ * @decimal 4
+ */
+PARAM_DEFINE_FLOAT(IV_ACC_MSHIFT, 1.f);
+
+/**
+ * Rate gyro noise for innovation validation, it is equal to the standard deviation of the residual between virtual gyro and real gyro.
+ *
+ * @group Innovation Validator
+ * @min 0.0001
+ * @max 0.2
+ * @unit rad/s
+ * @decimal 4
+ */
+PARAM_DEFINE_FLOAT(IV_GYR_NOISE, 0.1f);
+
+/**
+ * Control limit for CuScore validation of the gyro delta angle error, expressed in standard deviation.
+ *
+ * Set zero to inhibit validation.
+ *
+ * @group Innovation Validator
+ * @min 0.0
+ * @reboot_required true
+ * @decimal 4
+ */
+PARAM_DEFINE_FLOAT(IV_GYR_CSUM_H, 0.f);
+
+/**
+ * Minimum detectable mean shift for CuScore validation of the gyro delta angle error, expressed in standard deviation.
+ *
+ *
+ * @group Innovation Validator
+ * @min 0.0001
+ * @reboot_required true
+ * @decimal 4
+ */
+PARAM_DEFINE_FLOAT(IV_GYR_MSHIFT, 1.f);
+
+/**
+ * Control limit for Exponential Moving Average (EMA) validation of the gyro delta angle error, expressed in standard deviation.
+ *
+ * The formula is EMA(T) = min(max(val, -CAP), +CAP) * Alpha + (1-Alpha) * EMA(T-1)
+ * Set zero to inhibit validation.
+ *
+ * @group Innovation Validator
+ * @min 0.0
+ * @decimal 4
+ */
+PARAM_DEFINE_FLOAT(IV_GYR_EMA_H, 0.f);
+
+/**
+ * Alpha for Exponential Moving Average (EMA) validation of the gyro delta angle error, expressed in standard deviation.
+ *
+ * @group Innovation Validator
+ * @min 0.0001
+ * @max 1.0
+ * @decimal 4
+ */
+PARAM_DEFINE_FLOAT(IV_GYR_ALPHA, 1.f);
+
+/**
+ * Clip value for Exponential Moving Average (EMA) validation of the gyro delta angle error, expressed in standard deviation.
+ *
+ * This constrain the maximum value that will input into EMA detector
+ * Set zero to inhibit clip, for inhibit validation please refer to the control limit description.
+ *
+ * @group Innovation Validator
+ * @min 0.0
+ * @decimal 2
+ */
+PARAM_DEFINE_FLOAT(IV_GYR_EMA_CAP, 0.f);
+
+/**
+ * Control limit for Absolute Error Time Window (L1TW) validation of the gyro rate innovation, expressed in standard deviations.
+ *
+ * Set zero to inhibit validation.
+ *
+ * @group Innovation Validator
+ * @min 0.0
+ * @reboot_required true
+ * @decimal 4
+ */
+PARAM_DEFINE_FLOAT(IV_GYR_L1TW_H, 0.f);
+
+/**
+ * Minimum samples required before reset gyro L1TW detector.
+ *
+ * @group Innovation Validator
+ * @min 1
+ * @reboot_required true
+ */
+PARAM_DEFINE_INT32(IV_GYR_RST_CNT, 1);
+
+/**
+ * Minimum consecutive normal samples before declare the sensor is normal.
+ *
+ * @group Innovation Validator
+ * @min 1
+ * @reboot_required true
+ */
+PARAM_DEFINE_INT32(IV_GYR_SAFE_CNT, 1);
