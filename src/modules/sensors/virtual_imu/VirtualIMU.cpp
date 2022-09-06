@@ -446,11 +446,11 @@ bool VirtualIMU::CheckAndSyncTimestamp(const uint8_t i, const hrt_abstime &imu_t
     if (_last_integrator_reset + 1_ms < imu_timestamp) {
         if (_last_integrator_reset == 0) {
             // Synchronize timestamp.
-            PX4_INFO("%" PRIu64 ": %d - Initial sync of virtual imu_sample with sample timestamp %" PRIu64,
+            PX4_INFO("%" PRIu64 ": %d - Initial sync of vimu sample timestamp %" PRIu64,
                      hrt_absolute_time(), i, imu_timestamp);
         } else {
             // Do synchronization again
-            PX4_WARN("%" PRIu64 ": %d - slipping detected, re-sync virtual imu_sample timestamp: (%" PRIu64 " -> %" PRIu64 ")" ,
+            PX4_WARN("%" PRIu64 ": %d - slipping detected, re-sync vimu sample timestamp: (%" PRIu64 " -> %" PRIu64 ")" ,
                      hrt_absolute_time(), i, _last_integrator_reset, imu_timestamp);
             // TODO Declare a slipping
         }
