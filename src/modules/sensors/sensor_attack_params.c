@@ -10,8 +10,8 @@
  * @group Sensor Attack
  * @min 0
  * @max 63
- * @bit 0 Gyroscope spoofing/jamming (Only apply to EKF state estimation, rate control is not affected)
- * @bit 1 Accelerometer spoofing/jamming (Not implemented yet)
+ * @bit 0 Gyroscope spoofing/jamming (Apply to both Vehicle IMU and rate control)
+ * @bit 1 Accelerometer spoofing/jamming
  * @bit 2 Gps position spoofing
  * @bit 3 Gps velocity spoofing
  * @bit 4 Barometer height jamming
@@ -218,4 +218,15 @@ PARAM_DEFINE_FLOAT(ATK_GPS_V_PITCH, 0.0f);
  * @decimal 3
  */
 PARAM_DEFINE_FLOAT(ATK_GYR_BIAS, 0.00f);
+
+/**
+ * Accelerometer Spoofing Deviation - North Bias
+ *
+ * Set the bias of deviation at North Axis.
+ *
+ * @group Sensors
+ * @unit m/s^2
+ * @decimal 3
+ */
+PARAM_DEFINE_FLOAT(ATK_ACC_BIAS, 0.00f);
 
