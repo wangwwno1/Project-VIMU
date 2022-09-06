@@ -229,6 +229,9 @@ private:
         (ParamExtFloat<px4::params::IV_GYR_EMA_H>) _param_iv_gyr_ema_h,
         (ParamExtFloat<px4::params::IV_GYR_ALPHA>) _param_iv_gyr_alpha,
         (ParamExtFloat<px4::params::IV_GYR_EMA_CAP>) _param_iv_gyr_ema_cap,
+        (ParamFloat <px4::params::IV_GYR_L1TW_H>) _param_iv_gyr_l1tw_h,
+        (ParamInt <px4::params::IV_GYR_RST_CNT>) _param_iv_gyr_rst_cnt,
+        (ParamInt <px4::params::IV_GYR_SAFE_CNT>) _param_iv_gyr_safe_cnt,
 
         (ParamFloat<px4::params::IV_ACC_NOISE>) _param_iv_acc_noise,
         (ParamExtFloat <px4::params::IV_ACC_CSUM_H>) _param_iv_acc_csum_h,
