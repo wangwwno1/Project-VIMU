@@ -26,7 +26,7 @@ namespace sensors {
 
             // Which stealthy?
             float max_deviation = NAN;
-            if (type_mask & sensor_attack::DET_CUSUM) {
+            if (type_mask & sensor_attack::DET_CUSUM && (_param_iv_gyr_mshift.get() > 0.f)) {
                 max_deviation = _param_iv_gyr_mshift.get();
             }
 
