@@ -34,6 +34,7 @@
 px4_add_library(vehicle_angular_velocity
 	VehicleAngularVelocity.cpp
 	VehicleAngularVelocity.hpp
+    gyro_sensor_attack.cpp
 )
 
 target_compile_options(vehicle_angular_velocity PRIVATE ${MAX_CUSTOM_OPT_LEVEL})
@@ -43,4 +44,5 @@ target_link_libraries(vehicle_angular_velocity
 		mathlib
 		px4_work_queue
 		sensor_calibration
+        sensor_attack
 )
