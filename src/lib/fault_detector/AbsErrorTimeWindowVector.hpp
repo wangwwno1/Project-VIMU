@@ -30,6 +30,7 @@ namespace fault_detector {
 
             _is_normal = true;
             _is_running = false;
+            _offset_ready = false;
             this->_error_mask = ERROR_FLAG_NO_ERROR;
         }
 
@@ -52,6 +53,7 @@ namespace fault_detector {
                         _error_offset = _error_cusum / _sample_counter;
                         _error_cusum.setAll(+Type(0.));
                         _normal_sample_counter = 0;
+                        _offset_ready = true;
                     }
                     _abs_error_cusum.setAll(+Type(0.));
                     _sample_counter = 0;
@@ -71,6 +73,7 @@ namespace fault_detector {
                     _normal_sample_counter = 0;
                     _safe_counter = 0;
                     _is_normal = false;
+                    _offset_ready = false
                 } else {
                     if (!_is_normal) _safe_counter++;
                     // Only count error offsets in normal
@@ -88,7 +91,29 @@ namespace fault_detector {
             }
         }
 
-        const VectorN &upper_sum() const { return _abs_error_cusum; }
+        const VectorN &error_sum() const { return _abs_error_cusum; }
+
+        bool update_offset(float &error_offset) {
+            if (_offset_ready) {
+                error_offset = _error_offset(0);
+                _error_offset.setAll(+Type(0.));
+                _offset_ready = false;
+                return true
+            }
+
+            return false
+        }
+
+        bool update_offset(VectorN &error_offset) {
+            if (_offset_ready) {
+                error_offset = _error_offset;
+                _error_offset.setAll(+Type(0.));
+                _offset_ready = false;
+                return true
+            }
+
+            return false
+        }
 
         const Type test_ratio() const {
             return _abs_error_cusum.max();
@@ -108,6 +133,7 @@ namespace fault_detector {
         uint32_t _safe_counter{0};
         bool _is_normal{true};
         bool _is_running{false};
+        bool _offset_ready{false};
     };
 
     using AbsErrorTimeWindowf = AbsErrorTimeWindowVector<float>;
