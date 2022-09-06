@@ -42,6 +42,7 @@
 #ifndef EKF_COMMON_H
 #define EKF_COMMON_H
 
+#include <lib/fault_detector/fault_detector.hpp>
 #include <matrix/math.hpp>
 
 namespace estimator
@@ -55,6 +56,7 @@ using matrix::Quatf;
 using matrix::Vector2f;
 using matrix::Vector3f;
 using matrix::wrap_pi;
+using fault_detector::CuSumVector3f;
 
 enum class velocity_frame_t : uint8_t {
 	LOCAL_FRAME_FRD,
@@ -280,6 +282,7 @@ struct parameters {
 	float mag_acc_gate{0.5f};		///< when in auto select mode, heading fusion will be used when manoeuvre accel is lower than this (m/sec**2)
 	float mag_yaw_rate_gate{0.25f};		///< yaw rate threshold used by mode select logic (rad/sec)
 	const float quat_max_variance{0.0001f};	///< zero innovation yaw measurements will not be fused when the sum of quaternion variance is less than this
+	CuSumVector3f::ParamStruct mag_csum_param{};
 
 	// GNSS heading fusion
 	float gps_heading_noise{0.1f};		///< measurement noise standard deviation used for GNSS heading fusion (rad)

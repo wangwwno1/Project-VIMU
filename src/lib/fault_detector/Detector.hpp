@@ -8,6 +8,8 @@ namespace fault_detector {
     public:
         using VectorN = matrix::Vector<Type, N>;
 
+        virtual ~DetectorVector() = default;
+
         virtual void reset() = 0;
 
         virtual bool validate(const VectorN &innov_ratios) = 0;
@@ -21,6 +23,7 @@ namespace fault_detector {
         uint32_t state() const { return _error_mask; }
 
         virtual const Type test_ratio() const = 0;
+        virtual const VectorN test_ratios() const = 0;
 
     protected:
         uint32_t _error_mask;

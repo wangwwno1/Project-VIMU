@@ -73,6 +73,7 @@ set(msg_files
 	estimator_event_flags.msg
 	estimator_innovations.msg
 	estimator_optical_flow_vel.msg
+    estimator_offset_states.msg
 	estimator_selector_status.msg
 	estimator_sensor_bias.msg
 	estimator_states.msg
@@ -146,15 +147,16 @@ set(msg_files
 	sensor_combined.msg
 	sensor_correction.msg
 	sensor_gps.msg
+    sensor_gps_error.msg
 	sensor_gnss_relative.msg
 	sensor_gyro.msg
 	sensor_gyro_fft.msg
 	sensor_gyro_fifo.msg
-    sensor_health_status.msg
-	sensor_hygrometer.msg
+    sensor_hygrometer.msg
 	sensor_mag.msg
 	sensor_preflight_mag.msg
 	sensor_selection.msg
+    sensors_status_gps.msg
 	sensors_status_imu.msg
 	sensors_status.msg
 	system_power.msg

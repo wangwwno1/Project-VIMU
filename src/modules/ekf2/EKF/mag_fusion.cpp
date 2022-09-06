@@ -170,9 +170,12 @@ void Ekf::fuseMag(const Vector3f &mag)
 
 	// Perform an innovation consistency check and report the result
 	bool all_innovation_checks_passed = true;
+    _mag_validator.validate(_mag_innov.edivide(_mag_innov_var.sqrt()));
+    const Vector3f validator_ratios = _mag_validator.test_ratios();
 
 	for (uint8_t index = 0; index <= 2; index++) {
 		_mag_test_ratio(index) = sq(_mag_innov(index)) / (sq(math::max(_params.mag_innov_gate, 1.0f)) * _mag_innov_var(index));
+        _mag_test_ratio(index) = fmaxf(_mag_test_ratio(index), validator_ratios(index));
 
 		const bool innov_check_fail = (_mag_test_ratio(index) > 1.0f);
 
@@ -656,7 +659,8 @@ bool Ekf::updateQuaternion(const float innovation, const float variance, const f
 	}
 
 	// innovation test ratio
-	_yaw_test_ratio = sq(innovation) / (sq(gate_sigma) * _heading_innov_var);
+    _mag_validator.validate(innovation / sqrt(_heading_innov_var));
+	_yaw_test_ratio = fmaxf(_mag_validator.test_ratio(), sq(innovation) / (sq(gate_sigma) * _heading_innov_var));
 
 	// we are no longer using 3-axis fusion so set the reported test levels to zero
 	_mag_test_ratio.setZero();

@@ -55,10 +55,26 @@
 #include <uORB/topics/sensors_status.h>
 #include <uORB/topics/vehicle_air_data.h>
 
+#include <lib/sensor_attack/sensor_attack.hpp>
+#include <lib/fault_detector/fault_detector.hpp>
+#include <modules/ekf2/EKF/RingBuffer.h>
+#include <uORB/topics/estimator_states.h>
+#include <uORB/topics/estimator_offset_states.h>
+
 using namespace time_literals;
+using fault_detector::CuSumf;
 
 namespace sensors
 {
+
+struct RefBaroSample {
+    hrt_abstime time_us{0};
+    float alt_meter;
+    float alt_var;
+    float dt_ekf_avg;
+    float hgt_offset;
+};
+
 class VehicleAirData : public ModuleParams, public px4::ScheduledWorkItem
 {
 public:
@@ -78,12 +94,17 @@ private:
 	void CheckFailover(const hrt_abstime &time_now_us);
 	bool ParametersUpdate(bool force = false);
 	void UpdateStatus();
+    void UpdateReferenceState();
+    void ValidateBaroData(const uint8_t &instance, const hrt_abstime &timestamp_sample);
 
 	float PressureToAltitude(float pressure_pa, float temperature = 15.f) const;
+    float AltitudeToPressure(float altitude, float temperature = 15.f) const;
 
 	static constexpr int MAX_SENSOR_COUNT = 4;
 
 	uORB::Publication<sensors_status_s> _sensors_status_baro_pub{ORB_ID(sensors_status_baro)};
+    uORB::Publication<sensors_status_s> _sensors_status_baro_error_ratios_pub{ORB_ID(sensors_status_baro_error_ratios)};
+    uORB::Publication<sensors_status_s> _sensors_status_baro_test_ratios_pub{ORB_ID(sensors_status_baro_test_ratios)};
 
 	uORB::Publication<vehicle_air_data_s> _vehicle_air_data_pub{ORB_ID(vehicle_air_data)};
 
@@ -98,6 +119,9 @@ private:
 		{this, ORB_ID(sensor_baro), 3},
 	};
 
+    uORB::SubscriptionCallbackWorkItem  _reference_states_sub{this, ORB_ID(vehicle_reference_states)};
+    uORB::Subscription                  _vehicle_offset_states_sub{ORB_ID(vehicle_offset_states)};
+
 	calibration::Barometer _calibration[MAX_SENSOR_COUNT];
 
 	perf_counter_t _cycle_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": cycle")};
@@ -107,6 +131,13 @@ private:
 
 	DataValidatorGroup _voter{1};
 	unsigned _last_failover_count{0};
+
+    bool                        _forced_using_soft_baro{false};
+    CuSumf::ParamStruct         _baro_hgt_params{};
+    CuSumf                      *_baro_validators[MAX_SENSOR_COUNT] {nullptr};
+    float                       _baro_test_ratios[MAX_SENSOR_COUNT] {0};
+    RefBaroSample               _ref_baro_delayed{};
+    RingBuffer<RefBaroSample>   *_ref_baro_buffer{nullptr};
 
 	uint64_t _timestamp_sample_sum[MAX_SENSOR_COUNT] {0};
 	float _data_sum[MAX_SENSOR_COUNT] {};
@@ -127,7 +158,17 @@ private:
 
 	DEFINE_PARAMETERS(
 		(ParamFloat<px4::params::SENS_BARO_QNH>) _param_sens_baro_qnh,
-		(ParamFloat<px4::params::SENS_BARO_RATE>) _param_sens_baro_rate
+		(ParamFloat<px4::params::SENS_BARO_RATE>) _param_sens_baro_rate,
+
+        (ParamInt<px4::params::EKF2_PREDICT_US>) _param_ekf2_predict_us,
+        (ParamFloat<px4::params::EKF2_BARO_DELAY>) _param_ekf2_baro_delay,
+        ///< barometer height measurement delay relative to the IMU (mSec),
+        (ParamFloat<px4::params::EKF2_BARO_NOISE>) _param_ekf2_baro_noise,
+        ///< observation noise for barometric height fusion (m)
+
+        (ParamInt<px4::params::ATK_APPLY_TYPE>)      _param_atk_apply_type,
+        (ParamExtFloat<px4::params::IV_BARO_CSUM_H>)    _param_iv_baro_csum_h,
+        (ParamExtFloat<px4::params::IV_BARO_MSHIFT>)    _param_iv_baro_mshift
 	)
 };
 }; // namespace sensors

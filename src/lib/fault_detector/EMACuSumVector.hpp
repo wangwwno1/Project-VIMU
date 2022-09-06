@@ -57,6 +57,10 @@ namespace fault_detector {
             return math::max(_cusum_detector.test_ratio(), _ema_detector.test_ratio());
         }
 
+        const VectorN test_ratios() const {
+            return matrix::max(_cusum_detector.test_ratios(), _ema_detector.test_ratios());
+        }
+
         CuSumDetector &getCuSumDetector() { return _cusum_detector; }
 
         const CuSumDetector &getCuSumDetector() const { return _cusum_detector; }

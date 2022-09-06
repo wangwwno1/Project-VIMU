@@ -69,6 +69,17 @@ namespace fault_detector {
             return Type(0.);
         }
 
+        const VectorN test_ratios() const {
+            VectorN test_ratios{};
+            if (_param->control_limit > Type(0.)) {
+                test_ratios =  _state.abs() / _param->control_limit;
+            } else {
+                test_ratios.zero();
+            }
+
+            return test_ratios;
+        }
+
     private:
         ParamStruct *_param;
         VectorN _state;

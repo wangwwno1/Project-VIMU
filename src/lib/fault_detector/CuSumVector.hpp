@@ -63,6 +63,10 @@ namespace fault_detector {
             return math::max(_lower_sum.abs().max(), _upper_sum.max());
         }
 
+        const VectorN test_ratios() const {
+            return matrix::max(_lower_sum.abs(), _upper_sum);
+        }
+
     private:
         ParamStruct *_param;
         VectorN _lower_sum;

@@ -34,10 +34,12 @@
 #pragma once
 
 #include <memory>
-#include <lib/sensor_attack/sensor_attack.hpp>
+#include <lib/fault_detector/fault_detector.hpp>
 #include <lib/mathlib/math/Limits.hpp>
 #include <lib/matrix/matrix/math.hpp>
+#include <lib/sensor_attack/sensor_attack.hpp>
 #include <lib/perf/perf_counter.h>
+#include <modules/ekf2/EKF/RingBuffer.h>
 #include <px4_platform_common/log.h>
 #include <px4_platform_common/module_params.h>
 #include <px4_platform_common/px4_config.h>
@@ -45,16 +47,39 @@
 #include <uORB/Publication.hpp>
 #include <uORB/Subscription.hpp>
 #include <uORB/SubscriptionCallback.hpp>
+#include <uORB/topics/estimator_states.h>
+#include <uORB/topics/estimator_offset_states.h>
+#include <uORB/topics/sensors_status_gps.h>
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/sensor_gps.h>
+#include <uORB/topics/sensor_gps_error.h>
 #include <uORB/topics/vehicle_gps_position.h>
+#include <uORB/topics/vehicle_local_position.h>
 
 #include "gps_blending.hpp"
 
 using namespace time_literals;
+using fault_detector::CuSumParams;
+using fault_detector::CuSumVector3f;
+using fault_detector::EMACuSumParams;
+using fault_detector::EMACuSumVector3f;
+using matrix::Quatf;
 
 namespace sensors
 {
+
+struct RefGpsSample {
+    hrt_abstime time_us{0};
+    Quatf q;
+    Vector3f pos;
+    Vector3f pos_var;
+    Vector3f vel;
+    Vector3f vel_var;
+    Vector3f ang_rate_delayed_raw;
+    float    dt_ekf_avg;
+};
+
+
 class VehicleGPSPosition : public ModuleParams, public px4::ScheduledWorkItem
 {
 public:
@@ -72,8 +97,17 @@ private:
 
 	void ParametersUpdate(bool force = false);
 	void Publish(const sensor_gps_s &gps, uint8_t selected);
+    void PublishErrorStatus();
+    void PublishSensorStatus();
 
-	void ConductAttack(vehicle_gps_position_s &gps_position);
+    void UpdateReferenceState();
+
+	void ConductVelocitySpoofing(sensor_gps_s &gps_position);
+    bool ConductVelocitySpoofing(sensor_gps_s &gps_position, const Vector3f &ref_vel_board);
+    void ConductPositionSpoofing(sensor_gps_s &gps_position);
+    bool ConductPositionSpoofing(sensor_gps_s &gps_position, const Vector3f &ref_pos_board);
+    void ValidateGpsData(sensor_gps_s &gps_position);
+    void ReplaceGpsPosVelData(sensor_gps_s &gps_position, const Vector3f &ref_pos_board, const Vector3f &ref_vel_board);
 
 	// defines used to specify the mask position for use of different accuracy metrics in the GPS blending algorithm
 	static constexpr uint8_t BLEND_MASK_USE_SPD_ACC  = 1;
@@ -86,6 +120,11 @@ private:
 		      "GPS_MAX_RECEIVERS must match to GPS_MAX_RECEIVERS_BLEND");
 
 	uORB::Publication<vehicle_gps_position_s> _vehicle_gps_position_pub{ORB_ID(vehicle_gps_position)};
+    // TODO Remove debug topics
+    uORB::Publication<sensor_gps_error_s>     _sensor_gps_error_pub{ORB_ID(sensor_gps_error)};
+    uORB::Publication<sensor_gps_error_s>     _sensor_gps_error_variances_pub{ORB_ID(sensor_gps_error_variances)};
+    uORB::Publication<sensor_gps_error_s>     _sensor_gps_error_ratios_pub{ORB_ID(sensor_gps_error_ratios)};
+    uORB::Publication<sensors_status_gps_s>   _sensors_status_gps_pub{ORB_ID(sensors_status_gps)};
 
 	uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
 
@@ -94,21 +133,63 @@ private:
 		{this, ORB_ID(sensor_gps), 1},
 	};
 
+    uORB::SubscriptionCallbackWorkItem  _reference_states_sub{this, ORB_ID(vehicle_reference_states)};
+
+    uORB::Subscription  _vehicle_local_position_sub{ORB_ID(vehicle_local_position)};
+    uORB::Subscription  _vehicle_offset_states_sub{ORB_ID(vehicle_offset_states)};
+
+    Vector3f            _last_pos_error{0.f, 0.f, 0.f};
+    Vector3f            _last_vel_error{0.f , 0.f, 0.f};
+    Vector3f            _last_pos_vars{0.f, 0.f, 0.f};
+    Vector3f            _last_vel_vars{0.f ,0.f, 0.f};
+    hrt_abstime         _last_reference_timestamp{0};
+    MapProjection       _global_origin{};
+    float               _gps_alt_ref{0.f};
+
+    Vector3f            _gps_pos_body{};
+
+    CuSumParams<float>      _pos_validator_params{};
+    EMACuSumParams<float>   _vel_validator_params{};
+    CuSumVector3f           _pos_validator{&_pos_validator_params};
+    EMACuSumVector3f        _vel_validator{&_vel_validator_params};
+
+    hrt_abstime         _last_health_status_publish{0};
+    hrt_abstime         _last_healthy{true};
+
+    RingBuffer<RefGpsSample> *_ref_gps_buffer{nullptr};
+    RefGpsSample        _ref_gps_delayed{};
+
 	perf_counter_t _cycle_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": cycle")};
 
 	GpsBlending _gps_blending;
 
-    sensor_attack::DeviationParams              _pos_param{};
+    sensor_attack::DeviationParams              _pos_atk_params{};
 	std::unique_ptr<sensor_attack::Deviation>   _pos_deviation = nullptr;
-    sensor_attack::DeviationParams              _vel_param{};
+    sensor_attack::DeviationParams              _vel_atk_params{};
     std::unique_ptr<sensor_attack::Deviation>   _vel_deviation = nullptr;
 
 	DEFINE_PARAMETERS(
 		(ParamInt<px4::params::SENS_GPS_MASK>)          _param_sens_gps_mask,
 		(ParamFloat<px4::params::SENS_GPS_TAU>)         _param_sens_gps_tau,
 		(ParamInt<px4::params::SENS_GPS_PRIME>)         _param_sens_gps_prime,
+
+        (ParamInt<px4::params::EKF2_PREDICT_US>)        _param_ekf2_predict_us,
+        (ParamFloat<px4::params::EKF2_GPS_DELAY>)       _param_ekf2_gps_delay,
+        ///< GPS measurement delay relative to the IMU (mSec)
+        (ParamFloat<px4::params::EKF2_GPS_V_NOISE>)     _param_ekf2_gps_v_noise,
+        ///< minimum allowed observation noise for gps velocity fusion (m/sec)
+        (ParamFloat<px4::params::EKF2_GPS_P_NOISE>)     _param_ekf2_gps_p_noise,
+        ///< minimum allowed observation noise for gps position fusion (m)
+        (ParamExtFloat<px4::params::EKF2_GPS_POS_X>)    _param_ekf2_gps_pos_x,
+        ///< X position of GPS antenna in body frame (m)
+        (ParamExtFloat<px4::params::EKF2_GPS_POS_Y>)    _param_ekf2_gps_pos_y,
+        ///< Y position of GPS antenna in body frame (m)
+        (ParamExtFloat<px4::params::EKF2_GPS_POS_Z>)    _param_ekf2_gps_pos_z,
+        ///< Z position of GPS antenna in body frame (m)
+
         (ParamInt<px4::params::ATK_APPLY_TYPE>)         _param_atk_apply_type,
-		(ParamInt<px4::params::ATK_GPS_P_CLS>)          _param_atk_gps_p_cls,
+        (ParamInt<px4::params::ATK_STEALTH_TYPE>)       _param_atk_stealth_type,
+        (ParamInt<px4::params::ATK_GPS_P_CLS>)          _param_atk_gps_p_cls,
 		(ParamExtFloat<px4::params::ATK_GPS_P_IV>)      _param_atk_gps_p_iv,
 		(ParamExtFloat<px4::params::ATK_GPS_P_RATE>)    _param_atk_gps_p_rate,
 		(ParamExtFloat<px4::params::ATK_GPS_P_CAP>)     _param_atk_gps_p_cap,
@@ -119,7 +200,15 @@ private:
         (ParamExtFloat<px4::params::ATK_GPS_V_RATE>)    _param_atk_gps_v_rate,
         (ParamExtFloat<px4::params::ATK_GPS_V_CAP>)     _param_atk_gps_v_cap,
         (ParamExtFloat<px4::params::ATK_GPS_V_HDG>)     _param_atk_gps_v_hdg,
-        (ParamExtFloat<px4::params::ATK_GPS_V_PITCH>)   _param_atk_gps_v_pitch
+        (ParamExtFloat<px4::params::ATK_GPS_V_PITCH>)   _param_atk_gps_v_pitch,
+
+        (ParamExtFloat<px4::params::IV_GPS_P_CSUM_H>)   _param_iv_gps_p_csum_h,
+        (ParamExtFloat<px4::params::IV_GPS_P_MSHIFT>)   _param_iv_gps_p_mshift,
+        (ParamExtFloat<px4::params::IV_GPS_V_CSUM_H>)   _param_iv_gps_v_csum_h,
+        (ParamExtFloat<px4::params::IV_GPS_V_MSHIFT>)   _param_iv_gps_v_mshift,
+        (ParamExtFloat<px4::params::IV_GPS_V_EMA_H>)    _param_iv_gps_v_ema_h,
+        (ParamExtFloat<px4::params::IV_GPS_V_ALPHA>)    _param_iv_gps_v_alpha,
+        (ParamExtFloat<px4::params::IV_GPS_V_EMA_CAP>)  _param_iv_gps_v_ema_cap
 	)
 };
 }; // namespace sensors

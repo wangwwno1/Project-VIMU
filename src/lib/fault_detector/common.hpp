@@ -12,9 +12,9 @@ namespace fault_detector
     static constexpr uint32_t ERROR_FLAG_VAL_LCL_EXCEED = (0x00000001U << 3);
 
     template<typename Type>
-    struct CuSumParams{
-        Type control_limit     = Type(0.);  ///< The Control limit, expressed in standard deviations when quadratic_ratio = 0.
-        Type mean_shift        = Type(1.);  ///< Minimum mean shift to detect, expressed in standard deviations when quadratic_ratio = 0.
+    struct CuSumParams {
+        Type control_limit     = Type(0.);  ///< The Control limit, expressed in standard deviations.
+        Type mean_shift        = Type(1.);  ///< Minimum mean shift to detect, expressed in standard deviations.
     };
 
     template<typename Type>
@@ -28,5 +28,12 @@ namespace fault_detector
     struct EMACuSumParams {
         CuSumParams<Type> cusum_params{};
         EMAParams<Type>   ema_params{};
+    };
+
+    template<typename Type>
+    struct TimeWindowParams {
+        Type control_limit     = Type(0.);        // Positive cumulate control limit.
+        uint32_t reset_samples = 1;               // Samples take before trigger reset
+        uint32_t safe_count = 1;                  // Consecutive normal samples before declare safe.
     };
 }
