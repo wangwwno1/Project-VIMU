@@ -221,6 +221,7 @@ private:
         (ParamInt<px4::params::ATK_STEALTH_TYPE>) _param_atk_stealth_type,
         (ParamInt<px4::params::ATK_MULTI_IMU>) _param_atk_multi_imu,
         (ParamFloat<px4::params::ATK_GYR_BIAS>) _param_atk_gyr_bias,
+        (ParamFloat<px4::params::ATK_ACC_BIAS>) _param_atk_acc_bias,
 
         (ParamFloat<px4::params::IV_GYR_NOISE>) _param_iv_gyr_noise,
         (ParamExtFloat <px4::params::IV_GYR_CSUM_H>) _param_iv_gyr_csum_h,
