@@ -33,7 +33,7 @@ namespace fault_detector
     template<typename Type>
     struct TimeWindowParams {
         Type control_limit     = Type(0.);        // Positive cumulate control limit.
-        uint32_t reset_samples = 1;               // Samples take before trigger reset
-        uint32_t safe_count = 1;                  // Consecutive normal samples before declare safe.
+        int32_t reset_samples = 1;               // Samples take before trigger reset
+        int32_t safe_count = 1;                  // Consecutive normal samples before declare safe.
     };
 }
