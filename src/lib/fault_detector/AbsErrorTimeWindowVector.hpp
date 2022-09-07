@@ -22,7 +22,7 @@ namespace fault_detector {
 
         void reset() {
             _abs_error_cusum.setAll(+Type(0.) * _param->control_limit);
-            _error_offset.setAll(+Type(0.));
+            reset_error_offset();
 
             _sample_counter = 0;
             _normal_sample_counter = 0;
@@ -93,27 +93,11 @@ namespace fault_detector {
 
         const VectorN &error_sum() const { return _abs_error_cusum; }
 
-        bool update_offset(float &error_offset) {
-            if (_offset_ready) {
-                error_offset = _error_offset(0);
-                _error_offset.setAll(+Type(0.));
-                _offset_ready = false;
-                return true;
-            }
+        const Type &error_offset() const { return _error_offset(0); }
 
-            return false;
-        }
+        const VectorN &error_offsets() const { return _error_offset; }
 
-        bool update_offset(VectorN &error_offset) {
-            if (_offset_ready) {
-                error_offset = _error_offset;
-                _error_offset.setAll(+Type(0.));
-                _offset_ready = false;
-                return true;
-            }
-
-            return false;
-        }
+        void reset_error_offset() { _error_offset.setAll(+Type(0.)); }
 
         const Type test_ratio() const {
             return _abs_error_cusum.max();
