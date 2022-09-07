@@ -90,6 +90,25 @@ PARAM_DEFINE_FLOAT(IV_GPS_V_EMA_CAP, 0.f);
  */
 PARAM_DEFINE_FLOAT(IV_GPS_P_L1TW_H, 0.f);
 
+
+/**
+ * Minimum samples required before reset gps position L1TW detector.
+ *
+ * @group Innovation Validator
+ * @min 1
+ * @reboot_required true
+ */
+PARAM_DEFINE_INT32(IV_GPS_P_RST_CNT, 1);
+
+/**
+ * Minimum consecutive normal samples before declare the sensor is normal.
+ *
+ * @group Innovation Validator
+ * @min 1
+ * @reboot_required true
+ */
+PARAM_DEFINE_INT32(IV_GPS_P_CD_CNT, 1);
+
 /**
  * Control limit for Absolute Error Time Window (L1TW) validation of the gps velocity innovation, expressed in standard deviations.
  *
@@ -103,13 +122,13 @@ PARAM_DEFINE_FLOAT(IV_GPS_P_L1TW_H, 0.f);
 PARAM_DEFINE_FLOAT(IV_GPS_V_L1TW_H, 0.f);
 
 /**
- * Minimum samples required before reset gps L1TW detector.
+ * Minimum samples required before reset gps velocity L1TW detector.
  *
  * @group Innovation Validator
  * @min 1
  * @reboot_required true
  */
-PARAM_DEFINE_INT32(IV_GPS_RST_CNT, 1);
+PARAM_DEFINE_INT32(IV_GPS_V_RST_CNT, 1);
 
 /**
  * Minimum consecutive normal samples before declare the sensor is normal.
@@ -118,7 +137,7 @@ PARAM_DEFINE_INT32(IV_GPS_RST_CNT, 1);
  * @min 1
  * @reboot_required true
  */
-PARAM_DEFINE_INT32(IV_GPS_SAFE_CNT, 1);
+PARAM_DEFINE_INT32(IV_GPS_V_CD_CNT, 1);
 
 /**
  * Control limit for CuScore validation of the barometer height innovation.
