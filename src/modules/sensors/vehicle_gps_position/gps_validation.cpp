@@ -162,7 +162,10 @@ namespace sensors
 
                 PublishSensorStatus();
                 PublishErrorStatus();
-                ReplaceGpsPosVelData(gps_position, ref_pos_board, ref_vel_board);
+                // Replace corresponding information if gps is unhealthy
+                if ((_pos_validator.test_ratio() >= 1.f) || (_vel_validator.test_ratio() >= 1.f)) {
+                    ReplaceGpsPosVelData(gps_position, ref_pos_board, ref_vel_board);
+                }
             }
 
         } else {
@@ -228,22 +231,19 @@ namespace sensors
     void VehicleGPSPosition::ReplaceGpsPosVelData(sensor_gps_s &gps_position,
                                                   const Vector3f &ref_pos_board,
                                                   const Vector3f &ref_vel_board) {
-        // Replace corresponding information if gps is unhealthy
-        if ((_pos_validator.test_ratio() > 1.f) || (_vel_validator.test_ratio() > 1.f)) {
-            // Replace Position Info with reference
-            double lat, lon;
-            float alt = _gps_alt_ref - ref_pos_board(2);  // local position height is Downward
-            _global_origin.reproject(ref_pos_board(0), ref_pos_board(1), lat, lon);
-            gps_position.lat = (int) (lat * 1e7);
-            gps_position.lon = (int) (lon * 1e7);
-            gps_position.alt = (int) (alt * 1e3f);
+        // Replace Position Info with reference
+        double lat, lon;
+        float alt = _gps_alt_ref - ref_pos_board(2);  // local position height is Downward
+        _global_origin.reproject(ref_pos_board(0), ref_pos_board(1), lat, lon);
+        gps_position.lat = (int) (lat * 1e7);
+        gps_position.lon = (int) (lon * 1e7);
+        gps_position.alt = (int) (alt * 1e3f);
 
-            // Replace Velocity info with reference
-            gps_position.vel_n_m_s = ref_vel_board(0);
-            gps_position.vel_e_m_s = ref_vel_board(1);
-            gps_position.vel_d_m_s = ref_vel_board(2);
-            gps_position.vel_m_s = ref_vel_board.norm();
-        }
+        // Replace Velocity info with reference
+        gps_position.vel_n_m_s = ref_vel_board(0);
+        gps_position.vel_e_m_s = ref_vel_board(1);
+        gps_position.vel_d_m_s = ref_vel_board(2);
+        gps_position.vel_m_s = ref_vel_board.norm();
     }
 
 }  // sensors
