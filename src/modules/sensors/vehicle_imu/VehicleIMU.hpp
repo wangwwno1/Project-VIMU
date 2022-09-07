@@ -54,7 +54,9 @@
 #include <uORB/topics/estimator_sensor_bias.h>
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/sensor_accel.h>
+#include <uORB/topics/sensor_accel_errors.h>
 #include <uORB/topics/sensor_gyro.h>
+#include <uORB/topics/sensor_gyro_errors.h>
 #include <uORB/topics/vehicle_control_mode.h>
 #include <uORB/topics/vehicle_imu.h>
 #include <uORB/topics/vehicle_imu_status.h>
@@ -79,7 +81,10 @@ public:
 	void PrintStatus();
 
 private:
-	bool ParametersUpdate(bool force = false);
+    static constexpr uint8_t MAX_GYRO_SAMPLES = (sizeof(sensor_gyro_errors_s::x) / sizeof(sensor_gyro_errors_s::x[0]));
+    static constexpr uint8_t MAX_ACCEL_SAMPLES = (sizeof(sensor_accel_errors_s::x) / sizeof(sensor_accel_errors_s::x[0]));
+
+    bool ParametersUpdate(bool force = false);
 	bool Publish();
 	void Run() override;
 
@@ -105,6 +110,8 @@ private:
 
 	uORB::PublicationMulti<vehicle_imu_s> _vehicle_imu_pub{ORB_ID(vehicle_imu)};
 	uORB::PublicationMulti<vehicle_imu_status_s> _vehicle_imu_status_pub{ORB_ID(vehicle_imu_status)};
+    uORB::PublicationMulti<sensor_gyro_errors_s> _sensor_gyro_errors_pub{ORB_ID(sensor_gyro_errors)};
+    uORB::PublicationMulti<sensor_accel_errors_s> _sensor_accel_errors_pub{ORB_ID(sensor_accel_errors)};
 
 	static constexpr hrt_abstime kIMUStatusPublishingInterval{100_ms};
 
@@ -126,10 +133,10 @@ private:
     CuSumParams<float>          _accel_validator_params{};
     EMACuSumVector3f            _gyro_validator{&_gyro_validator_params};
     CuSumVector3f               _accel_validator{&_accel_validator_params};
-    Vector3f                    _last_gyro_residual{0.f, 0.f, 0.f};
-    Vector3f                    _last_accel_residual{0.f, 0.f, 0.f};
     sensor_gyro_s               _last_ref_gyro{};
+    sensor_gyro_errors_s        _last_gyro_errors{};
     sensor_accel_s              _last_ref_accel{};
+    sensor_accel_errors_s       _last_accel_errors{};
 
 
     // Note: this value is borrowed from data_validator

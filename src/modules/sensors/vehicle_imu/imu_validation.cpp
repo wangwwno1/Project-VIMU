@@ -26,25 +26,42 @@ namespace sensors {
             }
         }
 
+        Vector3f error_residuals{0.f, 0.f, 0.f};
         if (math::isInRange(validate_start, ref_gyro.timestamp_sample - interval_us, ref_gyro.timestamp_sample + interval_us)) {
 
             ApplyGyroAttack(gyro, ref_gyro);
 
-            _last_gyro_residual(0) = gyro.x - ref_gyro.x;
-            _last_gyro_residual(1) = gyro.y - ref_gyro.y;
-            _last_gyro_residual(2) = gyro.z - ref_gyro.z;
+            error_residuals(0) = gyro.x - ref_gyro.x;
+            error_residuals(1) = gyro.y - ref_gyro.y;
+            error_residuals(2) = gyro.z - ref_gyro.z;
 
         } else {
-            _last_gyro_residual.zero();
             ApplyGyroAttack(gyro);
+            return;
         }
 
         const float inv_gyr_noise = 1.f / fmaxf(_param_iv_gyr_noise.get(), 0.01f);
-        _gyro_validator.validate(_last_gyro_residual * inv_gyr_noise);
+        const Vector3f error_ratio = error_residuals * inv_gyr_noise;
+        _gyro_validator.validate(error_ratio);
+
         if (_gyro_validator.test_ratio() > 1.f) {
             // Declare gyro failure immediately by add error count
             gyro.error_count = math::max(gyro.error_count + NORETURN_ERRCOUNT, NORETURN_ERRCOUNT + 1U);
         }
+
+        // Record error ratio and test ratio for debug and post-mortem analysis
+        if (_last_gyro_errors.samples < MAX_GYRO_SAMPLES) {
+            const uint8_t idx = _last_gyro_errors.samples;
+            if (idx == 0) {
+                _last_gyro_errors.timestamp_start = hrt_absolute_time();
+            }
+            _last_gyro_errors.x[idx] = error_ratio(0);
+            _last_gyro_errors.y[idx] = error_ratio(1);
+            _last_gyro_errors.z[idx] = error_ratio(2);
+            _last_gyro_errors.test_ratio[idx] = _gyro_validator.test_ratio();
+
+        }
+        _last_gyro_errors.samples++;
     }
 
     void VehicleIMU::ValidateAccelData(sensor_accel_s &accel) {
@@ -66,24 +83,41 @@ namespace sensors {
             }
         }
 
+        Vector3f error_residuals{0.f, 0.f, 0.f};
         if (math::isInRange(validate_start, ref_accel.timestamp_sample - interval_us, ref_accel.timestamp_sample + interval_us)) {
 
             ApplyAccelAttack(accel, ref_accel);
-            
-            _last_accel_residual(0) = accel.x - ref_accel.x;
-            _last_accel_residual(1) = accel.y - ref_accel.y;
-            _last_accel_residual(2) = accel.z - ref_accel.z;
+
+            error_residuals(0) = accel.x - ref_accel.x;
+            error_residuals(1) = accel.y - ref_accel.y;
+            error_residuals(2) = accel.z - ref_accel.z;
 
         } else {
-            _last_accel_residual.zero();
             ApplyAccelAttack(accel);
+            return;
         }
 
         const float inv_acc_noise = 1.f / fmaxf(_param_iv_acc_noise.get(), 0.01f);
-        _accel_validator.validate(_last_accel_residual * inv_acc_noise);
+        const Vector3f error_ratio = error_residuals * inv_acc_noise;
+        _accel_validator.validate(error_ratio);
+
         if (_accel_validator.test_ratio() > 1.f) {
             // Declare accel failure immediately by add error count
             accel.error_count = math::max(accel.error_count + NORETURN_ERRCOUNT, NORETURN_ERRCOUNT + 1U);
         }
+
+        // Record error ratio and test ratio for debug and post-mortem analysis
+        if (_last_accel_errors.samples < MAX_ACCEL_SAMPLES) {
+            const uint8_t idx = _last_accel_errors.samples;
+            if (idx == 0) {
+                _last_accel_errors.timestamp_start = hrt_absolute_time();
+            }
+            _last_accel_errors.x[idx] = error_ratio(0);
+            _last_accel_errors.y[idx] = error_ratio(1);
+            _last_accel_errors.z[idx] = error_ratio(2);
+            _last_accel_errors.test_ratio[idx] = _accel_validator.test_ratio();
+
+        }
+        _last_accel_errors.samples++;
     }
 }  // namespace sensors

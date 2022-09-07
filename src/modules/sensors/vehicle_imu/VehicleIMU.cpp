@@ -80,6 +80,8 @@ VehicleIMU::VehicleIMU(int instance, uint8_t accel_index, uint8_t gyro_index, co
 	// advertise immediately to ensure consistent ordering
 	_vehicle_imu_pub.advertise();
 	_vehicle_imu_status_pub.advertise();
+    _sensor_gyro_errors_pub.advertise();
+    _sensor_accel_errors_pub.advertise();
 }
 
 VehicleIMU::~VehicleIMU()
@@ -91,6 +93,8 @@ VehicleIMU::~VehicleIMU()
 
 	_vehicle_imu_pub.unadvertise();
 	_vehicle_imu_status_pub.unadvertise();
+    _sensor_gyro_errors_pub.unadvertise();
+    _sensor_accel_errors_pub.unadvertise();
 }
 
 bool VehicleIMU::Start()
@@ -634,6 +638,22 @@ bool VehicleIMU::Publish()
 					_raw_gyro_mean.reset();
 				}
 			}
+
+            if (_last_accel_errors.samples > 0) {
+                // publish accel error info
+                _last_accel_errors.device_id = _accel_calibration.device_id();
+                _last_accel_errors.timestamp = hrt_absolute_time();
+                _sensor_accel_errors_pub.publish(_last_accel_errors);
+                _last_accel_errors = {};
+            }
+
+            if (_last_gyro_errors.samples > 0) {
+                // publish gyro error info
+                _last_gyro_errors.device_id = _gyro_calibration.device_id();
+                _last_gyro_errors.timestamp = hrt_absolute_time();
+                _sensor_gyro_errors_pub.publish(_last_gyro_errors);
+                _last_gyro_errors = {};
+            }
 
 			// publish vehicle_imu
 			imu.timestamp_sample = _gyro_timestamp_sample_last;
