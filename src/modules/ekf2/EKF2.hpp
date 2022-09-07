@@ -84,7 +84,6 @@
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/sensor_combined.h>
 #include <uORB/topics/sensor_selection.h>
-#include <uORB/topics/sensors_status_imu.h>
 #include <uORB/topics/vehicle_air_data.h>
 #include <uORB/topics/vehicle_attitude.h>
 #include <uORB/topics/vehicle_command.h>
@@ -267,7 +266,6 @@ private:
 	uORB::Subscription _magnetometer_sub{ORB_ID(vehicle_magnetometer)};
 	uORB::Subscription _optical_flow_sub{ORB_ID(optical_flow)};
 	uORB::Subscription _sensor_selection_sub{ORB_ID(sensor_selection)};
-    uORB::Subscription _sensors_status_imu_sub{ORB_ID(sensors_status_imu)};
     uORB::Subscription _status_sub{ORB_ID(vehicle_status)};
     uORB::Subscription _vehicle_command_sub{ORB_ID(vehicle_command)};
     uORB::Subscription _vehicle_gps_position_sub{ORB_ID(vehicle_gps_position)};
@@ -324,7 +322,7 @@ private:
 	uORB::PublicationMulti<wind_s>              _wind_pub;
 
     // Topics for non-imu sensor detection - TODO: Extend to multi-reference case
-//    uORB::Publication<estimator_states_s>           _vehicle_reference_states_pub{ORB_ID(vehicle_reference_states)};
+    uORB::Publication<estimator_states_s>           _vehicle_reference_states_pub{ORB_ID(vehicle_reference_states)};
     uORB::Publication<estimator_offset_states_s>    _vehicle_offset_states_pub{ORB_ID(vehicle_offset_states)};
 
 
