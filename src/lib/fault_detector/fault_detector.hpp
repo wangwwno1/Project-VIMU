@@ -10,3 +10,4 @@
 #include "EMAVector.hpp"
 #include "EMACuSumVector.hpp"
 #include "HorzVertDetector.hpp"
+#include "AbsErrorTimeWindowVector.hpp"
