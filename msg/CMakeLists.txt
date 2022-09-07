@@ -157,6 +157,8 @@ set(msg_files
 	sensor_selection.msg
     sensors_status_gps.msg
 	sensors_status_imu.msg
+    sensor_accel_errors.msg
+    sensor_gyro_errors.msg
 	sensors_status.msg
 	system_power.msg
 	takeoff_status.msg
