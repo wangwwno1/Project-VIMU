@@ -36,22 +36,32 @@ namespace sensors
     bool VehicleGPSPosition::ConductVelocitySpoofing(sensor_gps_s &gps_position, const Vector3f &ref_vel_board) {
         // Check if start condition satisfied
         bool attack_applied = false;
-        bool start_condition = (_param_atk_stealth_type.get() != sensor_attack::NO_STEALTHY) &&
+        const uint8_t type_mask = _param_atk_stealth_type.get();
+        bool start_condition = (type_mask != sensor_attack::NO_STEALTHY) &&
                                (_param_atk_apply_type.get() & sensor_attack::ATK_GPS_VEL);
 
         if (start_condition) {
             float max_deviation = NAN;
 
-            // TODO consider time window attack
-            if (_param_iv_gps_v_mshift.get() > 0.f && (_param_atk_stealth_type.get() & sensor_attack::DET_CUSUM)) {
+            if (_param_iv_gps_v_mshift.get() > 0.f && (type_mask & sensor_attack::DET_CUSUM)) {
                 max_deviation = _param_iv_gps_v_mshift.get();
             }
 
-            if (_param_iv_gps_v_ema_h.get() > 0.f && (_param_atk_stealth_type.get() & sensor_attack::DET_EWMA)) {
+            if (_param_iv_gps_v_ema_h.get() > 0.f && (type_mask & sensor_attack::DET_EWMA)) {
                 // Consider set the max deviation to EMA if we attempt to circumvent them
                 // If not (stealthy_attack_flag & sensor_attack::DET_CUSUM) then we replace cusum limit with ema
                 max_deviation = (PX4_ISFINITE(max_deviation)) ?
                                 fminf(max_deviation, _param_iv_gps_v_ema_h.get()) : _param_iv_gps_v_ema_h.get();
+            }
+
+            if (type_mask & sensor_attack::DET_TIME_WINDOW &&
+                (_param_iv_gps_v_l1tw_h.get() > 0.f) && (_param_iv_gps_v_rst_cnt.get() >= 1)) {
+                const float l1tw_deviation = _param_iv_gps_v_l1tw_h.get() / _param_iv_gps_v_rst_cnt.get();
+                if (PX4_ISFINITE(max_deviation)) {
+                    max_deviation = fminf(max_deviation, l1tw_deviation);
+                } else {
+                    max_deviation = l1tw_deviation;
+                }
             }
 
             max_deviation *= _param_ekf2_gps_v_noise.get();
@@ -113,15 +123,25 @@ namespace sensors
     {
         // Check if start condition satisfied
         bool attack_applied = false;
-        bool start_condition = (_param_atk_stealth_type.get() != sensor_attack::NO_STEALTHY) &&
+        const uint8_t type_mask = _param_atk_stealth_type.get();
+        bool start_condition = (type_mask != sensor_attack::NO_STEALTHY) &&
                                (_param_atk_apply_type.get() & sensor_attack::ATK_GPS_POS);
 
         if (start_condition) {
             float max_deviation = NAN;
 
-            // TODO consider time window attack
-            if (_param_iv_gps_p_mshift.get() > 0.f && (_param_atk_stealth_type.get() & sensor_attack::DET_CUSUM)) {
+            if (_param_iv_gps_p_mshift.get() > 0.f && (type_mask & sensor_attack::DET_CUSUM)) {
                 max_deviation = _param_iv_gps_p_mshift.get();
+            }
+
+            if (type_mask & sensor_attack::DET_TIME_WINDOW &&
+                (_param_iv_gps_p_l1tw_h.get() > 0.f) && (_param_iv_gps_p_rst_cnt.get() >= 1)) {
+                const float l1tw_deviation = _param_iv_gps_p_l1tw_h.get() / _param_iv_gps_p_rst_cnt.get();
+                if (PX4_ISFINITE(max_deviation)) {
+                    max_deviation = fminf(max_deviation, l1tw_deviation);
+                } else {
+                    max_deviation = l1tw_deviation;
+                }
             }
 
             max_deviation *= _param_ekf2_gps_p_noise.get();
