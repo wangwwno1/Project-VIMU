@@ -217,8 +217,8 @@ namespace sensors
 
         // Publish test ratios = error / variances
         sensor_gps_error_s gps_test_ratios{};
-        _last_pos_error.edivide(_last_pos_vars).copyTo(gps_test_ratios.position_error);
-        _last_vel_error.edivide(_last_vel_vars).copyTo(gps_test_ratios.velocity_error);
+        _last_pos_error.edivide(_last_pos_vars.sqrt()).copyTo(gps_test_ratios.position_error);
+        _last_vel_error.edivide(_last_vel_vars.sqrt()).copyTo(gps_test_ratios.velocity_error);
         gps_test_ratios.timestamp = hrt_absolute_time();
         _sensor_gps_error_ratios_pub.publish(gps_test_ratios);
     }
