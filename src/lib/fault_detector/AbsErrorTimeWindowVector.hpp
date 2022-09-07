@@ -73,7 +73,7 @@ namespace fault_detector {
                     _normal_sample_counter = 0;
                     _safe_counter = 0;
                     _is_normal = false;
-                    _offset_ready = false
+                    _offset_ready = false;
                 } else {
                     if (!_is_normal) _safe_counter++;
                     // Only count error offsets in normal
@@ -98,10 +98,10 @@ namespace fault_detector {
                 error_offset = _error_offset(0);
                 _error_offset.setAll(+Type(0.));
                 _offset_ready = false;
-                return true
+                return true;
             }
 
-            return false
+            return false;
         }
 
         bool update_offset(VectorN &error_offset) {
@@ -109,10 +109,10 @@ namespace fault_detector {
                 error_offset = _error_offset;
                 _error_offset.setAll(+Type(0.));
                 _offset_ready = false;
-                return true
+                return true;
             }
 
-            return false
+            return false;
         }
 
         const Type test_ratio() const {
@@ -128,9 +128,9 @@ namespace fault_detector {
         VectorN _abs_error_cusum;
         VectorN _error_cusum;
         VectorN _error_offset;
-        uint32_t _sample_counter{0};
-        uint32_t _normal_sample_counter{0};
-        uint32_t _safe_counter{0};
+        int32_t _sample_counter{0};
+        int32_t _normal_sample_counter{0};
+        int32_t _safe_counter{0};
         bool _is_normal{true};
         bool _is_running{false};
         bool _offset_ready{false};
