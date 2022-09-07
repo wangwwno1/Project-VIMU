@@ -44,7 +44,7 @@ namespace sensors {
         const Vector3f error_ratio = error_residuals * inv_gyr_noise;
         _gyro_validator.validate(error_ratio);
 
-        if (_gyro_validator.test_ratio() > 1.f) {
+        if (_gyro_validator.test_ratio() >= 1.f) {
             // Declare gyro failure immediately by add error count
             gyro.error_count = math::max(gyro.error_count + NORETURN_ERRCOUNT, NORETURN_ERRCOUNT + 1U);
         }
@@ -101,7 +101,7 @@ namespace sensors {
         const Vector3f error_ratio = error_residuals * inv_acc_noise;
         _accel_validator.validate(error_ratio);
 
-        if (_accel_validator.test_ratio() > 1.f) {
+        if (_accel_validator.test_ratio() >= 1.f) {
             // Declare accel failure immediately by add error count
             accel.error_count = math::max(accel.error_count + NORETURN_ERRCOUNT, NORETURN_ERRCOUNT + 1U);
         }
