@@ -1270,10 +1270,10 @@ void EKF2::PublishStates(const hrt_abstime &timestamp)
 	states.timestamp = _replay_mode ? timestamp : hrt_absolute_time();
 	_estimator_states_pub.publish(states);
 
-    // Inhibit publish because it will be published at SoftwareSensor
-//    if (use_reference()) {
-//        _vehicle_reference_states_pub.publish(states);
-//    }
+    // Also publish reference state if using reference imu
+    if (use_reference()) {
+        _vehicle_reference_states_pub.publish(states);
+    }
 }
 
 void EKF2::PublishOffsetStates(const hrt_abstime &timestamp)
