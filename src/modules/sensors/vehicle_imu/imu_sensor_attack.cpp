@@ -85,7 +85,18 @@ namespace sensors {
             if (type_mask & sensor_attack::DET_CUSUM && (_param_iv_acc_mshift.get() > 0.f)) {
                 max_deviation = _param_iv_acc_mshift.get();
             }
-            // We do not apply other stealthy attack because we won't use other detectors
+
+            // We do not apply ema stealthy attack because we won't use ema detector for accelerometer
+
+            if (type_mask & sensor_attack::DET_TIME_WINDOW &&
+                (_param_iv_acc_l1tw_h.get() > 0.f) && (_param_iv_acc_rst_cnt.get() >= 1)) {
+                const float l1tw_deviation = _param_iv_acc_l1tw_h.get() / _param_iv_acc_rst_cnt.get();
+                if (PX4_ISFINITE(max_deviation)) {
+                    max_deviation = fminf(max_deviation, l1tw_deviation);
+                } else {
+                    max_deviation = l1tw_deviation;
+                }
+            }
 
             if (!PX4_ISFINITE(max_deviation)) {
                 // No applicable stealthy attack, fallback to non-stealthy (overt) attack

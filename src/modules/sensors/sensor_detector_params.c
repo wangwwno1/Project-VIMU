@@ -227,6 +227,36 @@ PARAM_DEFINE_FLOAT(IV_ACC_CSUM_H, 0.f);
 PARAM_DEFINE_FLOAT(IV_ACC_MSHIFT, 1.f);
 
 /**
+ * Control limit for Absolute Error Time Window (L1TW) validation for acceleration, expressed in standard deviations.
+ *
+ * Set zero to inhibit validation.
+ *
+ * @group Innovation Validator
+ * @min 0.0
+ * @reboot_required true
+ * @decimal 4
+ */
+PARAM_DEFINE_FLOAT(IV_ACC_L1TW_H, 0.f);
+
+/**
+ * Minimum samples required before reset accelerometer L1TW detector.
+ *
+ * @group Innovation Validator
+ * @min 1
+ * @reboot_required true
+ */
+PARAM_DEFINE_INT32(IV_ACC_RST_CNT, 1);
+
+/**
+ * Minimum consecutive normal samples before declare the sensor is normal.
+ *
+ * @group Innovation Validator
+ * @min 1
+ * @reboot_required true
+ */
+PARAM_DEFINE_INT32(IV_ACC_CD_CNT, 1);
+
+/**
  * Rate gyro noise for innovation validation, it is equal to the standard deviation of the residual between virtual gyro and real gyro.
  *
  * @group Innovation Validator
@@ -322,4 +352,4 @@ PARAM_DEFINE_INT32(IV_GYR_RST_CNT, 1);
  * @min 1
  * @reboot_required true
  */
-PARAM_DEFINE_INT32(IV_GYR_SAFE_CNT, 1);
+PARAM_DEFINE_INT32(IV_GYR_CD_CNT, 1);
