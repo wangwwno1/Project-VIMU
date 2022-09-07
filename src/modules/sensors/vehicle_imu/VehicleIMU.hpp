@@ -62,7 +62,8 @@
 #include <uORB/topics/vehicle_imu_status.h>
 
 using namespace time_literals;
-using namespace fault_detector;
+using GyroValidator = fault_detector::EMACuSumVector3f;
+using AccelValidator = fault_detector::CuSumVector3f;
 
 namespace sensors
 {
@@ -129,10 +130,10 @@ private:
     uORB::Subscription _reference_gyro_sub{ORB_ID(reference_gyro)};
 
 
-    EMACuSumParams<float>       _gyro_validator_params{};
-    CuSumParams<float>          _accel_validator_params{};
-    EMACuSumVector3f            _gyro_validator{&_gyro_validator_params};
-    CuSumVector3f               _accel_validator{&_accel_validator_params};
+    GyroValidator::ParamStruct  _gyro_validator_params{};
+    AccelValidator::ParamStruct _accel_validator_params{};
+    GyroValidator               _gyro_validator{&_gyro_validator_params};
+    AccelValidator              _accel_validator{&_accel_validator_params};
     sensor_gyro_s               _last_ref_gyro{};
     sensor_gyro_errors_s        _last_gyro_errors{};
     sensor_accel_s              _last_ref_accel{};
