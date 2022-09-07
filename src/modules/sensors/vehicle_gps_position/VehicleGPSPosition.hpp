@@ -59,10 +59,8 @@
 #include "gps_blending.hpp"
 
 using namespace time_literals;
-using fault_detector::CuSumParams;
-using fault_detector::CuSumVector3f;
-using fault_detector::EMACuSumParams;
-using fault_detector::EMACuSumVector3f;
+using GPSPosValidator = fault_detector::CuSumVector3f;
+using GPSVelValidator = fault_detector::EMACuSumVector3f;
 using matrix::Quatf;
 
 namespace sensors
@@ -148,10 +146,10 @@ private:
 
     Vector3f            _gps_pos_body{};
 
-    CuSumParams<float>      _pos_validator_params{};
-    EMACuSumParams<float>   _vel_validator_params{};
-    CuSumVector3f           _pos_validator{&_pos_validator_params};
-    EMACuSumVector3f        _vel_validator{&_vel_validator_params};
+    GPSPosValidator::ParamStruct    _pos_validator_params{};
+    GPSVelValidator::ParamStruct    _vel_validator_params{};
+    GPSPosValidator                 _pos_validator{&_pos_validator_params};
+    GPSVelValidator                 _vel_validator{&_vel_validator_params};
 
     hrt_abstime         _last_health_status_publish{0};
     hrt_abstime         _last_healthy{true};
