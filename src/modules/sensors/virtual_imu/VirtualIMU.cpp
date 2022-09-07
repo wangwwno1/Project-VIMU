@@ -193,10 +193,12 @@ void VirtualIMU::Run()
             _accel_integrator.put(_body_acceleration - _accel_bias, _rate_ctrl_interval);
             _gyro_integrator.put(_ekf.getAngularRate(), _rate_ctrl_interval);
 
-            // Publish Angular Rate & Acceleration
-            // The Rate Control frequency are faster than IMU integral, so we publish it every time actuator output generated
-            PublishAngularVelocityAndAcceleration();
-            PublishSensorReference();
+            if (_copter_status.publish) {
+                // Publish Angular Rate & Acceleration
+                // The Rate Control frequency are faster than IMU integral, so we publish it every time actuator output generated
+                PublishAngularVelocityAndAcceleration();
+                PublishSensorReference();
+            }
         }
     }
 
