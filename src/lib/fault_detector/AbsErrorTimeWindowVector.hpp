@@ -61,9 +61,9 @@ namespace fault_detector {
 
                 // validate the ratio
                 _is_running = true;
-                const VectorN error = innov_ratios / _param->control_limit - _error_offset;
+                const VectorN error = innov_ratios / _param->control_limit;
 
-                _abs_error_cusum += error.abs();
+                _abs_error_cusum += (error - _error_offset).abs();
                 _abs_error_cusum = matrix::constrain(_abs_error_cusum, Type(0.), +Type(1.05));
                 _sample_counter++;
 
