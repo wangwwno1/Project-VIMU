@@ -78,6 +78,7 @@ namespace sensors {
             const float variance = math::sq(fmaxf(_param_ekf2_baro_noise.get(), 0.01f)) + _ref_baro_delayed.alt_var;
             _baro_test_ratios[instance] = (ref_alt - altitude) / sqrt(variance);
             _baro_validators[instance]->validate(_baro_test_ratios[instance]);
+            _status_updated = true;
         }
     }
 }  // sensors
