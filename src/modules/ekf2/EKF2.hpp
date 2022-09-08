@@ -300,7 +300,7 @@ private:
     uint8_t _last_valid_imu{INVALID_INSTANCE};
     uint8_t _last_bias_source{INVALID_INSTANCE};
 
-	uint32_t _filter_control_status{0};
+    uint64_t _filter_control_status{0};
 	uint32_t _filter_fault_status{0};
 	uint32_t _innov_check_fail_status{0};
 
@@ -575,7 +575,7 @@ private:
 
 		// Used by EKF-GSF experimental yaw estimator
 		(ParamExtFloat<px4::params::EKF2_GSF_TAS>)
-		_param_ekf2_gsf_tas_default,	///< default value of true airspeed assumed during fixed wing operation
+		_param_ekf2_gsf_tas_default	///< default value of true airspeed assumed during fixed wing operation
 
         (ParamExtFloat<px4::params::IV_MAG_CSUM_H>)  _param_iv_mag_csum_h,
         (ParamExtFloat<px4::params::IV_MAG_MSHIFT>)  _param_iv_mag_mshift

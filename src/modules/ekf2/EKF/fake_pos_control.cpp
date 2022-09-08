@@ -49,7 +49,7 @@ void Ekf::controlFakePosFusion()
         // Start fake pos fusion after dead-reckoning timeout according to commit f753b92
 		const bool starting_conditions_passing = continuing_conditions_passing && _deadreckon_time_exceeded;
 
-		if (_using_synthetic_position) {
+		if (_control_status.flags.fake_pos) {
 			if (continuing_conditions_passing) {
 				fuseFakePosition();
 
@@ -79,8 +79,8 @@ void Ekf::controlFakePosFusion()
 
 void Ekf::startFakePosFusion()
 {
-	if (!_using_synthetic_position) {
-		_using_synthetic_position = true;
+	if (!_control_status.flags.fake_pos) {
+        _control_status.flags.fake_pos = true;
 		_fuse_hpos_as_odom = false; // TODO: needed?
 		resetFakePosFusion();
 	}
@@ -96,7 +96,7 @@ void Ekf::resetFakePosFusion()
 
 void Ekf::stopFakePosFusion()
 {
-	_using_synthetic_position = false;
+    _control_status.flags.fake_pos = false;
 }
 
 void Ekf::fuseFakePosition()
