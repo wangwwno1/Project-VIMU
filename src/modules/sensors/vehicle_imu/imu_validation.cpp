@@ -55,9 +55,9 @@ namespace sensors {
             if (idx == 0) {
                 _last_gyro_errors.timestamp_start = hrt_absolute_time();
             }
-            _last_gyro_errors.x[idx] = error_ratio(0);
-            _last_gyro_errors.y[idx] = error_ratio(1);
-            _last_gyro_errors.z[idx] = error_ratio(2);
+            _last_gyro_errors.x[idx] = error_residuals(0);
+            _last_gyro_errors.y[idx] = error_residuals(1);
+            _last_gyro_errors.z[idx] = error_residuals(2);
             _last_gyro_errors.test_ratio[idx] = _gyro_validator.test_ratio();
 
         }
@@ -112,9 +112,9 @@ namespace sensors {
             if (idx == 0) {
                 _last_accel_errors.timestamp_start = hrt_absolute_time();
             }
-            _last_accel_errors.x[idx] = error_ratio(0);
-            _last_accel_errors.y[idx] = error_ratio(1);
-            _last_accel_errors.z[idx] = error_ratio(2);
+            _last_accel_errors.x[idx] = error_residuals(0);
+            _last_accel_errors.y[idx] = error_residuals(1);
+            _last_accel_errors.z[idx] = error_residuals(2);
             _last_accel_errors.test_ratio[idx] = _accel_validator.test_ratio();
 
         }
