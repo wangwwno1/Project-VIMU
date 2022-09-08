@@ -134,16 +134,6 @@ PARAM_DEFINE_FLOAT(VM_MOTOR_TAU, 0.005f);
 PARAM_DEFINE_FLOAT(VM_DRAG_FACTOR, 0.05f);
 
 /**
- *  Rate gyro noise for covariance prediction - used by virtual imu and related ekf.
- *
- * @min 0.0001
- * @max 0.1
- * @decimal 4
- * @group Vehicle Model
- */
-PARAM_DEFINE_FLOAT(VM_RATE_NOISE, 0.015f);
-
-/**
  * Process noise for vehicle model angular acceleration
  *
  * @unit rad/s^2
