@@ -134,6 +134,7 @@ private:
 	unsigned _last_failover_count{0};
 
     bool                        _forced_using_soft_baro{false};
+    bool                        _status_updated{false};
     BaroValidator::ParamStruct  _baro_hgt_params{};
     BaroValidator               *_baro_validators[MAX_SENSOR_COUNT] {nullptr};
     float                       _baro_test_ratios[MAX_SENSOR_COUNT] {0};
