@@ -8,7 +8,7 @@ using namespace matrix;
 
 namespace sensors {
     void VehicleIMU::ValidateGyroData(sensor_gyro_s &gyro) {
-        const hrt_abstime interval_us = _imu_integration_interval_us;
+        const hrt_abstime interval_us = _imu_integration_interval_us + 200_us;
         const hrt_abstime validate_start = hrt_absolute_time();
 
         sensor_gyro_s ref_gyro{};
@@ -65,7 +65,7 @@ namespace sensors {
     }
 
     void VehicleIMU::ValidateAccelData(sensor_accel_s &accel) {
-        const hrt_abstime interval_us = _imu_integration_interval_us;
+        const hrt_abstime interval_us = _imu_integration_interval_us + 200_us;
         const hrt_abstime validate_start = hrt_absolute_time();
 
         sensor_accel_s ref_accel{};
