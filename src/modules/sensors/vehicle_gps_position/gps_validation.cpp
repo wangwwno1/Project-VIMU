@@ -11,8 +11,9 @@ namespace sensors
 {
     void VehicleGPSPosition::UpdateReferenceState() {
         if (_ref_gps_buffer == nullptr) {
-            const uint8_t buffer_length = roundf(fmaxf(_param_ekf2_gps_delay.get() * 1.5f / (_param_ekf2_predict_us.get() * 1.e-3f), 2.f));
-            RingBuffer<RefGpsSample> *inst = new RingBuffer<RefGpsSample> (buffer_length);
+            const uint8_t buffer_length = roundf(fmaxf(_param_ekf2_gps_delay.get() * 1.5f / (_param_ekf2_predict_us.get() * 1.e-3f), 1.f));
+            // +1 because we need to take the first sample newer than the gps
+            RingBuffer<RefGpsSample> *inst = new RingBuffer<RefGpsSample> (buffer_length + 1);
             if (inst && inst->valid()) {
                 _ref_gps_buffer = inst;
                 PX4_INFO("Ref GPS buffer allocated");
@@ -26,7 +27,6 @@ namespace sensors
 
         if (!_reference_states_sub.registered()) {
             _reference_states_sub.registerCallback();
-            return;
         }
 
         // Check global origin Update first
@@ -99,13 +99,21 @@ namespace sensors
             }
 
             const float dt_ekf_avg = (_ref_gps_delayed.time_us == 0) ? _ref_gps_delayed.dt_ekf_avg : 0.f;
-            hrt_abstime actual_timestamp = gps_position.timestamp;
-            actual_timestamp -= static_cast<hrt_abstime>(_param_ekf2_gps_delay.get() * 1e3f);
-            actual_timestamp -= static_cast<hrt_abstime>(dt_ekf_avg * 5e5f);
-            const bool ref_gps_ready = _ref_gps_buffer->pop_first_older_than(gps_position.timestamp, &_ref_gps_delayed);
+            const hrt_abstime time_delay = static_cast<hrt_abstime>(_param_ekf2_gps_delay.get() * 1e3f) +
+                    static_cast<hrt_abstime>(dt_ekf_avg * 5e5f);
+            const hrt_abstime actual_timestamp = gps_position.timestamp - time_delay;
+            // In EKF we take the first gps sample older than delayed imu sample
+            // _gps_data_ready = _gps_buffer->pop_first_older_than(_imu_sample_delayed.time_us, &_gps_sample_delayed);
+            // So at there we take the first reference gps NEWER than gps sample
+            // First discard all sample older than gps_position
+            _ref_gps_buffer->pop_first_older_than(actual_timestamp, &_ref_gps_delayed);
+            if (_ref_gps_buffer->get_oldest().time_us != 0) {
+                // We have the data, take the oldest sample
+                _ref_gps_buffer->pop_first_older_than(_ref_gps_buffer->get_oldest().time_us,&_ref_gps_delayed);
+            }
+            const bool ref_gps_ready = (_ref_gps_delayed.time_us != 0) && (hrt_elapsed_time(&_ref_gps_delayed.time_us) < time_delay);
 
             if (_global_origin.isInitialized() && ref_gps_ready) {
-
                 // State Variances
                 // Velocity Covariances in NED inertial frame
                 const float vel_obs_var = math::sq(fmaxf(gps_position.s_variance_m_s, _param_ekf2_gps_v_noise.get()));
