@@ -144,6 +144,7 @@ set(msg_files
 	sensor_accel.msg
 	sensor_accel_fifo.msg
 	sensor_baro.msg
+    sensor_baro_error.msg
 	sensor_combined.msg
 	sensor_correction.msg
 	sensor_gps.msg
