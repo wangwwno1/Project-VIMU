@@ -40,7 +40,6 @@ void Ekf::updateAerodynamicWrench() {
     // Calculate the drag factor relative to rel_wind_body
     // and leave the sign to the last.
     Vector3f drag_coef{0.f, 0.f, 0.f};
-    // TODO Add bcoef_z
     if (using_bcoef_x || using_bcoef_y) {
         const float total_airspeed = rel_wind_body.norm();
         if (using_bcoef_x) {
