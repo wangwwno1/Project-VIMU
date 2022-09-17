@@ -270,13 +270,13 @@ void VirtualIMU::UpdateIMUData() {
 
 void VirtualIMU::UpdateSensorBias() {
     estimator_sensor_bias_s bias{};
-    if (_estimator_sensor_bias_sub.update(&bias) && _copter_status.in_air) {
+    if (_copter_status.in_air && _estimator_sensor_bias_sub.update(&bias)) {
         // Update gyro bias after in air
-        if (bias.gyro_bias_valid && bias.gyro_device_id == 0) {
+        if (bias.gyro_device_id == 0) {
             _ekf.setGyroBias(0.95f * _ekf.getGyroBias() + 0.05f * matrix::Vector3f(bias.gyro_bias));
         }
 
-        if (bias.accel_bias_valid && bias.accel_device_id == 0) {
+        if (bias.accel_device_id == 0) {
             _accel_bias = matrix::Vector3f(bias.accel_bias);
         }
     }
