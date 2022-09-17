@@ -670,6 +670,10 @@ void EKF2::Run()
 			PublishInnovationVariances(now);
 			PublishOpticalFlowVel(now);
 			PublishStates(now);
+            if (use_reference()) {
+                // Also publish reference state if using reference imu
+                PublishReferenceState(now);
+            }
             PublishOffsetStates(now);
 			PublishStatus(now);
 			PublishStatusFlags(now);
@@ -699,6 +703,16 @@ void EKF2::Run()
 
 	// re-schedule as backup timeout
 	ScheduleDelayed(100_ms);
+}
+
+void EKF2::PublishReferenceState(const hrt_abstime &timestamp) {
+    estimator_states_s states;
+    states.timestamp_sample = _ekf.get_imu_sample_delayed().time_us;
+    states.n_states = Ekf::_k_num_states;
+    _ekf.getStateAtFusionHorizonAsVector().copyTo(states.states);
+    _ekf.covariances_diagonal().copyTo(states.covariances);
+    states.timestamp = _replay_mode ? timestamp : hrt_absolute_time();
+    _vehicle_reference_states_pub.publish(states);
 }
 
 void EKF2::PublishAerodynamicWrench(const hrt_abstime &timestamp) {
@@ -1269,11 +1283,6 @@ void EKF2::PublishStates(const hrt_abstime &timestamp)
 	_ekf.covariances_diagonal().copyTo(states.covariances);
 	states.timestamp = _replay_mode ? timestamp : hrt_absolute_time();
 	_estimator_states_pub.publish(states);
-
-    // Also publish reference state if using reference imu
-    if (use_reference()) {
-        _vehicle_reference_states_pub.publish(states);
-    }
 }
 
 void EKF2::PublishOffsetStates(const hrt_abstime &timestamp)

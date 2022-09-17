@@ -158,6 +158,7 @@ private:
 	void PublishOpticalFlowVel(const hrt_abstime &timestamp);
 	void PublishSensorBias(const hrt_abstime &timestamp);
 	void PublishStates(const hrt_abstime &timestamp);
+    void PublishReferenceState(const hrt_abstime &timestamp);
     void PublishOffsetStates(const hrt_abstime &timestamp);
 	void PublishStatus(const hrt_abstime &timestamp);
 	void PublishStatusFlags(const hrt_abstime &timestamp);
