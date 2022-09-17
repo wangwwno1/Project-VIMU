@@ -92,7 +92,6 @@ class VirtualIMU : public ModuleParams, public px4::ScheduledWorkItem
 {
 public:
     VirtualIMU();
-    VirtualIMU(bool delayed_motor_response);
 	~VirtualIMU() override;
 
     bool Start();
@@ -125,7 +124,6 @@ private:
 
     static constexpr float sq(float x) { return x * x; };
 
-    bool _delayed_motor_response{true};
     bool _callback_registered{false};
 
     // Copter flight status
