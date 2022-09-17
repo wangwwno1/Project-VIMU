@@ -48,11 +48,6 @@ VirtualIMU::VirtualIMU():
 {
 }
 
-VirtualIMU::VirtualIMU(bool delayed_motor_response): VirtualIMU()
-{
-    _delayed_motor_response = delayed_motor_response;
-}
-
 VirtualIMU::~VirtualIMU()
 {
     Stop();
@@ -321,7 +316,7 @@ void VirtualIMU::ParameterUpdate(bool force) {
             _rate_ctrl_interval = 1.f / rate_control_rate_hz;
             _rate_ctrl_interval_us = 1e6f / rate_control_rate_hz;
 
-            if (_delayed_motor_response && (_phys_model_params.motor_time_constant > 0.f)) {
+            if (_phys_model_params.motor_time_constant > 0.f) {
                 _actuator_state_lpf.setAlpha(1.f - std::exp(- _rate_ctrl_interval / _phys_model_params.motor_time_constant));
             } else {
                 _actuator_state_lpf.setAlpha(1.f);
