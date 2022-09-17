@@ -52,6 +52,7 @@
 #include <uORB/topics/differential_pressure.h>
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/sensor_baro.h>
+#include <uORB/topics/sensor_baro_error.h>
 #include <uORB/topics/sensors_status.h>
 #include <uORB/topics/vehicle_air_data.h>
 
@@ -104,8 +105,7 @@ private:
 	static constexpr int MAX_SENSOR_COUNT = 4;
 
 	uORB::Publication<sensors_status_s> _sensors_status_baro_pub{ORB_ID(sensors_status_baro)};
-    uORB::Publication<sensors_status_s> _sensors_status_baro_error_ratios_pub{ORB_ID(sensors_status_baro_error_ratios)};
-    uORB::Publication<sensors_status_s> _sensors_status_baro_test_ratios_pub{ORB_ID(sensors_status_baro_test_ratios)};
+    uORB::Publication<sensor_baro_error_s> _sensor_baro_error_pub{ORB_ID(sensor_baro_error)};
 
 	uORB::Publication<vehicle_air_data_s> _vehicle_air_data_pub{ORB_ID(vehicle_air_data)};
 
@@ -135,11 +135,11 @@ private:
 
     bool                        _forced_using_soft_baro{false};
     bool                        _status_updated{false};
+    sensor_baro_error_s         _baro_error_status{};
     BaroValidator::ParamStruct  _baro_hgt_params{};
     BaroValidator               *_baro_validators[MAX_SENSOR_COUNT] {nullptr};
-    float                       _baro_test_ratios[MAX_SENSOR_COUNT] {0};
     RefBaroSample               _ref_baro_delayed{};
-    RingBuffer<RefBaroSample>   *_ref_baro_buffer{nullptr};
+    RingBuffer<RefBaroSample>   *_ref_baro_buffer[MAX_SENSOR_COUNT]{nullptr};
 
 	uint64_t _timestamp_sample_sum[MAX_SENSOR_COUNT] {0};
 	float _data_sum[MAX_SENSOR_COUNT] {};

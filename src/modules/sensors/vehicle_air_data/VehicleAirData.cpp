@@ -78,8 +78,10 @@ void VehicleAirData::Stop()
 
     _reference_states_sub.unregisterCallback();
 
-    if (_ref_baro_buffer) {
-        delete _ref_baro_buffer;
+    for (auto &buffer : _ref_baro_buffer) {
+        if (buffer) {
+            delete buffer;
+        }
     }
 
     for (auto &validator : _baro_validators) {
@@ -257,6 +259,7 @@ void VehicleAirData::Run()
 
 			_selected_sensor_sub_index = best_index;
 			_sensor_sub[_selected_sensor_sub_index].registerCallback();
+            _status_updated = _ref_baro_delayed.time_us != 0;  // Update error status because primary instance has been changed.
 		}
 	}
 
@@ -296,8 +299,8 @@ void VehicleAirData::Run()
 
                         if (!healthy) {
                             // fallback to reference baro
-                            const float hgt_offset = (_ref_baro_buffer->get_newest().time_us != 0) ?
-                                    _ref_baro_buffer->get_newest().hgt_offset : _ref_baro_delayed.hgt_offset;
+                            const float hgt_offset = (_ref_baro_buffer[instance]->get_newest().time_us != 0) ?
+                                    _ref_baro_buffer[instance]->get_newest().hgt_offset : _ref_baro_delayed.hgt_offset;
                             altitude = _ref_baro_delayed.alt_meter + hgt_offset;
                             pressure_pa = AltitudeToPressure(altitude, temperature);
                             device_id = 0;
@@ -485,29 +488,15 @@ void VehicleAirData::UpdateStatus()
 		_sensors_status_baro_pub.publish(sensors_status);
 
         if (_status_updated) {
-            // publish baro test ratios for debug
+            // publish baro error status
+            _baro_error_status.device_id_primary = _calibration[_selected_sensor_sub_index].device_id();
             for (int sensor_index = 0; sensor_index < MAX_SENSOR_COUNT; sensor_index++) {
-                if (_baro_validators[sensor_index]) {
-                    sensors_status.inconsistency[sensor_index] = _baro_validators[sensor_index]->test_ratio();
-                } else {
-                    sensors_status.inconsistency[sensor_index] = NAN;
-                }
+                _baro_error_status.device_ids[sensor_index] = _calibration[sensor_index].device_id();
             }
 
-            sensors_status.timestamp = hrt_absolute_time();
-            _sensors_status_baro_test_ratios_pub.publish(sensors_status);
+            _baro_error_status.timestamp = hrt_absolute_time();
+            _sensor_baro_error_pub.publish(_baro_error_status);
 
-            // publish baro error ratios for debug
-            for (int sensor_index = 0; sensor_index < MAX_SENSOR_COUNT; sensor_index++) {
-                if (PX4_ISFINITE(_baro_test_ratios[sensor_index])) {
-                    sensors_status.inconsistency[sensor_index] = _baro_test_ratios[sensor_index];
-                } else {
-                    sensors_status.inconsistency[sensor_index] = NAN;
-                }
-            }
-
-            sensors_status.timestamp = hrt_absolute_time();
-            _sensors_status_baro_error_ratios_pub.publish(sensors_status);
             _status_updated = false;
         }
 	}
