@@ -209,6 +209,7 @@ namespace sensors
     void VehicleGPSPosition::PublishErrorStatus() {
         // Publish error between sensor and reference
         sensor_gps_error_s gps_error{};
+        gps_error.timestamp_reference = _ref_gps_delayed.time_us;
         _last_pos_error.copyTo(gps_error.position_error);
         _last_vel_error.copyTo(gps_error.velocity_error);
         gps_error.timestamp = hrt_absolute_time();
@@ -216,6 +217,7 @@ namespace sensors
 
         // Publish variances from reference estimator
         sensor_gps_error_s gps_variances{};
+        gps_variances.timestamp_reference = _ref_gps_delayed.time_us;
         _last_pos_vars.copyTo(gps_variances.position_error);
         _last_vel_vars.copyTo(gps_variances.velocity_error);
         gps_variances.timestamp = hrt_absolute_time();
@@ -223,6 +225,7 @@ namespace sensors
 
         // Publish test ratios = error / variances
         sensor_gps_error_s gps_test_ratios{};
+        gps_test_ratios.timestamp_reference = _ref_gps_delayed.time_us;
         const Vector3f pos_test_ratios = _last_pos_error.edivide(_last_pos_vars.sqrt());
         const Vector3f vel_test_ratios = _last_vel_error.edivide(_last_vel_vars.sqrt());
         pos_test_ratios.copyTo(gps_test_ratios.position_error);
