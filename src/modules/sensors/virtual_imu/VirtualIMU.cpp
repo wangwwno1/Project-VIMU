@@ -369,11 +369,12 @@ void VirtualIMU::PublishAngularVelocityAndAcceleration() {
 
 void VirtualIMU::PublishSensorReference() {
     // Publish Reference Accelerometer & Gyroscope for IMU Detection
+    const Vector3f accels = _body_acceleration - _accel_bias;
     sensor_accel_s ref_accel{};
     ref_accel.timestamp_sample = _last_update_us;
-    ref_accel.x = _body_acceleration(0);
-    ref_accel.y = _body_acceleration(1);
-    ref_accel.z = _body_acceleration(2);
+    ref_accel.x = accels(0);
+    ref_accel.y = accels(1);
+    ref_accel.z = accels(2);
     ref_accel.samples = 1;
     ref_accel.timestamp = hrt_absolute_time();
     _reference_accel_pub.publish(ref_accel);
