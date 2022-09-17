@@ -8,7 +8,7 @@
  * @reboot_required true
  * @unit us
  */
-PARAM_DEFINE_INT32(IV_IMU_DELAY_US, 200000);
+PARAM_DEFINE_INT32(IV_IMU_DELAY_US, 500000);
 
 /**
  * @min 1000
@@ -16,4 +16,4 @@ PARAM_DEFINE_INT32(IV_IMU_DELAY_US, 200000);
  * @reboot_required true
  * @unit us
  */
-PARAM_DEFINE_INT32(VIMU_PREDICT_US, 20000);
+PARAM_DEFINE_INT32(VIMU_PREDICT_US, 50000);
