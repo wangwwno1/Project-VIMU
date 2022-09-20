@@ -171,8 +171,27 @@ namespace sensors
                 _pos_validator.validate(_last_pos_error.edivide(pos_std_var));
                 _vel_validator.validate(_last_vel_error.edivide(vel_std_var));
 
+                if (_param_iv_ttd_delay_ms.get() > 0) {
+                    // Use delay for precise Time to Detection
+                    if (_attack_timestamp != 0 &&
+                        hrt_elapsed_time(&_attack_timestamp) >= (hrt_abstime) (_param_iv_ttd_delay_ms.get() * 1000)) {
+                        // Declare faulty immediately
+                        _gps_healthy = false;
+                    } else {
+                        _gps_healthy = true;
+                    }
+
+                } else {
+                    // Determine health status by validator status
+                    _gps_healthy = (_pos_validator.test_ratio() < 1.f) && (_vel_validator.test_ratio() < 1.f);
+                }
+
                 PublishSensorStatus();
-                PublishErrorStatus();
+                if (_param_iv_debug_log.get()) {
+                    // Also publish error status for debug & detector identification
+                    PublishErrorStatus();
+                }
+
                 // Replace corresponding information if gps is unhealthy
                 if ((_pos_validator.test_ratio() >= 1.f) || (_vel_validator.test_ratio() >= 1.f)) {
                     ReplaceGpsPosVelData(gps_position, ref_pos_board, ref_vel_board);
@@ -188,27 +207,25 @@ namespace sensors
     }
 
     void VehicleGPSPosition::PublishSensorStatus() {
-
-        bool healthy = (_pos_validator.test_ratio() < 1.f) && (_vel_validator.test_ratio() < 1.f);
-        if ((healthy != _last_healthy) || (hrt_elapsed_time(&_last_health_status_publish) > 1_s)) {
+        if (_param_iv_debug_log.get() || (_gps_healthy != _gps_healthy_prev) || (hrt_elapsed_time(&_last_health_status_publish) > 1_s)) {
             sensors_status_gps_s status{};
             status.pos_test_ratio = _pos_validator.test_ratio();
             status.vel_test_ratio = _vel_validator.test_ratio();
             status.test_ratio = fmaxf(_pos_validator.test_ratio(), _vel_validator.test_ratio());
-            status.healthy = healthy;
-            status.ref_gps_enabled = !healthy;
+            status.healthy = _gps_healthy;
+            status.ref_gps_enabled = !_gps_healthy;
             status.timestamp = hrt_absolute_time();
             _sensors_status_gps_pub.publish(status);
 
-            if (healthy != _last_healthy) {
-                if (healthy) {
+            if (_gps_healthy != _gps_healthy_prev) {
+                if (_gps_healthy) {
                     PX4_INFO("GPS fault diminished, switch back to GPS measurement.");
                 } else {
                     PX4_WARN("GPS fault detected, switch to reference GPS.");
                 }
             }
 
-            _last_healthy = healthy;
+            _gps_healthy_prev = _gps_healthy;
             _last_health_status_publish = status.timestamp;
         }
 

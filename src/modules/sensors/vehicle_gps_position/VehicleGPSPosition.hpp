@@ -155,7 +155,8 @@ private:
     int                 _attack_flag_prev{0};
     hrt_abstime         _attack_timestamp{0};
     hrt_abstime         _last_health_status_publish{0};
-    hrt_abstime         _last_healthy{true};
+    bool                _gps_healthy_prev{true};
+    bool                _gps_healthy{true};
 
     RingBuffer<RefGpsSample> *_ref_gps_buffer{nullptr};
     RefGpsSample        _ref_gps_delayed{};
@@ -204,6 +205,9 @@ private:
         (ParamExtFloat<px4::params::ATK_GPS_V_HDG>)     _param_atk_gps_v_hdg,
         (ParamExtFloat<px4::params::ATK_GPS_V_PITCH>)   _param_atk_gps_v_pitch,
 
+        (ParamInt<px4::params::IV_DEBUG_LOG>)           _param_iv_debug_log,
+        (ParamInt<px4::params::IV_DELAY_MASK>)          _param_iv_delay_mask,
+        (ParamInt<px4::params::IV_TTD_DELAY_MS>)        _param_iv_ttd_delay_ms,
         (ParamExtFloat<px4::params::IV_GPS_P_CSUM_H>)   _param_iv_gps_p_csum_h,
         (ParamExtFloat<px4::params::IV_GPS_P_MSHIFT>)   _param_iv_gps_p_mshift,
         (ParamFloat<px4::params::IV_GPS_P_L1TW_H>)      _param_iv_gps_p_l1tw_h,
