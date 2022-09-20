@@ -122,6 +122,17 @@ void VehicleGPSPosition::ParametersUpdate(bool force)
 		_gps_blending.setBlendingUseVPosAccuracy(_param_sens_gps_mask.get() & BLEND_MASK_USE_VPOS_ACC);
 		_gps_blending.setBlendingTimeConstant(_param_sens_gps_tau.get());
 		_gps_blending.setPrimaryInstance(_param_sens_gps_prime.get());
+
+        if (_param_atk_apply_type.get() != _attack_flag_prev) {
+            _attack_flag_prev = _param_atk_apply_type.get();
+            if (_attack_flag_prev & (sensor_attack::ATK_GPS_VEL | sensor_attack::ATK_GPS_POS)) {
+                // Enable attack, calculate new timestamp
+                _attack_timestamp = param_update.timestamp + (hrt_abstime) (_param_atk_countdown_ms.get() * 1000);
+            } else {
+                // Disable attack, reset timestamp
+                _attack_timestamp = 0;
+            }
+        }
 	}
 }
 

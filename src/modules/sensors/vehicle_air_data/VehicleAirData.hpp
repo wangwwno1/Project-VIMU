@@ -133,6 +133,8 @@ private:
 	DataValidatorGroup _voter{1};
 	unsigned _last_failover_count{0};
 
+    uint8_t _attack_flag_prev{0};
+    hrt_abstime _attack_timestamp{0};
     bool                        _forced_using_soft_baro{false};
     bool                        _status_updated{false};
     sensor_baro_error_s         _baro_error_status{};
@@ -168,7 +170,8 @@ private:
         (ParamFloat<px4::params::EKF2_BARO_NOISE>) _param_ekf2_baro_noise,
         ///< observation noise for barometric height fusion (m)
 
-        (ParamInt<px4::params::ATK_APPLY_TYPE>)      _param_atk_apply_type,
+        (ParamInt<px4::params::ATK_APPLY_TYPE>)         _param_atk_apply_type,
+        (ParamInt<px4::params::ATK_COUNTDOWN_MS>)       _param_atk_countdown_ms,
         (ParamExtFloat<px4::params::IV_BARO_CSUM_H>)    _param_iv_baro_csum_h,
         (ParamExtFloat<px4::params::IV_BARO_MSHIFT>)    _param_iv_baro_mshift
 	)

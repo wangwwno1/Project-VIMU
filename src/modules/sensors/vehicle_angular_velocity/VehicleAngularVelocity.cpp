@@ -487,6 +487,17 @@ void VehicleAngularVelocity::ParametersUpdate(bool force)
 		}
 
 #endif // !CONSTRAINED_FLASH
+
+        if (_param_atk_apply_type.get() != _attack_flag_prev) {
+            _attack_flag_prev = _param_atk_apply_type.get();
+            if (_attack_flag_prev & sensor_attack::ATK_MASK_GYRO) {
+                // Enable attack, calculate new timestamp
+                _attack_timestamp = param_update.timestamp + (hrt_abstime) (_param_atk_countdown_ms.get() * 1000);
+            } else {
+                // Disable attack, reset timestamp
+                _attack_timestamp = 0;
+            }
+        }
 	}
 }
 
@@ -713,9 +724,8 @@ void VehicleAngularVelocity::UpdateImuStatus() {
         if (_sensors_status_imu_sub.copy(&imu_status)) {
             for (uint8_t imu = 0; imu < MAX_SENSOR_COUNT; ++imu) {
                 if (_selected_sensor_device_id == imu_status.gyro_device_ids[imu]) {
-                    const bool apply_attack = _param_atk_apply_type.get() & sensor_attack::ATK_MASK_GYRO;
                     const bool is_affected = _param_atk_multi_imu.get() & (1 << imu);
-                    _apply_gyro_attack = apply_attack & is_affected;
+                    _apply_gyro_attack = (_attack_timestamp != 0) && is_affected;
                     _recovery_mode = !imu_status.gyro_healthy[imu];
                     break;
                 }

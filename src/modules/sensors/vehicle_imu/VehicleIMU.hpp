@@ -101,6 +101,7 @@ private:
 	void SensorCalibrationSaveAccel();
 	void SensorCalibrationSaveGyro();
 
+    bool attack_enabled(const uint8_t &attack_type);
     void ApplyGyroAttack(sensor_gyro_s &gyro);
     void ApplyGyroAttack(sensor_gyro_s &gyro, const sensor_gyro_s &ref_gyro);
     void ApplyAccelAttack(sensor_accel_s &accel);
@@ -139,6 +140,8 @@ private:
     sensor_accel_s              _last_ref_accel{};
     sensor_accel_errors_s       _last_accel_errors{};
 
+    int  _attack_flag_prev{0};
+    hrt_abstime _attack_timestamp{0};
 
     // Note: this value is borrowed from data_validator
     static const constexpr unsigned NORETURN_ERRCOUNT =
@@ -229,6 +232,7 @@ private:
 
         (ParamInt<px4::params::ATK_APPLY_TYPE>) _param_atk_apply_type,
         (ParamInt<px4::params::ATK_STEALTH_TYPE>) _param_atk_stealth_type,
+        (ParamInt<px4::params::ATK_COUNTDOWN_MS>) _param_atk_countdown_ms,
         (ParamInt<px4::params::ATK_MULTI_IMU>) _param_atk_multi_imu,
         (ParamFloat<px4::params::ATK_GYR_BIAS>) _param_atk_gyr_bias,
         (ParamFloat<px4::params::ATK_ACC_BIAS>) _param_atk_acc_bias,

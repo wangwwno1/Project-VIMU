@@ -6,9 +6,14 @@
 
 namespace sensors
 {
+    bool VehicleGPSPosition::attack_enabled(const uint8_t &attack_type) const {
+        return _param_atk_apply_type.get() & attack_type &&
+                _attack_timestamp != 0 && hrt_absolute_time() >= _attack_timestamp;
+    }
+
     void VehicleGPSPosition::ConductVelocitySpoofing(sensor_gps_s &gps_position)
     {
-        if (_param_atk_apply_type.get() & sensor_attack::ATK_GPS_VEL) {
+        if (attack_enabled(sensor_attack::ATK_GPS_VEL)) {
             if (!_vel_deviation) {
                 PX4_INFO("Initiate GPS Velocity Spoofing Attack");
                 _vel_deviation.reset(sensor_attack::CreateAttackInstance(_param_atk_gps_v_cls.get(), &_vel_atk_params));
@@ -37,17 +42,14 @@ namespace sensors
         // Check if start condition satisfied
         bool attack_applied = false;
         const uint8_t type_mask = _param_atk_stealth_type.get();
-        bool start_condition = (type_mask != sensor_attack::NO_STEALTHY) &&
-                               (_param_atk_apply_type.get() & sensor_attack::ATK_GPS_VEL);
-
-        if (start_condition) {
+        if (type_mask != sensor_attack::NO_STEALTHY && attack_enabled(sensor_attack::ATK_GPS_VEL)) {
             float max_deviation = NAN;
 
-            if (_param_iv_gps_v_mshift.get() > 0.f && (type_mask & sensor_attack::DET_CUSUM)) {
+            if (_param_iv_gps_v_mshift.get() > 0.f && type_mask & sensor_attack::DET_CUSUM) {
                 max_deviation = _param_iv_gps_v_mshift.get();
             }
 
-            if (_param_iv_gps_v_ema_h.get() > 0.f && (type_mask & sensor_attack::DET_EWMA)) {
+            if (_param_iv_gps_v_ema_h.get() > 0.f && type_mask & sensor_attack::DET_EWMA) {
                 // Consider set the max deviation to EMA if we attempt to circumvent them
                 // If not (stealthy_attack_flag & sensor_attack::DET_CUSUM) then we replace cusum limit with ema
                 max_deviation = (PX4_ISFINITE(max_deviation)) ?
@@ -55,7 +57,7 @@ namespace sensors
             }
 
             if (type_mask & sensor_attack::DET_TIME_WINDOW &&
-                (_param_iv_gps_v_l1tw_h.get() > 0.f) && (_param_iv_gps_v_rst_cnt.get() >= 1)) {
+                _param_iv_gps_v_l1tw_h.get() > 0.f && _param_iv_gps_v_rst_cnt.get() >= 1) {
                 const float l1tw_deviation = _param_iv_gps_v_l1tw_h.get() / _param_iv_gps_v_rst_cnt.get();
                 if (PX4_ISFINITE(max_deviation)) {
                     max_deviation = fminf(max_deviation, l1tw_deviation);
@@ -93,7 +95,7 @@ namespace sensors
     }
 
     void VehicleGPSPosition::ConductPositionSpoofing(sensor_gps_s &gps_position) {
-        if (_param_atk_apply_type.get() & sensor_attack::ATK_GPS_POS) {
+        if (attack_enabled(sensor_attack::ATK_GPS_POS)) {
             if (!_pos_deviation) {
                 PX4_INFO("Initiate GPS Position Spoofing Attack");
                 _pos_deviation.reset(sensor_attack::CreateAttackInstance(_param_atk_gps_p_cls.get(), &_pos_atk_params));
@@ -124,10 +126,7 @@ namespace sensors
         // Check if start condition satisfied
         bool attack_applied = false;
         const uint8_t type_mask = _param_atk_stealth_type.get();
-        bool start_condition = (type_mask != sensor_attack::NO_STEALTHY) &&
-                               (_param_atk_apply_type.get() & sensor_attack::ATK_GPS_POS);
-
-        if (start_condition) {
+        if (type_mask != sensor_attack::NO_STEALTHY && attack_enabled(sensor_attack::ATK_GPS_POS)) {
             float max_deviation = NAN;
 
             if (_param_iv_gps_p_mshift.get() > 0.f && (type_mask & sensor_attack::DET_CUSUM)) {

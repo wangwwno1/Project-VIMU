@@ -95,6 +95,7 @@ private:
 	void UpdateDynamicNotchFFT(const hrt_abstime &time_now_us, bool force = false);
 	bool UpdateSampleRate();
     void UpdateImuStatus();
+    bool attack_enabled() const;
     void ApplyGyroAttack(matrix::Vector3f &angular_velocity_uncalibrated);
     void ApplyGyroAttack(matrix::Vector3f &angular_velocity_uncalibrated, const matrix::Vector3f &reference_angular_velocity);
 
@@ -140,6 +141,8 @@ private:
 
     bool _recovery_mode{false};
     bool _apply_gyro_attack{false};
+    int  _attack_flag_prev{0};
+    hrt_abstime _attack_timestamp{0};
 
 	// angular velocity filters
 	math::LowPassFilter2p<float> _lp_filter_velocity[3] {};
@@ -209,6 +212,7 @@ private:
 
         (ParamInt<px4::params::ATK_APPLY_TYPE>) _param_atk_apply_type,
         (ParamInt<px4::params::ATK_STEALTH_TYPE>) _param_atk_stealth_type,
+        (ParamInt<px4::params::ATK_COUNTDOWN_MS>) _param_atk_countdown_ms,
         (ParamInt<px4::params::ATK_MULTI_IMU>) _param_atk_multi_imu,
         (ParamFloat<px4::params::ATK_GYR_BIAS>) _param_atk_gyr_bias,
 
