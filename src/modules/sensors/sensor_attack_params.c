@@ -10,8 +10,8 @@
  * @group Sensor Attack
  * @min 0
  * @max 63
- * @bit 0 Gyroscope spoofing/jamming (Apply to both Vehicle IMU and rate control)
- * @bit 1 Accelerometer spoofing/jamming
+ * @bit 0 Gyroscope spoofing (Apply to both Vehicle IMU and rate control)
+ * @bit 1 Accelerometer spoofing
  * @bit 2 Gps position spoofing
  * @bit 3 Gps velocity spoofing
  * @bit 4 Barometer height jamming
@@ -29,7 +29,7 @@ PARAM_DEFINE_INT32(ATK_APPLY_TYPE, 0);
  * @min 0
  * @max 7
  * @bit 0 Cumulative Sum Detector
- * @bit 1 Exponential Moving Average (used by Gyroscope)
+ * @bit 1 Exponential Moving Average (used by Gyroscope and GPS velocity)
  * @bit 2 Time-Windowed Detector
  */
 PARAM_DEFINE_INT32(ATK_STEALTH_TYPE, 0);
