@@ -288,6 +288,8 @@ private:
 	hrt_abstime _last_range_sensor_update{0};
 
     hrt_abstime _last_mag_faulty_time[MAX_NUM_MAGS]{0};
+    uint8_t _attack_flag_prev{0};
+    hrt_abstime _attack_timestamp{0};
 
 	uint32_t _filter_control_status{0};
 	uint32_t _filter_fault_status{0};
@@ -568,8 +570,9 @@ private:
 
         (ParamInt<px4::params::ATK_APPLY_TYPE>)      _param_atk_apply_type,		///< bitmasked integer that selects which of the sensor will be spoofed (gps, imu) or jammed (only affect magnetometer and barometer)
         (ParamInt<px4::params::ATK_STEALTH_TYPE>)    _param_atk_stealth_type,		///< bitmasked integer that determine the stealthy attack type
-        (ParamExtFloat<px4::params::IV_MAG_CSUM_H>)     _param_iv_mag_csum_h,
-        (ParamExtFloat<px4::params::IV_MAG_MSHIFT>)     _param_iv_mag_mshift
+        (ParamInt<px4::params::ATK_COUNTDOWN_MS>)    _param_atk_countdown_ms,
+        (ParamExtFloat<px4::params::IV_MAG_CSUM_H>)  _param_iv_mag_csum_h,
+        (ParamExtFloat<px4::params::IV_MAG_MSHIFT>)  _param_iv_mag_mshift
 	)
 };
 #endif // !EKF2_HPP

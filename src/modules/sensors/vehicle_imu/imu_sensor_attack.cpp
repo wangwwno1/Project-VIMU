@@ -5,12 +5,19 @@
 #include "VehicleIMU.hpp"
 
 namespace sensors {
-    
+    bool VehicleIMU::attack_enabled(const uint8_t &attack_type) {
+        const int instance = _vehicle_imu_pub.get_instance();
+        if (instance < 0) {
+            PX4_ERR("Vechile IMU instance is smaller than 0! Attack has been disabled!");
+        }
+
+        return (_param_atk_apply_type.get() & attack_type) &&
+               (instance >= 0) && (_param_atk_multi_imu.get() & (1 << instance)) &&
+               (hrt_absolute_time() >= _attack_timestamp);
+    }
+
     void VehicleIMU::ApplyGyroAttack(sensor_gyro_s &gyro) {
-        const int inst_id = _vehicle_imu_pub.get_instance();
-        const bool apply_attack = _param_atk_apply_type.get() & sensor_attack::ATK_MASK_GYRO;
-        const bool is_affected = (inst_id >= 0) && (_param_atk_multi_imu.get() & (1 << inst_id));
-        if (apply_attack && is_affected) {
+        if (attack_enabled(sensor_attack::ATK_MASK_GYRO)) {
             // Apply Non-Stealthy Attack to Roll Axis
             gyro.x += _param_atk_gyr_bias.get();
         }
@@ -18,10 +25,7 @@ namespace sensors {
 
     void VehicleIMU::ApplyGyroAttack(sensor_gyro_s &gyro, const sensor_gyro_s &ref_gyro) {
         // Attempt to Apply Stealthy Attack, else fall back to Non-Stealthy Attack
-        const int inst_id = _vehicle_imu_pub.get_instance();
-        const bool apply_attack = _param_atk_apply_type.get() & sensor_attack::ATK_MASK_GYRO;
-        const bool is_affected = (inst_id >= 0) && (_param_atk_multi_imu.get() & (1 << inst_id));
-        if (apply_attack & is_affected) {
+        if (attack_enabled(sensor_attack::ATK_MASK_GYRO)) {
             const uint8_t type_mask = _param_atk_stealth_type.get();
 
             // Which stealthy?
@@ -63,10 +67,7 @@ namespace sensors {
     }
 
     void VehicleIMU::ApplyAccelAttack(sensor_accel_s &accel) {
-        const int inst_id = _vehicle_imu_pub.get_instance();
-        const bool apply_attack = _param_atk_apply_type.get() & sensor_attack::ATK_MASK_ACCEL;
-        const bool is_affected = (inst_id >= 0) && (_param_atk_multi_imu.get() & (1 << inst_id));
-        if (apply_attack && is_affected) {
+        if (attack_enabled(sensor_attack::ATK_MASK_ACCEL)) {
             // Apply Non-Stealthy Attack to X Axis
             accel.x += _param_atk_acc_bias.get();
         }
@@ -74,10 +75,7 @@ namespace sensors {
 
     void VehicleIMU::ApplyAccelAttack(sensor_accel_s &accel, const sensor_accel_s &ref_accel) {
         // Attempt to Apply Stealthy Attack, else fall back to Non-Stealthy Attack
-        const int inst_id = _vehicle_imu_pub.get_instance();
-        const bool apply_attack = _param_atk_apply_type.get() & sensor_attack::ATK_MASK_ACCEL;
-        const bool is_affected = (inst_id >= 0) && (_param_atk_multi_imu.get() & (1 << inst_id));
-        if (apply_attack & is_affected) {
+        if (attack_enabled(sensor_attack::ATK_MASK_ACCEL)) {
             const uint8_t type_mask = _param_atk_stealth_type.get();
 
             // Which stealthy?

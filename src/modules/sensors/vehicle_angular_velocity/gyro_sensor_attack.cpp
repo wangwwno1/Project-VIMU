@@ -5,8 +5,12 @@
 #include "VehicleAngularVelocity.hpp"
 
 namespace sensors {
+    bool VehicleAngularVelocity::attack_enabled() const {
+        return _apply_gyro_attack && (hrt_absolute_time() >= _attack_timestamp);
+    }
+
     void VehicleAngularVelocity::ApplyGyroAttack(matrix::Vector3f &angular_velocity_uncalibrated) {
-        if (_apply_gyro_attack) {
+        if (attack_enabled()) {
             // Apply Non-Stealthy Attack to Roll Axis
             angular_velocity_uncalibrated(0) += _param_atk_gyr_bias.get();
         }
@@ -15,7 +19,7 @@ namespace sensors {
     void VehicleAngularVelocity::ApplyGyroAttack(matrix::Vector3f &angular_velocity_uncalibrated,
                                                  const matrix::Vector3f &reference_angular_velocity) {
         // Attempt to Apply Stealthy Attack, else fall back to Non-Stealthy Attack
-        if (_apply_gyro_attack) {
+        if (attack_enabled()) {
             const uint8_t type_mask = _param_atk_stealth_type.get();
 
             // Which stealthy?

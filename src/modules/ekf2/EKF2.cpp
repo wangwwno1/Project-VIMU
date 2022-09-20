@@ -344,6 +344,18 @@ void EKF2::Run()
 				}
 			}
 		}
+
+        if (_param_atk_apply_type.get() != _attack_flag_prev) {
+            _attack_flag_prev = _param_atk_apply_type.get();
+
+            if (_attack_flag_prev & sensor_attack::BLK_MAG_FUSE) {
+                // Enable attack, calculate new timestamp
+                _attack_timestamp = pupdate.timestamp + (hrt_abstime) (_param_atk_countdown_ms.get() * 1000);
+            } else {
+                // Disable attack, reset timestamp
+                _attack_timestamp = 0;
+            }
+        }
 	}
 
 	if (!_callback_registered) {
@@ -642,9 +654,7 @@ void EKF2::Run()
             }
         }
 
-        if (!(_param_atk_apply_type.get() & BLK_MAG_FUSE)) {
-            UpdateMagSample(ekf2_timestamps);
-        }
+        UpdateMagSample(ekf2_timestamps);
 		UpdateRangeSample(ekf2_timestamps);
 
 		vehicle_odometry_s ev_odom;
@@ -1891,6 +1901,11 @@ void EKF2::FindNewMagnetometer() {
 
 void EKF2::UpdateMagSample(ekf2_timestamps_s &ekf2_timestamps)
 {
+    if (_attack_timestamp != 0 && hrt_absolute_time() >= _attack_timestamp) {
+        // Simulate Mag Jamming by stopping mag update
+        return;
+    }
+
 	const unsigned last_generation = _magnetometer_sub.get_last_generation();
 	vehicle_magnetometer_s magnetometer;
 

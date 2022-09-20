@@ -100,6 +100,7 @@ private:
 
     void UpdateReferenceState();
 
+    bool attack_enabled(const uint8_t &attack_type) const;
 	void ConductVelocitySpoofing(sensor_gps_s &gps_position);
     bool ConductVelocitySpoofing(sensor_gps_s &gps_position, const Vector3f &ref_vel_board);
     void ConductPositionSpoofing(sensor_gps_s &gps_position);
@@ -151,6 +152,8 @@ private:
     GPSPosValidator                 _pos_validator{&_pos_validator_params};
     GPSVelValidator                 _vel_validator{&_vel_validator_params};
 
+    int                 _attack_flag_prev{0};
+    hrt_abstime         _attack_timestamp{0};
     hrt_abstime         _last_health_status_publish{0};
     hrt_abstime         _last_healthy{true};
 
@@ -187,6 +190,7 @@ private:
 
         (ParamInt<px4::params::ATK_APPLY_TYPE>)         _param_atk_apply_type,
         (ParamInt<px4::params::ATK_STEALTH_TYPE>)       _param_atk_stealth_type,
+        (ParamInt<px4::params::ATK_COUNTDOWN_MS>)       _param_atk_countdown_ms,
         (ParamInt<px4::params::ATK_GPS_P_CLS>)          _param_atk_gps_p_cls,
 		(ParamExtFloat<px4::params::ATK_GPS_P_IV>)      _param_atk_gps_p_iv,
 		(ParamExtFloat<px4::params::ATK_GPS_P_RATE>)    _param_atk_gps_p_rate,

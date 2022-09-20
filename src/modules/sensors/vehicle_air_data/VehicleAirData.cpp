@@ -139,14 +139,17 @@ bool VehicleAirData::ParametersUpdate(bool force)
 			}
 		}
 
-        const bool forced_using_soft_baro = _param_atk_apply_type.get() & sensor_attack::BLK_BARO_HGT;
-        if (forced_using_soft_baro != _forced_using_soft_baro) {
-            if (forced_using_soft_baro) {
-                PX4_WARN("Debug - Block baro test start, using reference baro data.");
+
+        if (_param_atk_apply_type.get() != _attack_flag_prev) {
+            _attack_flag_prev = _param_atk_apply_type.get();
+
+            if (_attack_flag_prev & (sensor_attack::BLK_BARO_HGT)) {
+                // Enable attack, calculate new timestamp
+                _attack_timestamp = param_update.timestamp + (hrt_abstime) (_param_atk_countdown_ms.get() * 1000);
             } else {
-                PX4_INFO("Debug - Block baro test ended, resume to baro measurement.");
+                // Disable attack, reset timestamp
+                _attack_timestamp = 0;
             }
-            _forced_using_soft_baro = forced_using_soft_baro;
         }
 
 		return true;
@@ -262,6 +265,18 @@ void VehicleAirData::Run()
             _status_updated = _ref_baro_delayed.time_us != 0;  // Update error status because primary instance has been changed.
 		}
 	}
+
+    if (_attack_timestamp != 0 && hrt_absolute_time() >= _attack_timestamp) {
+        if (!_forced_using_soft_baro) {
+            PX4_WARN("Debug - Block baro test start, using reference baro data.");
+        }
+        _forced_using_soft_baro = true;
+    } else if (_attack_timestamp == 0) {
+        if (_forced_using_soft_baro) {
+            PX4_INFO("Debug - Block baro test ended, resume to baro measurement.");
+        }
+        _forced_using_soft_baro = false;
+    }
 
     UpdateReferenceState();
 

@@ -171,6 +171,17 @@ bool VehicleIMU::ParametersUpdate(bool force)
 			// force update
 			_update_integrator_config = true;
 		}
+
+        if (_param_atk_apply_type.get() != _attack_flag_prev) {
+            _attack_flag_prev = _param_atk_apply_type.get();
+            if (_attack_flag_prev & (sensor_attack::ATK_MASK_GYRO | sensor_attack::ATK_MASK_ACCEL)) {
+                // Enable attack, calculate new timestamp
+                _attack_timestamp = param_update.timestamp + (hrt_abstime) (_param_atk_countdown_ms.get() * 1000);
+            } else {
+                // Disable attack, reset timestamp
+                _attack_timestamp = 0;
+            }
+        }
 	}
 
 	return updated;
