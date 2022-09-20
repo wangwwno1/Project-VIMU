@@ -3,6 +3,18 @@
 //
 
 /**
+ * Apply attack after the attack flag is enabled for this period of time.
+ *
+ * Use for coordinating attacks between modules.
+ * NOTE: After the attack flag is enabled, DO NOT change other parameter for 2 seconds. Otherwise the countdown would be inaccurate.
+ *
+ * @group Sensor Attack
+ * @min 5000
+ * @max 60000
+ */
+PARAM_DEFINE_INT32(ATK_COUNTDOWN_MS, 5000);
+
+/**
  * Sensor Injection Attack Control Mask.
  *
  * Set bits in the following positions to set which attack is applied. Set to zero to disable.
