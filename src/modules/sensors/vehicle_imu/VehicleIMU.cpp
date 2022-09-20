@@ -650,7 +650,7 @@ bool VehicleIMU::Publish()
 				}
 			}
 
-            if (_last_accel_errors.samples > 0) {
+            if (_last_accel_errors.samples > 0 && _param_iv_debug_log.get()) {
                 // publish accel error info
                 _last_accel_errors.device_id = _accel_calibration.device_id();
                 _last_accel_errors.timestamp = hrt_absolute_time();
@@ -658,7 +658,7 @@ bool VehicleIMU::Publish()
                 _last_accel_errors = {};
             }
 
-            if (_last_gyro_errors.samples > 0) {
+            if (_last_gyro_errors.samples > 0 && _param_iv_debug_log.get()) {
                 // publish gyro error info
                 _last_gyro_errors.device_id = _gyro_calibration.device_id();
                 _last_gyro_errors.timestamp = hrt_absolute_time();

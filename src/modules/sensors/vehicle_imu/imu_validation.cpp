@@ -44,13 +44,20 @@ namespace sensors {
         const Vector3f error_ratio = error_residuals * inv_gyr_noise;
         _gyro_validator.validate(error_ratio);
 
-        if (_gyro_validator.test_ratio() >= 1.f) {
+        if (_param_iv_delay_mask.get() & sensor_attack::ATK_MASK_GYRO && _param_iv_ttd_delay_ms.get() > 0) {
+            // Use delay for precise Time to Detection
+            if (hrt_elapsed_time(&_attack_timestamp) >= (hrt_abstime) (_param_iv_ttd_delay_ms.get() * 1000)) {
+                // Declare gyro failure immediately by add error count
+                gyro.error_count = math::max(gyro.error_count + NORETURN_ERRCOUNT, NORETURN_ERRCOUNT + 1U);
+            }
+        } else if (_gyro_validator.test_ratio() >= 1.f) {
             // Declare gyro failure immediately by add error count
             gyro.error_count = math::max(gyro.error_count + NORETURN_ERRCOUNT, NORETURN_ERRCOUNT + 1U);
         }
 
-        // Record error ratio and test ratio for debug and post-mortem analysis
-        if (_last_gyro_errors.samples < MAX_GYRO_SAMPLES) {
+
+        if (_last_gyro_errors.samples < MAX_GYRO_SAMPLES && _param_iv_debug_log.get()) {
+            // Record error ratio and test ratio for debug and post-mortem analysis
             const uint8_t idx = _last_gyro_errors.samples;
             if (idx == 0) {
                 _last_gyro_errors.timestamp_start = hrt_absolute_time();
@@ -59,7 +66,6 @@ namespace sensors {
             _last_gyro_errors.y[idx] = error_residuals(1);
             _last_gyro_errors.z[idx] = error_residuals(2);
             _last_gyro_errors.test_ratio[idx] = _gyro_validator.test_ratio();
-
         }
         _last_gyro_errors.samples++;
     }
@@ -101,13 +107,19 @@ namespace sensors {
         const Vector3f error_ratio = error_residuals * inv_acc_noise;
         _accel_validator.validate(error_ratio);
 
-        if (_accel_validator.test_ratio() >= 1.f) {
+        if (_param_iv_delay_mask.get() & sensor_attack::ATK_MASK_ACCEL && _param_iv_ttd_delay_ms.get() > 0) {
+            // Use delay for precise Time to Detection
+            if (hrt_elapsed_time(&_attack_timestamp) >= (hrt_abstime) (_param_iv_ttd_delay_ms.get() * 1000)) {
+                // Declare gyro failure immediately by add error count
+                accel.error_count = math::max(accel.error_count + NORETURN_ERRCOUNT, NORETURN_ERRCOUNT + 1U);
+            }
+        } else if (_accel_validator.test_ratio() >= 1.f) {
             // Declare accel failure immediately by add error count
             accel.error_count = math::max(accel.error_count + NORETURN_ERRCOUNT, NORETURN_ERRCOUNT + 1U);
         }
 
-        // Record error ratio and test ratio for debug and post-mortem analysis
-        if (_last_accel_errors.samples < MAX_ACCEL_SAMPLES) {
+        if (_last_accel_errors.samples < MAX_ACCEL_SAMPLES && _param_iv_debug_log.get()) {
+            // Record error ratio and test ratio for debug and post-mortem analysis
             const uint8_t idx = _last_accel_errors.samples;
             if (idx == 0) {
                 _last_accel_errors.timestamp_start = hrt_absolute_time();
@@ -116,7 +128,6 @@ namespace sensors {
             _last_accel_errors.y[idx] = error_residuals(1);
             _last_accel_errors.z[idx] = error_residuals(2);
             _last_accel_errors.test_ratio[idx] = _accel_validator.test_ratio();
-
         }
         _last_accel_errors.samples++;
     }
