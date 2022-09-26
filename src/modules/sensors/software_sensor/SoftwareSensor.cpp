@@ -85,7 +85,7 @@ void SoftwareSensor::Run() {
     // Run() will be invoked when actuator_output receive update
     actuator_outputs_s act{};
     if (_actuator_outputs_sub.copy(&act)) {
-        if (_last_update_us == 0) {
+        if (!math::isInRange(_last_update_us, act.timestamp - _rate_ctrl_interval_us, act.timestamp + _rate_ctrl_interval_us)) {
             _last_update_us = act.timestamp;
         }
 
@@ -108,9 +108,11 @@ void SoftwareSensor::Run() {
 
             // Publish Angular Rate & Acceleration
             // The Rate Control frequency are faster than IMU integral, so we publish it every time actuator output generated
-            PublishAngularVelocityAndAcceleration();
-            PublishReferenceGyroAndAccelerometer();
-            PublishReferenceState();
+            if (_copter_status.publish) {
+                PublishAngularVelocityAndAcceleration();
+                PublishReferenceGyroAndAccelerometer();
+                PublishReferenceState();
+            }
         }
     }
 
