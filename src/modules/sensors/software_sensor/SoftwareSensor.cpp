@@ -171,7 +171,10 @@ void SoftwareSensor::UpdatePosVelState() {
         _delta_vel = _vel_model.getOutputState() - prev_vel;
         _state.vel = _vel_model.getOutputState();
 
+        // Add acceleration due to gravity
+        const matrix::Dcmf R_earth_to_body{_state.att};
         _avg_acceleration = _delta_vel / _filter_update_period;
+        _avg_acceleration -= R_earth_to_body.transpose() * Vector3f(0.f, 0.f, CONSTANTS_ONE_G);
     }
 }
 
