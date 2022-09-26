@@ -8,7 +8,7 @@ using namespace matrix;
 
 namespace sensors {
     void VehicleIMU::ValidateGyroData(sensor_gyro_s &gyro) {
-        const hrt_abstime interval_us = _imu_integration_interval_us + 200_us;
+        const hrt_abstime interval_us = static_cast<hrt_abstime>(_imu_integration_interval_us * 1.5f);
         const hrt_abstime validate_start = hrt_absolute_time();
 
         sensor_gyro_s ref_gyro{};
@@ -19,8 +19,7 @@ namespace sensors {
                 _last_ref_gyro = ref_gyro;
             } else {
                 // Use last reference, then update it
-                sensor_gyro_s tmp;
-                tmp = ref_gyro;
+                sensor_gyro_s tmp{ref_gyro};
                 ref_gyro = _last_ref_gyro;
                 _last_ref_gyro = tmp;
             }
@@ -66,12 +65,12 @@ namespace sensors {
             _last_gyro_errors.y[idx] = error_residuals(1);
             _last_gyro_errors.z[idx] = error_residuals(2);
             _last_gyro_errors.test_ratio[idx] = _gyro_validator.test_ratio();
+            _last_gyro_errors.samples++;
         }
-        _last_gyro_errors.samples++;
     }
 
     void VehicleIMU::ValidateAccelData(sensor_accel_s &accel) {
-        const hrt_abstime interval_us = _imu_integration_interval_us + 200_us;
+        const hrt_abstime interval_us = static_cast<hrt_abstime>(_imu_integration_interval_us * 1.5f);
         const hrt_abstime validate_start = hrt_absolute_time();
 
         sensor_accel_s ref_accel{};
@@ -82,8 +81,7 @@ namespace sensors {
                 _last_ref_accel = ref_accel;
             } else {
                 // Use last reference, then update it
-                sensor_accel_s tmp;
-                tmp = ref_accel;
+                sensor_accel_s tmp{ref_accel};
                 ref_accel = _last_ref_accel;
                 _last_ref_accel = tmp;
             }
@@ -128,7 +126,7 @@ namespace sensors {
             _last_accel_errors.y[idx] = error_residuals(1);
             _last_accel_errors.z[idx] = error_residuals(2);
             _last_accel_errors.test_ratio[idx] = _accel_validator.test_ratio();
+            _last_accel_errors.samples++;
         }
-        _last_accel_errors.samples++;
     }
 }  // namespace sensors
