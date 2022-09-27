@@ -67,7 +67,7 @@ namespace fault_detector {
                 _abs_error_cusum = matrix::constrain(_abs_error_cusum, Type(0.), +Type(1.05));
                 _sample_counter++;
 
-                if (_abs_error_cusum.max() > +Type(1.0)) {
+                if (_abs_error_cusum.max() >= +Type(1.0)) {
                     // Declare faulty, discard all previous normal samples, reset safe counter
                     _error_cusum.setAll(+Type(0.));
                     _normal_sample_counter = 0;
