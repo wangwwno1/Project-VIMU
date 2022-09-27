@@ -39,7 +39,7 @@ namespace sensors {
     void VehicleAirData::ValidateBaroData(const uint8_t &instance, const hrt_abstime &timestamp_sample) {
         // First check if validator initiated
         if (_baro_validators[instance] == nullptr) {
-            CuSumf *inst = new CuSumf (&_baro_hgt_params);
+            BaroValidator *inst = new BaroValidator (&_baro_hgt_params);
             if (inst) {
                 _baro_validators[instance] = inst;
                 _baro_validators[instance]->reset();
