@@ -196,6 +196,36 @@ PARAM_DEFINE_FLOAT(IV_BARO_CSUM_H, 0.f);
 PARAM_DEFINE_FLOAT(IV_BARO_MSHIFT, 1.f);
 
 /**
+ * Control limit for Absolute Error Time Window (L1TW) validation of the barometer rate innovation, expressed in standard deviations.
+ *
+ * Set zero to inhibit validation.
+ *
+ * @group Innovation Validator
+ * @min 0.0
+ * @reboot_required true
+ * @decimal 4
+ */
+PARAM_DEFINE_FLOAT(IV_BARO_L1TW_H, 0.f);
+
+/**
+ * Minimum samples required before reset barometer L1TW detector.
+ *
+ * @group Innovation Validator
+ * @min 1
+ * @reboot_required true
+ */
+PARAM_DEFINE_INT32(IV_BARO_RST_CNT, 1);
+
+/**
+ * Minimum consecutive normal samples before declare the sensor is normal.
+ *
+ * @group Innovation Validator
+ * @min 1
+ * @reboot_required true
+ */
+PARAM_DEFINE_INT32(IV_BARO_CD_CNT, 1);
+
+/**
  * Control limit for CuScore validation of magnetometer innovation.
  *
  * Expressed in standard deviations when the respective quadratic ratio is equal to zero, or variances if the ratio is set to one.
@@ -220,6 +250,36 @@ PARAM_DEFINE_FLOAT(IV_MAG_CSUM_H, 0.f);
  * @decimal 4
  */
 PARAM_DEFINE_FLOAT(IV_MAG_MSHIFT, 1.f);
+
+/**
+ * Control limit for Absolute Error Time Window (L1TW) validation of the magnetometer rate innovation, expressed in standard deviations.
+ *
+ * Set zero to inhibit validation.
+ *
+ * @group Innovation Validator
+ * @min 0.0
+ * @reboot_required true
+ * @decimal 4
+ */
+PARAM_DEFINE_FLOAT(IV_MAG_L1TW_H, 0.f);
+
+/**
+ * Minimum samples required before reset magnetometer L1TW detector.
+ *
+ * @group Innovation Validator
+ * @min 1
+ * @reboot_required true
+ */
+PARAM_DEFINE_INT32(IV_MAG_RST_CNT, 1);
+
+/**
+ * Minimum consecutive normal samples before declare the sensor is normal.
+ *
+ * @group Innovation Validator
+ * @min 1
+ * @reboot_required true
+ */
+PARAM_DEFINE_INT32(IV_MAG_CD_CNT, 1);
 
 /**
  * Accelerometer noise for innovation validation, it is equal to the standard deviation of the residual between the virtual and real sensor.
