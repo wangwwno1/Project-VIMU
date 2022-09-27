@@ -49,8 +49,6 @@
 #include "EKFGSF_yaw.h"
 #include "baro_bias_estimator.hpp"
 
-using fault_detector::CuSumVector3f;
-
 class Ekf final : public EstimatorInterface
 {
 public:
@@ -491,7 +489,7 @@ private:
 
 	Vector3f _mag_innov{};		///< earth magnetic field innovations (Gauss)
 	Vector3f _mag_innov_var{};	///< earth magnetic field innovation variance (Gauss**2)
-	CuSumVector3f _mag_validator{&_params.mag_csum_param};  ///< magnetometer validator, use for MagHdg & Mag3D fusion
+    MagValidator _mag_validator{&_params.mag_validator_params};  ///< magnetometer validator, use for MagHdg & Mag3D fusion
 
 	Vector2f _drag_innov{};		///< multirotor drag measurement innovation (m/sec**2)
 	Vector2f _drag_innov_var{};	///< multirotor drag measurement innovation variance ((m/sec**2)**2)
