@@ -93,9 +93,9 @@ namespace fault_detector {
 
         const VectorN &error_sum() const { return _abs_error_cusum; }
 
-        const Type &error_offset() const { return _error_offset(0); }
+        const Type error_offset() const { return _error_offset(0) * _param->control_limit; }
 
-        const VectorN &error_offsets() const { return _error_offset; }
+        const VectorN error_offsets() const { return _error_offset * _param->control_limit; }
 
         void reset_error_offset() { _error_offset.setAll(+Type(0.)); }
 
