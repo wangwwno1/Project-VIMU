@@ -30,7 +30,6 @@ namespace fault_detector {
 
             _is_normal = true;
             _is_running = false;
-            _offset_ready = false;
             this->_error_mask = ERROR_FLAG_NO_ERROR;
         }
 
@@ -53,7 +52,6 @@ namespace fault_detector {
                         _error_offset = _error_cusum / _sample_counter;
                         _error_cusum.setAll(+Type(0.));
                         _normal_sample_counter = 0;
-                        _offset_ready = true;
                     }
                     _abs_error_cusum.setAll(+Type(0.));
                     _sample_counter = 0;
@@ -73,7 +71,6 @@ namespace fault_detector {
                     _normal_sample_counter = 0;
                     _safe_counter = 0;
                     _is_normal = false;
-                    _offset_ready = false;
                 } else {
                     if (!_is_normal) _safe_counter++;
                     // Only count error offsets in normal
@@ -107,7 +104,7 @@ namespace fault_detector {
             return _abs_error_cusum;
         }
 
-    private:
+    protected:
         ParamStruct *_param;
         VectorN _abs_error_cusum;
         VectorN _error_cusum;
@@ -117,7 +114,6 @@ namespace fault_detector {
         int32_t _safe_counter{0};
         bool _is_normal{true};
         bool _is_running{false};
-        bool _offset_ready{false};
     };
 
     using AbsErrorTimeWindowf = AbsErrorTimeWindowVector<float>;
