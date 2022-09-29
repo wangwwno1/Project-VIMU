@@ -104,7 +104,7 @@ namespace sensors {
                 // No applicable stealthy attack, fallback to non-stealthy (overt) attack
                 ApplyAccelAttack(accel);
             } else {
-                max_deviation = .99f * max_deviation * _param_iv_gyr_noise.get();
+                max_deviation = .99f * max_deviation * _param_iv_acc_noise.get();
                 // Inject deviation at X axis
                 accel.x = ref_accel.x + max_deviation;
                 // Ensure other axis is under control
