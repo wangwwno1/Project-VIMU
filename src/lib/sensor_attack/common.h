@@ -18,8 +18,8 @@ namespace sensor_attack {
     static constexpr uint8_t ATK_MASK_ACCEL = (1 << 1);
     static constexpr uint8_t ATK_GPS_POS    = (1 << 2);
     static constexpr uint8_t ATK_GPS_VEL    = (1 << 3);
-    static constexpr uint8_t BLK_BARO_HGT   = (1 << 2);
-    static constexpr uint8_t BLK_MAG_FUSE   = (1 << 3);
+    static constexpr uint8_t BLK_BARO_HGT   = (1 << 4);
+    static constexpr uint8_t BLK_MAG_FUSE   = (1 << 5);
 
     static constexpr uint8_t NO_STEALTHY        = 0;
     static constexpr uint8_t DET_CUSUM          = (1 << 0);
