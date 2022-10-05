@@ -176,14 +176,30 @@ bool VehicleIMU::ParametersUpdate(bool force)
 		}
 
         if (_param_atk_apply_type.get() != _attack_flag_prev) {
-            _attack_flag_prev = _param_atk_apply_type.get();
-            if (_attack_flag_prev & (sensor_attack::ATK_MASK_GYRO | sensor_attack::ATK_MASK_ACCEL)) {
+            const int next_attack_flag = _param_atk_apply_type.get();
+            if (next_attack_flag & (sensor_attack::ATK_MASK_GYRO | sensor_attack::ATK_MASK_ACCEL) &&
+                _param_atk_multi_imu.get() & (1 << _instance)) {
                 // Enable attack, calculate new timestamp
                 _attack_timestamp = param_update.timestamp + (hrt_abstime) (_param_atk_countdown_ms.get() * 1000);
-            } else {
+                if (next_attack_flag & sensor_attack::ATK_MASK_GYRO) {
+                    PX4_INFO("Debug - Enable GYRO attack for IMU%d, expect start timestamp: %" PRIu64, _instance, _attack_timestamp);
+                } else if (_attack_flag_prev & sensor_attack::ATK_MASK_GYRO) {
+                    PX4_INFO("Debug - GYRO attack is disabled for IMU%d.", _instance);
+                }
+
+                if (next_attack_flag & sensor_attack::ATK_MASK_ACCEL) {
+                    PX4_INFO("Debug - Enable ACCEL attack for IMU%d, expect start timestamp: %" PRIu64, _instance, _attack_timestamp);
+                } else if (_attack_flag_prev & sensor_attack::ATK_MASK_ACCEL) {
+                    PX4_INFO("Debug - ACCEL attack is disabled for IMU%d.", _instance);
+                }
+
+            } else if (_attack_timestamp != 0) {
                 // Disable attack, reset timestamp
                 _attack_timestamp = 0;
+                PX4_INFO("Debug - Attack is disabled for IMU%d, reset attack timestamp.", _instance);
             }
+
+            _attack_flag_prev = next_attack_flag;
         }
 	}
 

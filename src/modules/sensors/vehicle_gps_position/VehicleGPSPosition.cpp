@@ -127,14 +127,29 @@ void VehicleGPSPosition::ParametersUpdate(bool force)
 		_gps_blending.setPrimaryInstance(_param_sens_gps_prime.get());
 
         if (_param_atk_apply_type.get() != _attack_flag_prev) {
-            _attack_flag_prev = _param_atk_apply_type.get();
-            if (_attack_flag_prev & (sensor_attack::ATK_GPS_VEL | sensor_attack::ATK_GPS_POS)) {
+            const int next_attack_flag = _param_atk_apply_type.get();
+            if (next_attack_flag & (sensor_attack::ATK_GPS_VEL | sensor_attack::ATK_GPS_POS)) {
                 // Enable attack, calculate new timestamp
                 _attack_timestamp = param_update.timestamp + (hrt_abstime) (_param_atk_countdown_ms.get() * 1000);
-            } else {
+                if (next_attack_flag & sensor_attack::ATK_GPS_POS) {
+                    PX4_INFO("Debug - Enable GPS POS attack, expect start timestamp: %" PRIu64, _attack_timestamp);
+                } else if (_attack_flag_prev & sensor_attack::ATK_GPS_POS) {
+                    PX4_INFO("Debug - GPS POS attack disabled.");
+                }
+
+                if (next_attack_flag & sensor_attack::ATK_GPS_VEL) {
+                    PX4_INFO("Debug - Enable GPS VEL attack, expect start timestamp: %" PRIu64, _attack_timestamp);
+                } else if (_attack_flag_prev & sensor_attack::ATK_GPS_VEL) {
+                    PX4_INFO("Debug - GPS VEL attack disabled.");
+                }
+
+            } else if (_attack_flag_prev & (sensor_attack::ATK_GPS_VEL | sensor_attack::ATK_GPS_POS)) {
                 // Disable attack, reset timestamp
                 _attack_timestamp = 0;
+                PX4_INFO("Debug - GPS attack disabled , reset attack timestamp.");
             }
+
+            _attack_flag_prev = next_attack_flag;
         }
 	}
 }
