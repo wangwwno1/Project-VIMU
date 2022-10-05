@@ -58,8 +58,8 @@ VehicleIMU::VehicleIMU(int instance, uint8_t accel_index, uint8_t gyro_index, co
     _param_iv_gyr_ema_h(_gyro_validator_params.ema_params.control_limit),
     _param_iv_gyr_alpha(_gyro_validator_params.ema_params.alpha),
     _param_iv_gyr_ema_cap(_gyro_validator_params.ema_params.cap),
-    _param_iv_acc_csum_h(_accel_validator_params.control_limit),
-    _param_iv_acc_mshift(_accel_validator_params.mean_shift),
+    _param_iv_acc_csum_h(_accel_validator_params.cusum_params.control_limit),
+    _param_iv_acc_mshift(_accel_validator_params.cusum_params.mean_shift),
     _param_iv_acc_ema_h(_accel_validator_params.ema_params.control_limit),
     _param_iv_acc_alpha(_accel_validator_params.ema_params.alpha),
     _param_iv_acc_ema_cap(_accel_validator_params.ema_params.cap)
