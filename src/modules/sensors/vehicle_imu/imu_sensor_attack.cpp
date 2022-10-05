@@ -42,13 +42,12 @@ namespace sensors {
                 }
             }
 
+            Vector3f extra_offset{0.f, 0.f, 0.f};
             if (type_mask & sensor_attack::DET_TIME_WINDOW &&
-                (_param_iv_gyr_l1tw_h.get() > 0.f) && (_param_iv_gyr_rst_cnt.get() >= 1)) {
-                const float l1tw_deviation = _param_iv_gyr_l1tw_h.get() / _param_iv_gyr_rst_cnt.get();
-                if (PX4_ISFINITE(max_deviation)) {
-                    max_deviation = fminf(max_deviation, l1tw_deviation);
-                } else {
-                    max_deviation = l1tw_deviation;
+                (_param_iv_gyr_twin_h.get() > 0.f) && (_param_iv_gyr_rst_cnt.get() >= 1)) {
+                const float twin_deviation = _param_iv_gyr_twin_h.get() / _param_iv_gyr_rst_cnt.get();
+                if (!PX4_ISFINITE(max_deviation) || twin_deviation <= max_deviation) {
+                    max_deviation = twin_deviation;
                 }
             }
 
@@ -56,12 +55,12 @@ namespace sensors {
                 // No applicable stealthy attack, fallback to non-stealthy (overt) attack
                 ApplyGyroAttack(gyro);
             } else {
-                max_deviation = max_deviation * _param_iv_gyr_noise.get();
+                max_deviation = .99f * max_deviation * _param_iv_gyr_noise.get();
                 // Inject deviation at X axis
-                gyro.x = ref_gyro.x + .99f * max_deviation;
+                gyro.x = ref_gyro.x + max_deviation;
                 // Ensure other axis is under control
-                gyro.y = math::constrain(gyro.y, ref_gyro.y - .99f * max_deviation, ref_gyro.y + .99f * max_deviation);
-                gyro.z = math::constrain(gyro.z, ref_gyro.z - .99f * max_deviation, ref_gyro.z + .99f * max_deviation);
+                gyro.y = math::constrain(gyro.y, ref_gyro.y - max_deviation, ref_gyro.y + max_deviation);
+                gyro.z = math::constrain(gyro.z, ref_gyro.z - max_deviation, ref_gyro.z + max_deviation);
             }
         }
     }
@@ -93,14 +92,11 @@ namespace sensors {
             }
 
             // We do not apply ema stealthy attack because we won't use ema detector for accelerometer
-
             if (type_mask & sensor_attack::DET_TIME_WINDOW &&
-                (_param_iv_acc_l1tw_h.get() > 0.f) && (_param_iv_acc_rst_cnt.get() >= 1)) {
-                const float l1tw_deviation = _param_iv_acc_l1tw_h.get() / _param_iv_acc_rst_cnt.get();
-                if (PX4_ISFINITE(max_deviation)) {
-                    max_deviation = fminf(max_deviation, l1tw_deviation);
-                } else {
-                    max_deviation = l1tw_deviation;
+                (_param_iv_acc_twin_h.get() > 0.f) && (_param_iv_acc_rst_cnt.get() >= 1)) {
+                const float twin_deviation = _param_iv_acc_twin_h.get() / _param_iv_acc_rst_cnt.get();
+                if (!PX4_ISFINITE(max_deviation) || twin_deviation <= max_deviation) {
+                    max_deviation = twin_deviation;
                 }
             }
 
@@ -108,12 +104,12 @@ namespace sensors {
                 // No applicable stealthy attack, fallback to non-stealthy (overt) attack
                 ApplyAccelAttack(accel);
             } else {
-                max_deviation = max_deviation * _param_iv_gyr_noise.get();
+                max_deviation = .99f * max_deviation * _param_iv_gyr_noise.get();
                 // Inject deviation at X axis
-                accel.x = ref_accel.x + .99f * max_deviation;
+                accel.x = ref_accel.x + max_deviation;
                 // Ensure other axis is under control
-                accel.y = math::constrain(accel.y, ref_accel.y - .99f * max_deviation, ref_accel.y + .99f * max_deviation);
-                accel.z = math::constrain(accel.z, ref_accel.z - .99f * max_deviation, ref_accel.z + .99f * max_deviation);
+                accel.y = math::constrain(accel.y, ref_accel.y - max_deviation, ref_accel.y + max_deviation);
+                accel.z = math::constrain(accel.z, ref_accel.z - max_deviation, ref_accel.z + max_deviation);
             }
         }
     }

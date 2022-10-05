@@ -110,7 +110,7 @@ PARAM_DEFINE_FLOAT(IV_GPS_V_ALPHA, 1.f);
 PARAM_DEFINE_FLOAT(IV_GPS_V_EMA_CAP, 0.f);
 
 /**
- * Control limit for Absolute Error Time Window (L1TW) validation of the gps position innovation, expressed in standard deviations.
+ * Control limit for Time Window (TWIN) validation of the gps position innovation, expressed in standard deviations.
  *
  * Set zero to inhibit validation.
  *
@@ -119,11 +119,11 @@ PARAM_DEFINE_FLOAT(IV_GPS_V_EMA_CAP, 0.f);
  * @reboot_required true
  * @decimal 4
  */
-PARAM_DEFINE_FLOAT(IV_GPS_P_L1TW_H, 0.f);
+PARAM_DEFINE_FLOAT(IV_GPS_P_TWIN_H, 0.f);
 
 
 /**
- * Minimum samples required before reset gps position L1TW detector.
+ * Minimum samples required before reset gps position TWIN detector.
  *
  * @group Innovation Validator
  * @min 1
@@ -141,7 +141,7 @@ PARAM_DEFINE_INT32(IV_GPS_P_RST_CNT, 1);
 PARAM_DEFINE_INT32(IV_GPS_P_CD_CNT, 1);
 
 /**
- * Control limit for Absolute Error Time Window (L1TW) validation of the gps velocity innovation, expressed in standard deviations.
+ * Control limit for Time Window (TWIN) validation of the gps velocity innovation, expressed in standard deviations.
  *
  * Set zero to inhibit validation.
  *
@@ -150,10 +150,10 @@ PARAM_DEFINE_INT32(IV_GPS_P_CD_CNT, 1);
  * @reboot_required true
  * @decimal 4
  */
-PARAM_DEFINE_FLOAT(IV_GPS_V_L1TW_H, 0.f);
+PARAM_DEFINE_FLOAT(IV_GPS_V_TWIN_H, 0.f);
 
 /**
- * Minimum samples required before reset gps velocity L1TW detector.
+ * Minimum samples required before reset gps velocity TWIN detector.
  *
  * @group Innovation Validator
  * @min 1
@@ -196,7 +196,7 @@ PARAM_DEFINE_FLOAT(IV_BARO_CSUM_H, 0.f);
 PARAM_DEFINE_FLOAT(IV_BARO_MSHIFT, 1.f);
 
 /**
- * Control limit for Absolute Error Time Window (L1TW) validation of the barometer rate innovation, expressed in standard deviations.
+ * Control limit for Time Window (TWIN) validation of the barometer rate innovation, expressed in standard deviations.
  *
  * Set zero to inhibit validation.
  *
@@ -205,10 +205,10 @@ PARAM_DEFINE_FLOAT(IV_BARO_MSHIFT, 1.f);
  * @reboot_required true
  * @decimal 4
  */
-PARAM_DEFINE_FLOAT(IV_BARO_L1TW_H, 0.f);
+PARAM_DEFINE_FLOAT(IV_BARO_TWIN_H, 0.f);
 
 /**
- * Minimum samples required before reset barometer L1TW detector.
+ * Minimum samples required before reset barometer TWIN detector.
  *
  * @group Innovation Validator
  * @min 1
@@ -252,7 +252,7 @@ PARAM_DEFINE_FLOAT(IV_MAG_CSUM_H, 0.f);
 PARAM_DEFINE_FLOAT(IV_MAG_MSHIFT, 1.f);
 
 /**
- * Control limit for Absolute Error Time Window (L1TW) validation of the magnetometer rate innovation, expressed in standard deviations.
+ * Control limit for Time Window (TWIN) validation of the magnetometer rate innovation, expressed in standard deviations.
  *
  * Set zero to inhibit validation.
  *
@@ -261,10 +261,10 @@ PARAM_DEFINE_FLOAT(IV_MAG_MSHIFT, 1.f);
  * @reboot_required true
  * @decimal 4
  */
-PARAM_DEFINE_FLOAT(IV_MAG_L1TW_H, 0.f);
+PARAM_DEFINE_FLOAT(IV_MAG_TWIN_H, 0.f);
 
 /**
- * Minimum samples required before reset magnetometer L1TW detector.
+ * Minimum samples required before reset magnetometer TWIN detector.
  *
  * @group Innovation Validator
  * @min 1
@@ -353,7 +353,7 @@ PARAM_DEFINE_FLOAT(IV_ACC_ALPHA, 1.f);
 PARAM_DEFINE_FLOAT(IV_ACC_EMA_CAP, 0.f);
 
 /**
- * Control limit for Absolute Error Time Window (L1TW) validation for acceleration, expressed in standard deviations.
+ * Control limit for Time Window (TWIN) validation for acceleration, expressed in standard deviations.
  *
  * Set zero to inhibit validation.
  *
@@ -362,10 +362,10 @@ PARAM_DEFINE_FLOAT(IV_ACC_EMA_CAP, 0.f);
  * @reboot_required true
  * @decimal 4
  */
-PARAM_DEFINE_FLOAT(IV_ACC_L1TW_H, 0.f);
+PARAM_DEFINE_FLOAT(IV_ACC_TWIN_H, 0.f);
 
 /**
- * Minimum samples required before reset accelerometer L1TW detector.
+ * Minimum samples required before reset accelerometer TWIN detector.
  *
  * @group Innovation Validator
  * @min 1
@@ -451,7 +451,7 @@ PARAM_DEFINE_FLOAT(IV_GYR_ALPHA, 1.f);
 PARAM_DEFINE_FLOAT(IV_GYR_EMA_CAP, 0.f);
 
 /**
- * Control limit for Absolute Error Time Window (L1TW) validation of the gyro rate innovation, expressed in standard deviations.
+ * Control limit for Time Window (TWIN) validation of the gyro rate innovation, expressed in standard deviations.
  *
  * Set zero to inhibit validation.
  *
@@ -460,10 +460,10 @@ PARAM_DEFINE_FLOAT(IV_GYR_EMA_CAP, 0.f);
  * @reboot_required true
  * @decimal 4
  */
-PARAM_DEFINE_FLOAT(IV_GYR_L1TW_H, 0.f);
+PARAM_DEFINE_FLOAT(IV_GYR_TWIN_H, 0.f);
 
 /**
- * Minimum samples required before reset gyro L1TW detector.
+ * Minimum samples required before reset gyro TWIN detector.
  *
  * @group Innovation Validator
  * @min 1

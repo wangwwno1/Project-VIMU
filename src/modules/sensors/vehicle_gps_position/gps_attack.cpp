@@ -57,27 +57,40 @@ namespace sensors
             }
 
             if (type_mask & sensor_attack::DET_TIME_WINDOW &&
-                _param_iv_gps_v_l1tw_h.get() > 0.f && _param_iv_gps_v_rst_cnt.get() >= 1) {
-                const float l1tw_deviation = _param_iv_gps_v_l1tw_h.get() / _param_iv_gps_v_rst_cnt.get();
-                if (PX4_ISFINITE(max_deviation)) {
-                    max_deviation = fminf(max_deviation, l1tw_deviation);
-                } else {
-                    max_deviation = l1tw_deviation;
+                _param_iv_gps_v_twin_h.get() > 0.f && _param_iv_gps_v_rst_cnt.get() >= 1) {
+                const float twin_deviation = _param_iv_gps_v_twin_h.get() / _param_iv_gps_v_rst_cnt.get();
+                if (!PX4_ISFINITE(max_deviation) || twin_deviation <= max_deviation) {
+                    max_deviation = twin_deviation;
                 }
             }
 
-            max_deviation *= _param_ekf2_gps_v_noise.get();
-
             if (PX4_ISFINITE(max_deviation)) {
+                const float vel_gate = fmaxf(_param_ekf2_gps_v_gate.get(), 1.f);
+                const float vel_noise = fmaxf(_param_ekf2_gps_v_noise.get(), 0.01f);
+                max_deviation *= 0.99f * vel_noise;
+                
                 // Apply stealthy attack to east axis (positive deviation will make drone fly west)
                 gps_position.vel_n_m_s = math::constrain(gps_position.vel_n_m_s,
-                                                         ref_vel_board(0) - .99f * max_deviation,
-                                                         ref_vel_board(0) + .99f * max_deviation);
+                                                         ref_vel_board(0) - max_deviation,
+                                                         ref_vel_board(0) + max_deviation);
 
-                gps_position.vel_e_m_s = ref_vel_board(1) + .99f * max_deviation;
+                gps_position.vel_e_m_s = ref_vel_board(1) + max_deviation;
                 gps_position.vel_d_m_s = math::constrain(gps_position.vel_d_m_s,
-                                                         ref_vel_board(2) - .99f * max_deviation,
-                                                         ref_vel_board(2) + .99f * max_deviation);
+                                                         ref_vel_board(2) - max_deviation,
+                                                         ref_vel_board(2) + max_deviation);
+
+                // constrain velocity within EKF vel gate
+                const float ekf_vel_noise = fmaxf(vel_noise, gps_position.s_variance_m_s);
+                gps_position.vel_n_m_s = math::constrain(gps_position.vel_n_m_s,
+                                                         ref_vel_board(0) - vel_gate * ekf_vel_noise,
+                                                         ref_vel_board(0) + vel_gate * ekf_vel_noise);
+                gps_position.vel_e_m_s = math::constrain(gps_position.vel_e_m_s,
+                                                         ref_vel_board(1) - vel_gate * ekf_vel_noise,
+                                                         ref_vel_board(1) + vel_gate * ekf_vel_noise);
+                gps_position.vel_d_m_s = math::constrain(gps_position.vel_d_m_s,
+                                                         ref_vel_board(2) - vel_gate * ekf_vel_noise * 1.5f,
+                                                         ref_vel_board(2) + vel_gate * ekf_vel_noise * 1.5f);
+
                 gps_position.vel_m_s = sqrtf(gps_position.vel_n_m_s * gps_position.vel_n_m_s +
                         gps_position.vel_e_m_s * gps_position.vel_e_m_s +
                         gps_position.vel_d_m_s * gps_position.vel_d_m_s);
@@ -134,36 +147,46 @@ namespace sensors
             }
 
             if (type_mask & sensor_attack::DET_TIME_WINDOW &&
-                (_param_iv_gps_p_l1tw_h.get() > 0.f) && (_param_iv_gps_p_rst_cnt.get() >= 1)) {
-                const float l1tw_deviation = _param_iv_gps_p_l1tw_h.get() / _param_iv_gps_p_rst_cnt.get();
-                if (PX4_ISFINITE(max_deviation)) {
-                    max_deviation = fminf(max_deviation, l1tw_deviation);
-                } else {
-                    max_deviation = l1tw_deviation;
+                (_param_iv_gps_p_twin_h.get() > 0.f) && (_param_iv_gps_p_rst_cnt.get() >= 1)) {
+                const float twin_deviation = _param_iv_gps_p_twin_h.get() / _param_iv_gps_p_rst_cnt.get();
+                if (!PX4_ISFINITE(max_deviation) || twin_deviation <= max_deviation) {
+                    max_deviation = twin_deviation;
                 }
             }
 
-            max_deviation *= _param_ekf2_gps_p_noise.get();
-
             if (PX4_ISFINITE(max_deviation)) {
                 Vector2f horz_pos{};
+                const float pos_gate = fmaxf(_param_ekf2_gps_p_gate.get(), 1.f);
+                const float pos_noise = fmaxf(_param_ekf2_gps_p_noise.get(), 0.01f);
                 double lat = gps_position.lat * 1.e-7;
                 double lon = gps_position.lon * 1.e-7;
                 float relative_alt = gps_position.alt * 1.e-3f - _gps_alt_ref;
                 _global_origin.project(lat, lon, horz_pos(0), horz_pos(1));
 
+                max_deviation *= 0.99f * pos_noise;
                 // Apply stealthy attack to East axis, positive deviation will cause the vehicle fly west.
-                horz_pos(1) = ref_pos_board(1) + .99f * max_deviation;
+                horz_pos(1) = ref_pos_board(1)  + max_deviation;
 
                 // Contain other axis below threshold
                 horz_pos(0) = math::constrain(horz_pos(0),
-                                              ref_pos_board(0) - .99f * max_deviation,
-                                              ref_pos_board(0) + .99f * max_deviation);
+                                              ref_pos_board(0) - max_deviation,
+                                              ref_pos_board(0) + max_deviation);
 
                 // ref_pos altitude is opposite to the gps altitude, where the latter one is Up direction
                 relative_alt = math::constrain(relative_alt,
-                                               - ref_pos_board(2) - .99f * max_deviation,
-                                               - ref_pos_board(2) + .99f * max_deviation);
+                                               - ref_pos_board(2) - max_deviation,
+                                               - ref_pos_board(2) + max_deviation);
+                
+                // constrain the deviation within the EKF POS GATE
+                const float hpos_noise = fmaxf(gps_position.eph, pos_noise);
+                const float vpos_noise = fmaxf(gps_position.epv, pos_noise);
+                horz_pos = matrix::constrain(horz_pos,
+                                             Vector2f(ref_pos_board.xy()) - pos_gate * hpos_noise,
+                                             Vector2f(ref_pos_board.xy()) + pos_gate * hpos_noise);
+
+                relative_alt = math::constrain(relative_alt,
+                                               - ref_pos_board(2) - pos_gate * vpos_noise * 1.5f,
+                                               - ref_pos_board(2) + pos_gate * vpos_noise * 1.5f);
 
                 _global_origin.reproject(horz_pos(0), horz_pos(1), lat, lon);
                 gps_position.lat = (int) (lat * 1e7);
