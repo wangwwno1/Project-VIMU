@@ -146,6 +146,14 @@ namespace sensors
                 max_deviation = _param_iv_gps_p_mshift.get();
             }
 
+            if (_param_iv_gps_p_ema_h.get() > 0.f && type_mask & sensor_attack::DET_EWMA) {
+                // Consider set the max deviation to EMA if we attempt to circumvent them
+                // If not (stealthy_attack_flag & sensor_attack::DET_CUSUM) then we replace cusum limit with ema
+                max_deviation = (PX4_ISFINITE(max_deviation)) ?
+                                fminf(max_deviation, _param_iv_gps_p_ema_h.get()) : _param_iv_gps_p_ema_h.get();
+            }
+
+            Vector3f extra_offset{0.f, 0.f, 0.f};
             if (type_mask & sensor_attack::DET_TIME_WINDOW &&
                 (_param_iv_gps_p_twin_h.get() > 0.f) && (_param_iv_gps_p_rst_cnt.get() >= 1)) {
                 const float twin_deviation = _param_iv_gps_p_twin_h.get() / _param_iv_gps_p_rst_cnt.get();
@@ -165,7 +173,7 @@ namespace sensors
 
                 max_deviation *= 0.99f * pos_noise;
                 // Apply stealthy attack to East axis, positive deviation will cause the vehicle fly west.
-                horz_pos(1) = ref_pos_board(1)  + max_deviation;
+                horz_pos(1) = ref_pos_board(1) + max_deviation;
 
                 // Contain other axis below threshold
                 horz_pos(0) = math::constrain(horz_pos(0),
