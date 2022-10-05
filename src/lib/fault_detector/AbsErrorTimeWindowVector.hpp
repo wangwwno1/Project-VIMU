@@ -21,7 +21,7 @@ namespace fault_detector {
         ~AbsErrorTimeWindowVector() = default;
 
         void reset() {
-            _abs_error_cusum.setAll(+Type(0.) * _param->control_limit);
+            _sum_absolute_error.setAll(+Type(0.) * _param->control_limit);
             reset_error_offset();
 
             _sample_counter = 0;
@@ -53,7 +53,7 @@ namespace fault_detector {
                         _error_cusum.setAll(+Type(0.));
                         _normal_sample_counter = 0;
                     }
-                    _abs_error_cusum.setAll(+Type(0.));
+                    _sum_absolute_error.setAll(+Type(0.));
                     _sample_counter = 0;
                 };
 
@@ -61,11 +61,11 @@ namespace fault_detector {
                 _is_running = true;
                 const VectorN error = innov_ratios / _param->control_limit;
 
-                _abs_error_cusum += (error - _error_offset).abs();
-                _abs_error_cusum = matrix::constrain(_abs_error_cusum, Type(0.), +Type(1.05));
+                _sum_absolute_error += (error - _error_offset).abs();
+                _sum_absolute_error = matrix::constrain(_sum_absolute_error, Type(0.), +Type(1.05));
                 _sample_counter++;
 
-                if (_abs_error_cusum.max() >= +Type(1.0)) {
+                if (_sum_absolute_error.max() >= +Type(1.0)) {
                     // Declare faulty, discard all previous normal samples, reset safe counter
                     _error_cusum.setAll(+Type(0.));
                     _normal_sample_counter = 0;
@@ -88,7 +88,7 @@ namespace fault_detector {
             }
         }
 
-        const VectorN &error_sum() const { return _abs_error_cusum; }
+        const VectorN &error_sum() const { return _sum_absolute_error; }
 
         const Type error_offset() const { return _error_offset(0) * _param->control_limit; }
 
@@ -97,16 +97,16 @@ namespace fault_detector {
         void reset_error_offset() { _error_offset.setAll(+Type(0.)); }
 
         const Type test_ratio() const {
-            return _is_normal ? _abs_error_cusum.max() : math::max(_abs_error_cusum.max(), Type(+1.0001));
+            return _is_normal ? _sum_absolute_error.max() : math::max(_sum_absolute_error.max(), Type(+1.0001));
         }
 
         const VectorN test_ratios() const {
-            return _abs_error_cusum;
+            return _sum_absolute_error;
         }
 
-    protected:
+    private:
         ParamStruct *_param;
-        VectorN _abs_error_cusum;
+        VectorN _sum_absolute_error;
         VectorN _error_cusum;
         VectorN _error_offset;
         int32_t _sample_counter{0};
