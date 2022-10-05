@@ -188,6 +188,10 @@ private:
         ///< Y position of GPS antenna in body frame (m)
         (ParamExtFloat<px4::params::EKF2_GPS_POS_Z>)    _param_ekf2_gps_pos_z,
         ///< Z position of GPS antenna in body frame (m)
+        (ParamFloat<px4::params::EKF2_GPS_P_GATE>)  _param_ekf2_gps_p_gate,
+        ///< GPS horizontal position innovation consistency gate size (STD)
+        (ParamFloat<px4::params::EKF2_GPS_V_GATE>) _param_ekf2_gps_v_gate,
+        ///< GPS velocity innovation consistency gate size (STD)
 
         (ParamInt<px4::params::ATK_APPLY_TYPE>)         _param_atk_apply_type,
         (ParamInt<px4::params::ATK_STEALTH_TYPE>)       _param_atk_stealth_type,
@@ -210,7 +214,7 @@ private:
         (ParamInt<px4::params::IV_TTD_DELAY_MS>)        _param_iv_ttd_delay_ms,
         (ParamExtFloat<px4::params::IV_GPS_P_CSUM_H>)   _param_iv_gps_p_csum_h,
         (ParamExtFloat<px4::params::IV_GPS_P_MSHIFT>)   _param_iv_gps_p_mshift,
-        (ParamFloat<px4::params::IV_GPS_P_L1TW_H>)      _param_iv_gps_p_l1tw_h,
+        (ParamFloat<px4::params::IV_GPS_P_TWIN_H>)      _param_iv_gps_p_twin_h,
         (ParamInt<px4::params::IV_GPS_P_RST_CNT>)       _param_iv_gps_p_rst_cnt,
         (ParamInt<px4::params::IV_GPS_P_CD_CNT>)        _param_iv_gps_p_cd_cnt,
         (ParamExtFloat<px4::params::IV_GPS_V_CSUM_H>)   _param_iv_gps_v_csum_h,
@@ -218,7 +222,7 @@ private:
         (ParamExtFloat<px4::params::IV_GPS_V_EMA_H>)    _param_iv_gps_v_ema_h,
         (ParamExtFloat<px4::params::IV_GPS_V_ALPHA>)    _param_iv_gps_v_alpha,
         (ParamExtFloat<px4::params::IV_GPS_V_EMA_CAP>)  _param_iv_gps_v_ema_cap,
-        (ParamFloat<px4::params::IV_GPS_V_L1TW_H>)      _param_iv_gps_v_l1tw_h,
+        (ParamFloat<px4::params::IV_GPS_V_TWIN_H>)      _param_iv_gps_v_twin_h,
         (ParamInt<px4::params::IV_GPS_V_RST_CNT>)       _param_iv_gps_v_rst_cnt,
         (ParamInt<px4::params::IV_GPS_V_CD_CNT>)        _param_iv_gps_v_cd_cnt
 	)
