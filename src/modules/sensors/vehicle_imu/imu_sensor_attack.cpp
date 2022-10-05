@@ -6,14 +6,9 @@
 
 namespace sensors {
     bool VehicleIMU::attack_enabled(const uint8_t &attack_type) {
-        const int instance = _vehicle_imu_pub.get_instance();
-        if (instance < 0) {
-            PX4_ERR("Vechile IMU instance is smaller than 0! Attack has been disabled!");
-        }
 
-        return (_param_atk_apply_type.get() & attack_type) &&
-               (instance >= 0) && (_param_atk_multi_imu.get() & (1 << instance)) &&
-               (hrt_absolute_time() >= _attack_timestamp);
+        return _attack_flag_prev & attack_type && _attack_timestamp != 0 &&
+               hrt_absolute_time() >= _attack_timestamp;
     }
 
     void VehicleIMU::ApplyGyroAttack(sensor_gyro_s &gyro) {

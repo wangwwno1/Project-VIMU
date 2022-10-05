@@ -132,7 +132,8 @@ private:
 	DataValidatorGroup _voter{1};
 	unsigned _last_failover_count{0};
 
-    uint8_t _attack_flag_prev{0};
+    uint8_t     _attack_flag_prev{0};
+    uint8_t     _instance_flag_prev{0};
     hrt_abstime _attack_timestamp{0};
     bool                        _forced_using_soft_baro{false};
     bool                        _status_updated{false};
@@ -171,6 +172,7 @@ private:
 
         (ParamInt<px4::params::ATK_APPLY_TYPE>)         _param_atk_apply_type,
         (ParamInt<px4::params::ATK_COUNTDOWN_MS>)       _param_atk_countdown_ms,
+        (ParamInt<px4::params::ATK_MULTI_BARO>)         _param_atk_multi_baro,
         (ParamInt<px4::params::IV_DEBUG_LOG>)           _param_iv_debug_log,
         (ParamExtFloat<px4::params::IV_BARO_CSUM_H>)    _param_iv_baro_csum_h,
         (ParamExtFloat<px4::params::IV_BARO_MSHIFT>)    _param_iv_baro_mshift

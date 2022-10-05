@@ -47,7 +47,7 @@ PARAM_DEFINE_INT32(ATK_APPLY_TYPE, 0);
 PARAM_DEFINE_INT32(ATK_STEALTH_TYPE, 0);
 
 /**
- * Sensor Injection Attack Control Mask.
+ * Sensor Injection Attack Control Mask for IMU.
  *
  * Set bits in the following positions to set which imu is affected. Set to zero to disable.
  *
@@ -60,6 +60,36 @@ PARAM_DEFINE_INT32(ATK_STEALTH_TYPE, 0);
  * @bit 3 Apply attack to IMU3
  */
 PARAM_DEFINE_INT32(ATK_MULTI_IMU, 0);
+
+/**
+ * Sensor Denied of Service Attack Control Mask for Magnetometer.
+ *
+ * Set bits in the following positions to set which mag is affected. Set to zero to disable.
+ *
+ * @group Sensor Attack
+ * @min 0
+ * @max 15
+ * @bit 0 Apply attack to MAG0
+ * @bit 1 Apply attack to MAG1
+ * @bit 2 Apply attack to MAG2
+ * @bit 3 Apply attack to MAG3
+ */
+PARAM_DEFINE_INT32(ATK_MULTI_MAG, 0);
+
+/**
+ * Sensor Denied of Service Attack Control Mask for Barometer.
+ *
+ * Set bits in the following positions to set which barometer is affected. Set to zero to disable.
+ *
+ * @group Sensor Attack
+ * @min 0
+ * @max 15
+ * @bit 0 Apply attack to BARO0
+ * @bit 1 Apply attack to BARO1
+ * @bit 2 Apply attack to BARO2
+ * @bit 3 Apply attack to BARO3
+ */
+PARAM_DEFINE_INT32(ATK_MULTI_BARO, 0);
 
 // Parameters related to GPS Position Spoofing
 /**

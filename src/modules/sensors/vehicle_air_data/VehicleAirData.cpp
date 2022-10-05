@@ -139,17 +139,25 @@ bool VehicleAirData::ParametersUpdate(bool force)
 			}
 		}
 
-
         if (_param_atk_apply_type.get() != _attack_flag_prev) {
-            _attack_flag_prev = _param_atk_apply_type.get();
-
-            if (_attack_flag_prev & (sensor_attack::BLK_BARO_HGT)) {
+            const int next_attack_flag = _param_atk_apply_type.get();
+            const int next_instance_flag = _param_atk_multi_baro.get();
+            if (next_attack_flag & sensor_attack::BLK_BARO_HGT && next_instance_flag != 0) {
                 // Enable attack, calculate new timestamp
                 _attack_timestamp = param_update.timestamp + (hrt_abstime) (_param_atk_countdown_ms.get() * 1000);
-            } else {
+                PX4_INFO("Debug - Blocking BARO, expect start timestamp: %" PRIu64, _attack_timestamp);
+                if (next_instance_flag != _instance_flag_prev) {
+                    PX4_INFO("Debug - Affected BARO instance flag has changed: %d -> %d", _instance_flag_prev, next_instance_flag);
+                    _instance_flag_prev = next_instance_flag;
+                }
+
+            } else if (_attack_timestamp != 0) {
                 // Disable attack, reset timestamp
                 _attack_timestamp = 0;
+                PX4_INFO("Debug - BARO Attack disabled, reset attack timestamp.");
             }
+
+            _attack_flag_prev = next_attack_flag;
         }
 
 		return true;
@@ -190,6 +198,11 @@ void VehicleAirData::Run()
 		}
 
 		if (_advertised[uorb_index]) {
+            if (_attack_timestamp != 0 && hrt_absolute_time() >= _attack_timestamp && (_instance_flag_prev & (1 << uorb_index))) {
+                // Skip the affected baro to simulate blocking attack
+                continue;
+            }
+
 			sensor_baro_s report;
 
 			while (_sensor_sub[uorb_index].update(&report)) {
