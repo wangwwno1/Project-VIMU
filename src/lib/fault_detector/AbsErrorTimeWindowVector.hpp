@@ -97,7 +97,7 @@ namespace fault_detector {
         void reset_error_offset() { _error_offset.setAll(+Type(0.)); }
 
         const Type test_ratio() const {
-            return _abs_error_cusum.max();
+            return _is_normal ? _abs_error_cusum.max() : math::max(_abs_error_cusum.max(), Type(+1.0001));
         }
 
         const VectorN test_ratios() const {
