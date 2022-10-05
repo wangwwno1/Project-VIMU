@@ -63,7 +63,7 @@
 
 using namespace time_literals;
 using GyroValidator = fault_detector::EMACuSumVector3f;
-using AccelValidator = fault_detector::CuSumVector3f;
+using AccelValidator = fault_detector::EMACuSumVector3f;
 
 namespace sensors
 {
@@ -253,6 +253,9 @@ private:
         (ParamFloat<px4::params::IV_ACC_NOISE>) _param_iv_acc_noise,
         (ParamExtFloat <px4::params::IV_ACC_CSUM_H>) _param_iv_acc_csum_h,
         (ParamExtFloat <px4::params::IV_ACC_MSHIFT>) _param_iv_acc_mshift,
+        (ParamExtFloat<px4::params::IV_ACC_EMA_H>) _param_iv_acc_ema_h,
+        (ParamExtFloat<px4::params::IV_ACC_ALPHA>) _param_iv_acc_alpha,
+        (ParamExtFloat<px4::params::IV_ACC_EMA_CAP>) _param_iv_acc_ema_cap,
         (ParamFloat <px4::params::IV_ACC_L1TW_H>) _param_iv_acc_l1tw_h,
         (ParamInt <px4::params::IV_ACC_RST_CNT>) _param_iv_acc_rst_cnt,
         (ParamInt <px4::params::IV_ACC_CD_CNT>) _param_iv_acc_cd_cnt

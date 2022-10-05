@@ -84,6 +84,14 @@ namespace sensors {
                 max_deviation = _param_iv_acc_mshift.get();
             }
 
+            if (type_mask & sensor_attack::DET_EWMA && (_param_iv_acc_ema_h.get() > 0.f)) {
+                if (PX4_ISFINITE(max_deviation)) {
+                    max_deviation = fminf(max_deviation, _param_iv_acc_ema_h.get());
+                } else {
+                    max_deviation = _param_iv_acc_ema_h.get();
+                }
+            }
+
             // We do not apply ema stealthy attack because we won't use ema detector for accelerometer
 
             if (type_mask & sensor_attack::DET_TIME_WINDOW &&

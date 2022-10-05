@@ -317,6 +317,41 @@ PARAM_DEFINE_FLOAT(IV_ACC_CSUM_H, 0.f);
  */
 PARAM_DEFINE_FLOAT(IV_ACC_MSHIFT, 1.f);
 
+
+/**
+ * Control limit for Exponential Moving Average (EMA) validation of the acceleration error, expressed in standard deviation.
+ *
+ * The formula is EMA(T) = min(max(val, -CAP), +CAP) * Alpha + (1-Alpha) * EMA(T-1)
+ * Set zero to inhibit validation.
+ *
+ * @group Innovation Validator
+ * @min 0.0
+ * @decimal 4
+ */
+PARAM_DEFINE_FLOAT(IV_ACC_EMA_H, 0.f);
+
+/**
+ * Alpha for Exponential Moving Average (EMA) validation of the acceleration error, expressed in standard deviation.
+ *
+ * @group Innovation Validator
+ * @min 0.0001
+ * @max 1.0
+ * @decimal 4
+ */
+PARAM_DEFINE_FLOAT(IV_ACC_ALPHA, 1.f);
+
+/**
+ * Clip value for Exponential Moving Average (EMA) validation of the acceleration error, expressed in standard deviation.
+ *
+ * This constrain the maximum value that will input into EMA detector
+ * Set zero to inhibit clip, for inhibit validation please refer to the control limit description.
+ *
+ * @group Innovation Validator
+ * @min 0.0
+ * @decimal 2
+ */
+PARAM_DEFINE_FLOAT(IV_ACC_EMA_CAP, 0.f);
+
 /**
  * Control limit for Absolute Error Time Window (L1TW) validation for acceleration, expressed in standard deviations.
  *
