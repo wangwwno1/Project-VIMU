@@ -43,7 +43,9 @@ namespace sensors {
         const Vector3f error_ratio = error_residuals * inv_gyr_noise;
         _gyro_validator.validate(error_ratio);
 
-        if (_param_iv_delay_mask.get() & sensor_attack::ATK_MASK_GYRO && _param_iv_ttd_delay_ms.get() > 0) {
+        if (attack_enabled(sensor_attack::ATK_MASK_GYRO)
+            && _param_iv_delay_mask.get() & sensor_attack::ATK_MASK_GYRO
+            && _param_iv_ttd_delay_ms.get() > 0) {
             // Use delay for precise Time to Detection
             if (hrt_elapsed_time(&_attack_timestamp) >= (hrt_abstime) (_param_iv_ttd_delay_ms.get() * 1000)) {
                 // Declare gyro failure immediately by add error count
@@ -105,7 +107,9 @@ namespace sensors {
         const Vector3f error_ratio = error_residuals * inv_acc_noise;
         _accel_validator.validate(error_ratio);
 
-        if (_param_iv_delay_mask.get() & sensor_attack::ATK_MASK_ACCEL && _param_iv_ttd_delay_ms.get() > 0) {
+        if (attack_enabled(sensor_attack::ATK_MASK_ACCEL)
+            && _param_iv_delay_mask.get() & sensor_attack::ATK_MASK_ACCEL
+            && _param_iv_ttd_delay_ms.get() > 0) {
             // Use delay for precise Time to Detection
             if (hrt_elapsed_time(&_attack_timestamp) >= (hrt_abstime) (_param_iv_ttd_delay_ms.get() * 1000)) {
                 // Declare gyro failure immediately by add error count

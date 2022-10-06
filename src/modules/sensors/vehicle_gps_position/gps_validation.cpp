@@ -171,8 +171,9 @@ namespace sensors
                 _pos_validator.validate(_last_pos_error.edivide(pos_std_var));
                 _vel_validator.validate(_last_vel_error.edivide(vel_std_var));
 
-                if (_param_iv_delay_mask.get() & (sensor_attack::ATK_GPS_POS | sensor_attack::ATK_GPS_VEL) &&
-                    _param_iv_ttd_delay_ms.get() > 0) {
+                if (attack_enabled(sensor_attack::ATK_GPS_POS | sensor_attack::ATK_GPS_VEL)
+                    && _param_iv_delay_mask.get() & (sensor_attack::ATK_GPS_POS | sensor_attack::ATK_GPS_VEL)
+                    && _param_iv_ttd_delay_ms.get() > 0) {
                     // Use delay for precise Time to Detection
                     if (_attack_timestamp != 0 &&
                         hrt_elapsed_time(&_attack_timestamp) >= (hrt_abstime) (_param_iv_ttd_delay_ms.get() * 1000)) {
