@@ -149,6 +149,18 @@ private:
 			delete _sensor_gps_pubs[i];
 		}
 
+        for (auto &gyro : _px4_gyro) {
+            if (gyro) {
+                delete gyro;
+            }
+        }
+
+        for (auto &accel : _px4_accel) {
+            if (accel) {
+                delete accel;
+            }
+        }
+
 		_instance = nullptr;
 	}
 
@@ -163,17 +175,17 @@ private:
 
 	// simulated sensor instances
 	static constexpr uint8_t ACCEL_COUNT_MAX = 3;
-	PX4Accelerometer _px4_accel[ACCEL_COUNT_MAX] {
-		{1310988, ROTATION_NONE}, // 1310988: DRV_IMU_DEVTYPE_SIM, BUS: 1, ADDR: 1, TYPE: SIMULATION
-		{1310996, ROTATION_NONE}, // 1310996: DRV_IMU_DEVTYPE_SIM, BUS: 2, ADDR: 1, TYPE: SIMULATION
-		{1311004, ROTATION_NONE}, // 1311004: DRV_IMU_DEVTYPE_SIM, BUS: 3, ADDR: 1, TYPE: SIMULATION
+	PX4Accelerometer *_px4_accel[ACCEL_COUNT_MAX] {
+        new PX4Accelerometer(1310988, ROTATION_NONE), // 1310988: DRV_IMU_DEVTYPE_SIM, BUS: 1, ADDR: 1, TYPE: SIMULATION
+        new PX4Accelerometer(1310996, ROTATION_NONE), // 1310996: DRV_IMU_DEVTYPE_SIM, BUS: 2, ADDR: 1, TYPE: SIMULATION
+        new PX4Accelerometer(1311004, ROTATION_NONE), // 1311004: DRV_IMU_DEVTYPE_SIM, BUS: 3, ADDR: 1, TYPE: SIMULATION
 	};
 
 	static constexpr uint8_t GYRO_COUNT_MAX = 3;
-	PX4Gyroscope _px4_gyro[GYRO_COUNT_MAX] {
-		{1310988, ROTATION_NONE}, // 1310988: DRV_IMU_DEVTYPE_SIM, BUS: 1, ADDR: 1, TYPE: SIMULATION
-		{1310996, ROTATION_NONE}, // 1310996: DRV_IMU_DEVTYPE_SIM, BUS: 2, ADDR: 1, TYPE: SIMULATION
-		{1311004, ROTATION_NONE}, // 1311004: DRV_IMU_DEVTYPE_SIM, BUS: 3, ADDR: 1, TYPE: SIMULATION
+	PX4Gyroscope *_px4_gyro[GYRO_COUNT_MAX] {
+        new PX4Gyroscope(1310988, ROTATION_NONE), // 1310988: DRV_IMU_DEVTYPE_SIM, BUS: 1, ADDR: 1, TYPE: SIMULATION
+        new PX4Gyroscope(1310996, ROTATION_NONE), // 1310996: DRV_IMU_DEVTYPE_SIM, BUS: 2, ADDR: 1, TYPE: SIMULATION
+        new PX4Gyroscope(1311004, ROTATION_NONE), // 1311004: DRV_IMU_DEVTYPE_SIM, BUS: 3, ADDR: 1, TYPE: SIMULATION
 	};
 
 	PX4Magnetometer		_px4_mag_0{197388, ROTATION_NONE}; // 197388: DRV_MAG_DEVTYPE_MAGSIM, BUS: 1, ADDR: 1, TYPE: SIMULATION
