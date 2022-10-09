@@ -67,8 +67,14 @@ static constexpr uint8_t clipping(const int16_t samples[], uint8_t len)
 }
 
 PX4Accelerometer::PX4Accelerometer(uint32_t device_id, enum Rotation rotation) :
+    ModuleParams(nullptr),
 	_device_id{device_id},
-	_rotation{rotation}
+	_rotation{rotation},
+    _param_iv_acc_csum_h(_accel_validator_params.cusum_params.control_limit),
+    _param_iv_acc_mshift(_accel_validator_params.cusum_params.mean_shift),
+    _param_iv_acc_ema_h(_accel_validator_params.ema_params.control_limit),
+    _param_iv_acc_alpha(_accel_validator_params.ema_params.alpha),
+    _param_iv_acc_ema_cap(_accel_validator_params.ema_params.cap)
 {
 	// advertise immediately to keep instance numbering in sync
 	_sensor_pub.advertise();
@@ -130,8 +136,13 @@ void PX4Accelerometer::update(const hrt_abstime &timestamp_sample, float x, floa
 	report.clip_counter[1] = (fabsf(y) >= _clip_limit);
 	report.clip_counter[2] = (fabsf(z) >= _clip_limit);
 	report.samples = 1;
-	report.timestamp = hrt_absolute_time();
 
+    ParametersUpdate();
+    updateReference(timestamp_sample);
+    applyAccelAttack(report);
+    validateAccel(report);
+
+	report.timestamp = hrt_absolute_time();
 	_sensor_pub.publish(report);
 }
 
@@ -143,12 +154,6 @@ void PX4Accelerometer::updateFIFO(sensor_accel_fifo_s &sample)
 	for (int n = 0; n < N; n++) {
 		rotate_3i(_rotation, sample.x[n], sample.y[n], sample.z[n]);
 	}
-
-	sample.device_id = _device_id;
-	sample.scale = _scale;
-	sample.timestamp = hrt_absolute_time();
-	_sensor_fifo_pub.publish(sample);
-
 
 	// publish
 	sensor_accel_s report;
@@ -167,6 +172,11 @@ void PX4Accelerometer::updateFIFO(sensor_accel_fifo_s &sample)
 	_last_sample[1] = sample.y[N - 1];
 	_last_sample[2] = sample.z[N - 1];
 
+    ParametersUpdate();
+    updateReference(sample.timestamp_sample);
+    applyAccelAttack(report, sample);
+    validateAccel(report);
+
 	report.clip_counter[0] = clipping(sample.x, N);
 	report.clip_counter[1] = clipping(sample.y, N);
 	report.clip_counter[2] = clipping(sample.z, N);
@@ -174,10 +184,52 @@ void PX4Accelerometer::updateFIFO(sensor_accel_fifo_s &sample)
 	report.timestamp = hrt_absolute_time();
 
 	_sensor_pub.publish(report);
+
+    sample.device_id = _device_id;
+    sample.scale = _scale;
+    sample.timestamp = hrt_absolute_time();
+    _sensor_fifo_pub.publish(sample);
 }
 
 void PX4Accelerometer::UpdateClipLimit()
 {
 	// 99.9% of potential max
 	_clip_limit = math::constrain((_range / _scale) * 0.999f, 0.f, (float)INT16_MAX);
+}
+
+
+bool PX4Accelerometer::ParametersUpdate()
+{
+    bool updated = false;
+
+    // Check if parameters have changed
+    if (_parameter_update_sub.updated()) {
+        // clear update
+        parameter_update_s param_update;
+        _parameter_update_sub.copy(&param_update);
+
+        updateParams();
+
+        if (_param_atk_apply_type.get() != _attack_flag_prev) {
+            const int next_attack_flag = _param_atk_apply_type.get();
+            if (next_attack_flag & sensor_attack::ATK_MASK_GYRO
+                && _param_atk_multi_imu.get() & (1 << get_instance())) {
+                // Enable attack, calculate new timestamp
+                _attack_timestamp = param_update.timestamp + (hrt_abstime) (_param_atk_countdown_ms.get() * 1000);
+                PX4_INFO("Debug - Enable GYRO attack for instance %d, expect start timestamp: %" PRIu64,
+                         get_instance(), _attack_timestamp);
+
+            } else if (_attack_timestamp != 0) {
+                // Disable attack, reset timestamp
+                _attack_timestamp = 0;
+                PX4_INFO("Debug - Attack is disabled for GYRO%d, reset attack timestamp.", get_instance());
+            }
+
+            _attack_flag_prev = next_attack_flag;
+        }
+
+        updated = true;
+    }
+
+    return updated;
 }

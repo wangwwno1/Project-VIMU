@@ -33,14 +33,24 @@
 
 #pragma once
 
+#include <px4_platform_common/module_params.h>
 #include <drivers/drv_hrt.h>
 #include <lib/conversion/rotation.h>
+#include <lib/fault_detector/fault_detector.hpp>
+#include <lib/sensor_attack/sensor_attack.hpp>
 #include <lib/geo/geo.h>
+#include <uORB/Subscription.hpp>
+#include <uORB/SubscriptionInterval.hpp>
 #include <uORB/PublicationMulti.hpp>
+#include <uORB/topics/parameter_update.h>
 #include <uORB/topics/sensor_accel.h>
 #include <uORB/topics/sensor_accel_fifo.h>
+#include <uORB/topics/sensor_accel_errors.h>
 
-class PX4Accelerometer
+using namespace time_literals;
+using AccelValidator = fault_detector::EMACuSumVector3f;
+
+class PX4Accelerometer : public ModuleParams
 {
 public:
 	PX4Accelerometer(uint32_t device_id, enum Rotation rotation = ROTATION_NONE);
@@ -64,10 +74,30 @@ public:
 	int get_instance() { return _sensor_pub.get_instance(); };
 
 private:
+    // Note: this value is borrowed from data_validator
+    static const constexpr unsigned NORETURN_ERRCOUNT = 10000;
+    /**< if the error count reaches this value, return sensor as invalid */
+
 	void UpdateClipLimit();
+
+    bool ParametersUpdate();
+    void updateReference(const hrt_abstime &timestamp_sample);
+
+    void validateAccel(sensor_accel_s &accel);
+
+    bool attack_enabled(const uint8_t &attack_type, const hrt_abstime &timestamp_sample) const;
+
+    void applyAccelAttack(sensor_accel_s &accel);
+    void applyAccelAttack(sensor_accel_s &accel, sensor_accel_fifo_s &accel_fifo);
+
+    float getMaxDeviation() const;
 
 	uORB::PublicationMulti<sensor_accel_s> _sensor_pub{ORB_ID(sensor_accel)};
 	uORB::PublicationMulti<sensor_accel_fifo_s>  _sensor_fifo_pub{ORB_ID(sensor_accel_fifo)};
+    uORB::PublicationMulti<sensor_accel_errors_s> _sensor_accel_errors_pub{ORB_ID(sensor_accel_errors)};
+
+    uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
+    uORB::Subscription  _reference_accel_sub{ORB_ID(reference_accel)};
 
 	uint32_t		_device_id{0};
 	const enum Rotation	_rotation;
@@ -83,4 +113,34 @@ private:
 	uint32_t		_error_count{0};
 
 	int16_t			_last_sample[3] {};
+
+    AccelValidator::ParamStruct  _accel_validator_params{};
+    AccelValidator               _accel_validator{&_accel_validator_params};
+    sensor_accel_s               _curr_ref_accel{};
+    sensor_accel_s               _next_ref_accel{};
+
+    int  _attack_flag_prev{0};
+    hrt_abstime _attack_timestamp{0};
+    float   _last_deviation[3] {};
+
+    DEFINE_PARAMETERS(
+        (ParamInt<px4::params::ATK_APPLY_TYPE>) _param_atk_apply_type,
+        (ParamInt<px4::params::ATK_STEALTH_TYPE>) _param_atk_stealth_type,
+        (ParamInt<px4::params::ATK_COUNTDOWN_MS>) _param_atk_countdown_ms,
+        (ParamInt<px4::params::ATK_MULTI_IMU>) _param_atk_multi_imu,
+        (ParamFloat<px4::params::ATK_ACC_BIAS>) _param_atk_acc_bias,
+    
+        (ParamInt<px4::params::IV_DEBUG_LOG>) _param_iv_debug_log,
+        (ParamInt<px4::params::IV_DELAY_MASK>) _param_iv_delay_mask,
+        (ParamInt<px4::params::IV_TTD_DELAY_MS>) _param_iv_ttd_delay_ms,
+        (ParamFloat<px4::params::IV_ACC_NOISE>) _param_iv_acc_noise,
+        (ParamExtFloat <px4::params::IV_ACC_CSUM_H>) _param_iv_acc_csum_h,
+        (ParamExtFloat <px4::params::IV_ACC_MSHIFT>) _param_iv_acc_mshift,
+        (ParamExtFloat<px4::params::IV_ACC_EMA_H>) _param_iv_acc_ema_h,
+        (ParamExtFloat<px4::params::IV_ACC_ALPHA>) _param_iv_acc_alpha,
+        (ParamExtFloat<px4::params::IV_ACC_EMA_CAP>) _param_iv_acc_ema_cap,
+        (ParamFloat <px4::params::IV_ACC_TWIN_H>) _param_iv_acc_twin_h,
+        (ParamInt <px4::params::IV_ACC_RST_CNT>) _param_iv_acc_rst_cnt,
+        (ParamInt <px4::params::IV_ACC_CD_CNT>) _param_iv_acc_cd_cnt
+    )
 };
