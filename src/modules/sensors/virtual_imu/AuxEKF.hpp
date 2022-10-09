@@ -19,8 +19,8 @@ namespace estimator
 struct AuxEKFParam {
     float gyro_noise{1.5e-2f};
     float process_noise{0.075f};
-    int32_t imu_fuse_delay_us{200000};
-    int32_t filter_update_interval_us{20000};  // ekf prediction period in microseconds - this should ideally be an integer multiple of the IMU time delta
+    int32_t imu_fuse_delay_us{500000};
+    int32_t filter_update_interval_us{50000};  // ekf prediction period in microseconds - this should ideally be an integer multiple of the IMU time delta
 };
 
 class AuxEKF
@@ -147,7 +147,7 @@ public:
         }
     }
 
-    bool reset_imu_buffer(uint8_t index) {
+    bool reset_imu_buffer(const uint8_t index) {
         if (_imu_buffers[index] != nullptr) {
             RateSample newest_imu_sample = _imu_buffers[index]->buffer.get_newest();
             _imu_buffers[index]->buffer.pop_first_older_than(newest_imu_sample.time_us, &newest_imu_sample);
@@ -265,8 +265,8 @@ private:
             }
 
             RateSample imu_sample_delayed{};
-            if (_imu_buffers[i]->buffer.pop_first_older_than(output_sample_delayed.time_us, &imu_sample_delayed) &&
-                output_sample_delayed.time_us < imu_sample_delayed.time_us + _param.imu_fuse_delay_us) {
+            if (_imu_buffers[i]->buffer.pop_first_older_than(output_sample_delayed.time_us, &imu_sample_delayed)
+                && output_sample_delayed.time_us < imu_sample_delayed.time_us + _param.imu_fuse_delay_us) {
                 for (uint8_t dim = 0; dim < _k_num_states; ++dim) {
                     const float innov = _state(dim) - imu_sample_delayed.angular_rate(dim);
                     const float innov_var = P(dim, dim) + math::sq(_param.gyro_noise);
