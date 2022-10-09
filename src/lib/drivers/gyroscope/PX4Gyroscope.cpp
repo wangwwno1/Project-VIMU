@@ -51,11 +51,18 @@ static constexpr int32_t sum(const int16_t samples[], uint8_t len)
 }
 
 PX4Gyroscope::PX4Gyroscope(uint32_t device_id, enum Rotation rotation) :
+    ModuleParams(nullptr),
 	_device_id{device_id},
-	_rotation{rotation}
+	_rotation{rotation},
+    _param_iv_gyr_csum_h(_gyro_validator_params.cusum_params.control_limit),
+    _param_iv_gyr_mshift(_gyro_validator_params.cusum_params.mean_shift),
+    _param_iv_gyr_ema_h(_gyro_validator_params.ema_params.control_limit),
+    _param_iv_gyr_alpha(_gyro_validator_params.ema_params.alpha),
+    _param_iv_gyr_ema_cap(_gyro_validator_params.ema_params.cap)
 {
 	// advertise immediately to keep instance numbering in sync
 	_sensor_pub.advertise();
+    _sensor_gyro_errors_pub.advertise();
 
 	param_get(param_find("IMU_GYRO_RATEMAX"), &_imu_gyro_rate_max);
 }
@@ -108,9 +115,15 @@ void PX4Gyroscope::update(const hrt_abstime &timestamp_sample, float x, float y,
 	report.y = y * _scale;
 	report.z = z * _scale;
 	report.samples = 1;
-	report.timestamp = hrt_absolute_time();
 
-	_sensor_pub.publish(report);
+    // Apply simulated attack, check gyro data, replace error_count to alarm value if an attack is detected.
+    ParametersUpdate();
+    updateReference(timestamp_sample);
+    applyGyroAttack(report);
+    validateGyro(report);
+
+    report.timestamp = hrt_absolute_time();
+    _sensor_pub.publish(report);
 }
 
 void PX4Gyroscope::updateFIFO(sensor_gyro_fifo_s &sample)
@@ -121,12 +134,6 @@ void PX4Gyroscope::updateFIFO(sensor_gyro_fifo_s &sample)
 	for (int n = 0; n < N; n++) {
 		rotate_3i(_rotation, sample.x[n], sample.y[n], sample.z[n]);
 	}
-
-	sample.device_id = _device_id;
-	sample.scale = _scale;
-	sample.timestamp = hrt_absolute_time();
-	_sensor_fifo_pub.publish(sample);
-
 
 	// publish
 	sensor_gyro_s report;
@@ -141,12 +148,59 @@ void PX4Gyroscope::updateFIFO(sensor_gyro_fifo_s &sample)
 	report.y = (0.5f * (_last_sample[1] + sample.y[N - 1]) + sum(sample.y, N - 1)) * scale;
 	report.z = (0.5f * (_last_sample[2] + sample.z[N - 1]) + sum(sample.z, N - 1)) * scale;
 
-	_last_sample[0] = sample.x[N - 1];
+    _last_sample[0] = sample.x[N - 1];
 	_last_sample[1] = sample.y[N - 1];
 	_last_sample[2] = sample.z[N - 1];
 
-	report.samples = N;
-	report.timestamp = hrt_absolute_time();
+    // Try to update reference
+    ParametersUpdate();
+    updateReference(sample.timestamp_sample);
+    applyGyroAttack(report, sample);
+    validateGyro(report);
 
+    report.samples = N;
+	report.timestamp = hrt_absolute_time();
 	_sensor_pub.publish(report);
+
+    // Postpone fifo publish until detection completed
+    sample.device_id = _device_id;
+    sample.scale = _scale;
+    sample.timestamp = hrt_absolute_time();
+    _sensor_fifo_pub.publish(sample);
+}
+
+bool PX4Gyroscope::ParametersUpdate()
+{
+    bool updated = false;
+
+    // Check if parameters have changed
+    if (_parameter_update_sub.updated()) {
+        // clear update
+        parameter_update_s param_update;
+        _parameter_update_sub.copy(&param_update);
+
+        updateParams();
+
+        if (_param_atk_apply_type.get() != _attack_flag_prev) {
+            const int next_attack_flag = _param_atk_apply_type.get();
+            if (next_attack_flag & sensor_attack::ATK_MASK_GYRO
+                && _param_atk_multi_imu.get() & (1 << get_instance())) {
+                // Enable attack, calculate new timestamp
+                _attack_timestamp = param_update.timestamp + (hrt_abstime) (_param_atk_countdown_ms.get() * 1000);
+                PX4_INFO("Debug - Enable GYRO attack for instance %d, expect start timestamp: %" PRIu64,
+                         get_instance(), _attack_timestamp);
+
+            } else if (_attack_timestamp != 0) {
+                // Disable attack, reset timestamp
+                _attack_timestamp = 0;
+                PX4_INFO("Debug - Attack is disabled for GYRO%d, reset attack timestamp.", get_instance());
+            }
+
+            _attack_flag_prev = next_attack_flag;
+        }
+
+        updated = true;
+    }
+
+    return updated;
 }

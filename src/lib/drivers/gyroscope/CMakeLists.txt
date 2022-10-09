@@ -34,6 +34,8 @@
 px4_add_library(drivers_gyroscope
 	PX4Gyroscope.cpp
 	PX4Gyroscope.hpp
+    gyro_validation.cpp
+    gyro_attack_simulation.cpp
 )
 target_compile_options(drivers_gyroscope PRIVATE ${MAX_CUSTOM_OPT_LEVEL})
 target_link_libraries(drivers_gyroscope PRIVATE conversion)
