@@ -52,17 +52,7 @@ VehicleIMU::VehicleIMU(int instance, uint8_t accel_index, uint8_t gyro_index, co
 	ScheduledWorkItem(MODULE_NAME, config),
 	_sensor_accel_sub(ORB_ID(sensor_accel), accel_index),
 	_sensor_gyro_sub(this, ORB_ID(sensor_gyro), gyro_index),
-	_instance(instance),
-    _param_iv_gyr_csum_h(_gyro_validator_params.cusum_params.control_limit),
-    _param_iv_gyr_mshift(_gyro_validator_params.cusum_params.mean_shift),
-    _param_iv_gyr_ema_h(_gyro_validator_params.ema_params.control_limit),
-    _param_iv_gyr_alpha(_gyro_validator_params.ema_params.alpha),
-    _param_iv_gyr_ema_cap(_gyro_validator_params.ema_params.cap),
-    _param_iv_acc_csum_h(_accel_validator_params.cusum_params.control_limit),
-    _param_iv_acc_mshift(_accel_validator_params.cusum_params.mean_shift),
-    _param_iv_acc_ema_h(_accel_validator_params.ema_params.control_limit),
-    _param_iv_acc_alpha(_accel_validator_params.ema_params.alpha),
-    _param_iv_acc_ema_cap(_accel_validator_params.ema_params.cap)
+	_instance(instance)
 {
 	_imu_integration_interval_us = 1e6f / _param_imu_integ_rate.get();
 
@@ -83,8 +73,6 @@ VehicleIMU::VehicleIMU(int instance, uint8_t accel_index, uint8_t gyro_index, co
 	// advertise immediately to ensure consistent ordering
 	_vehicle_imu_pub.advertise();
 	_vehicle_imu_status_pub.advertise();
-    _sensor_gyro_errors_pub.advertise();
-    _sensor_accel_errors_pub.advertise();
 }
 
 VehicleIMU::~VehicleIMU()
@@ -96,8 +84,6 @@ VehicleIMU::~VehicleIMU()
 
 	_vehicle_imu_pub.unadvertise();
 	_vehicle_imu_status_pub.unadvertise();
-    _sensor_gyro_errors_pub.unadvertise();
-    _sensor_accel_errors_pub.unadvertise();
 }
 
 bool VehicleIMU::Start()
@@ -174,33 +160,6 @@ bool VehicleIMU::ParametersUpdate(bool force)
 			// force update
 			_update_integrator_config = true;
 		}
-
-        if (_param_atk_apply_type.get() != _attack_flag_prev) {
-            const int next_attack_flag = _param_atk_apply_type.get();
-            if (next_attack_flag & (sensor_attack::ATK_MASK_GYRO | sensor_attack::ATK_MASK_ACCEL) &&
-                _param_atk_multi_imu.get() & (1 << _instance)) {
-                // Enable attack, calculate new timestamp
-                _attack_timestamp = param_update.timestamp + (hrt_abstime) (_param_atk_countdown_ms.get() * 1000);
-                if (next_attack_flag & sensor_attack::ATK_MASK_GYRO) {
-                    PX4_INFO("Debug - Enable GYRO attack for IMU%d, expect start timestamp: %" PRIu64, _instance, _attack_timestamp);
-                } else if (_attack_flag_prev & sensor_attack::ATK_MASK_GYRO) {
-                    PX4_INFO("Debug - GYRO attack is disabled for IMU%d.", _instance);
-                }
-
-                if (next_attack_flag & sensor_attack::ATK_MASK_ACCEL) {
-                    PX4_INFO("Debug - Enable ACCEL attack for IMU%d, expect start timestamp: %" PRIu64, _instance, _attack_timestamp);
-                } else if (_attack_flag_prev & sensor_attack::ATK_MASK_ACCEL) {
-                    PX4_INFO("Debug - ACCEL attack is disabled for IMU%d.", _instance);
-                }
-
-            } else if (_attack_timestamp != 0) {
-                // Disable attack, reset timestamp
-                _attack_timestamp = 0;
-                PX4_INFO("Debug - Attack is disabled for IMU%d, reset attack timestamp.", _instance);
-            }
-
-            _attack_flag_prev = next_attack_flag;
-        }
 	}
 
 	return updated;
@@ -393,9 +352,6 @@ bool VehicleIMU::UpdateAccel()
 
 		_accel_calibration.set_device_id(accel.device_id);
 
-        // Validate accelerometer data, simulate sensor attack inside if necessary
-        ValidateAccelData(accel);
-
 		if (accel.error_count != _status.accel_error_count) {
 			_publish_status = true;
 			_status.accel_error_count = accel.error_count;
@@ -552,9 +508,6 @@ bool VehicleIMU::UpdateGyro()
 
 		_gyro_calibration.set_device_id(gyro.device_id);
 
-        // Validate Gyro data, simulate sensor attack inside if necessary
-        ValidateGyroData(gyro);
-
 		if (gyro.error_count != _status.gyro_error_count) {
 			_publish_status = true;
 			_status.gyro_error_count = gyro.error_count;
@@ -668,22 +621,6 @@ bool VehicleIMU::Publish()
 					_raw_gyro_mean.reset();
 				}
 			}
-
-            if (_last_accel_errors.samples > 0 && _param_iv_debug_log.get()) {
-                // publish accel error info
-                _last_accel_errors.device_id = _accel_calibration.device_id();
-                _last_accel_errors.timestamp = hrt_absolute_time();
-                _sensor_accel_errors_pub.publish(_last_accel_errors);
-                _last_accel_errors = {};
-            }
-
-            if (_last_gyro_errors.samples > 0 && _param_iv_debug_log.get()) {
-                // publish gyro error info
-                _last_gyro_errors.device_id = _gyro_calibration.device_id();
-                _last_gyro_errors.timestamp = hrt_absolute_time();
-                _sensor_gyro_errors_pub.publish(_last_gyro_errors);
-                _last_gyro_errors = {};
-            }
 
 			// publish vehicle_imu
 			imu.timestamp_sample = _gyro_timestamp_sample_last;

@@ -35,8 +35,6 @@ px4_add_library(vehicle_imu
 	Integrator.hpp
 	VehicleIMU.cpp
 	VehicleIMU.hpp
-    imu_validation.cpp
-    imu_sensor_attack.cpp
 )
 
 target_compile_options(vehicle_imu PRIVATE ${MAX_CUSTOM_OPT_LEVEL})

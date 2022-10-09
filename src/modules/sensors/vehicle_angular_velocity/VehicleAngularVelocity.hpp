@@ -40,7 +40,6 @@
 #include <lib/mathlib/math/filter/AlphaFilter.hpp>
 #include <lib/mathlib/math/filter/LowPassFilter2p.hpp>
 #include <lib/mathlib/math/filter/NotchFilter.hpp>
-#include <lib/sensor_attack/sensor_attack.hpp>
 #include <px4_platform_common/log.h>
 #include <px4_platform_common/module_params.h>
 #include <px4_platform_common/px4_config.h>
@@ -56,7 +55,6 @@
 #include <uORB/topics/sensor_gyro_fft.h>
 #include <uORB/topics/sensor_gyro_fifo.h>
 #include <uORB/topics/sensor_selection.h>
-#include <uORB/topics/sensors_status_imu.h>
 #include <uORB/topics/vehicle_angular_acceleration.h>
 #include <uORB/topics/vehicle_angular_velocity.h>
 
@@ -78,8 +76,8 @@ public:
 private:
 	void Run() override;
 
-	bool CalibrateAndPublish(const hrt_abstime &timestamp_sample, Vector3f &angular_velocity_uncalibrated,
-                             const matrix::Vector3f &angular_acceleration_uncalibrated);
+	bool CalibrateAndPublish(const hrt_abstime &timestamp_sample, const matrix::Vector3f &angular_velocity_uncalibrated,
+				 const matrix::Vector3f &angular_acceleration_uncalibrated);
 
 	inline float FilterAngularVelocity(int axis, float data[], int N = 1);
 	inline float FilterAngularAcceleration(int axis, float inverse_dt_s, float data[], int N = 1);
@@ -94,10 +92,6 @@ private:
 	void UpdateDynamicNotchEscRpm(const hrt_abstime &time_now_us, bool force = false);
 	void UpdateDynamicNotchFFT(const hrt_abstime &time_now_us, bool force = false);
 	bool UpdateSampleRate();
-    void UpdateImuStatus();
-    bool attack_enabled() const;
-    void ApplyGyroAttack(matrix::Vector3f &angular_velocity_uncalibrated);
-    void ApplyGyroAttack(matrix::Vector3f &angular_velocity_uncalibrated, const matrix::Vector3f &reference_angular_velocity);
 
 	// scaled appropriately for current sensor
 	matrix::Vector3f GetResetAngularVelocity() const;
@@ -110,7 +104,6 @@ private:
 
 	uORB::Subscription _estimator_selector_status_sub{ORB_ID(estimator_selector_status)};
 	uORB::Subscription _estimator_sensor_bias_sub{ORB_ID(estimator_sensor_bias)};
-    uORB::Subscription _sensors_status_imu_sub{ORB_ID(sensors_status_imu)};
     uORB::Subscription _reference_angular_acceleration_sub{ORB_ID(reference_angular_acceleration)};
     uORB::Subscription _reference_angular_velocity_sub{ORB_ID(reference_angular_velocity)};
 #if !defined(CONSTRAINED_FLASH)
@@ -138,11 +131,6 @@ private:
 	hrt_abstime _last_publish{0};
 
 	float _filter_sample_rate_hz{NAN};
-
-    bool _recovery_mode{false};
-    bool _apply_gyro_attack{false};
-    int  _attack_flag_prev{0};
-    hrt_abstime _attack_timestamp{0};
 
 	// angular velocity filters
 	math::LowPassFilter2p<float> _lp_filter_velocity[3] {};
@@ -208,22 +196,7 @@ private:
 		(ParamFloat<px4::params::IMU_GYRO_NF1_FRQ>) _param_imu_gyro_nf1_frq,
 		(ParamFloat<px4::params::IMU_GYRO_NF1_BW>) _param_imu_gyro_nf1_bw,
 		(ParamInt<px4::params::IMU_GYRO_RATEMAX>) _param_imu_gyro_ratemax,
-		(ParamFloat<px4::params::IMU_DGYRO_CUTOFF>) _param_imu_dgyro_cutoff,
-
-        (ParamInt<px4::params::ATK_APPLY_TYPE>) _param_atk_apply_type,
-        (ParamInt<px4::params::ATK_STEALTH_TYPE>) _param_atk_stealth_type,
-        (ParamInt<px4::params::ATK_COUNTDOWN_MS>) _param_atk_countdown_ms,
-        (ParamInt<px4::params::ATK_MULTI_IMU>) _param_atk_multi_imu,
-        (ParamFloat<px4::params::ATK_GYR_BIAS>) _param_atk_gyr_bias,
-
-        (ParamFloat<px4::params::IV_GYR_NOISE>) _param_iv_gyr_noise,
-        (ParamFloat <px4::params::IV_GYR_CSUM_H>) _param_iv_gyr_csum_h,
-        (ParamFloat <px4::params::IV_GYR_MSHIFT>) _param_iv_gyr_mshift,
-        (ParamFloat<px4::params::IV_GYR_EMA_H>) _param_iv_gyr_ema_h,
-        (ParamFloat<px4::params::IV_GYR_ALPHA>) _param_iv_gyr_alpha,
-        (ParamFloat<px4::params::IV_GYR_EMA_CAP>) _param_iv_gyr_ema_cap,
-        (ParamFloat <px4::params::IV_GYR_TWIN_H>) _param_iv_gyr_twin_h,
-        (ParamInt <px4::params::IV_GYR_RST_CNT>) _param_iv_gyr_rst_cnt
+		(ParamFloat<px4::params::IMU_DGYRO_CUTOFF>) _param_imu_dgyro_cutoff
 	)
 };
 

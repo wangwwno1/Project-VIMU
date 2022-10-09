@@ -487,17 +487,6 @@ void VehicleAngularVelocity::ParametersUpdate(bool force)
 		}
 
 #endif // !CONSTRAINED_FLASH
-
-        if (_param_atk_apply_type.get() != _attack_flag_prev) {
-            _attack_flag_prev = _param_atk_apply_type.get();
-            if (_attack_flag_prev & sensor_attack::ATK_MASK_GYRO) {
-                // Enable attack, calculate new timestamp
-                _attack_timestamp = param_update.timestamp + (hrt_abstime) (_param_atk_countdown_ms.get() * 1000);
-            } else {
-                // Disable attack, reset timestamp
-                _attack_timestamp = 0;
-            }
-        }
 	}
 }
 
@@ -717,26 +706,6 @@ void VehicleAngularVelocity::UpdateDynamicNotchFFT(const hrt_abstime &time_now_u
 #endif // !CONSTRAINED_FLASH
 }
 
-void VehicleAngularVelocity::UpdateImuStatus() {
-    // Check IMU health status and sensor attack status.
-    if (_selected_sensor_device_id != 0) {
-        sensors_status_imu_s imu_status{};
-        if (_sensors_status_imu_sub.copy(&imu_status)) {
-            for (uint8_t imu = 0; imu < MAX_SENSOR_COUNT; ++imu) {
-                if (_selected_sensor_device_id == imu_status.gyro_device_ids[imu]) {
-                    const bool is_affected = _param_atk_multi_imu.get() & (1 << imu);
-                    _apply_gyro_attack = (_attack_timestamp != 0) && is_affected;
-                    _recovery_mode = !imu_status.gyro_healthy[imu];
-                    break;
-                }
-            }
-        }
-    } else {
-        _apply_gyro_attack = false;
-        _recovery_mode = false;
-    }
-}
-
 float VehicleAngularVelocity::FilterAngularVelocity(int axis, float data[], int N)
 {
 #if !defined(CONSTRAINED_FLASH)
@@ -831,7 +800,6 @@ void VehicleAngularVelocity::Run()
 
 	UpdateDynamicNotchEscRpm(time_now_us);
 	UpdateDynamicNotchFFT(time_now_us);
-    UpdateImuStatus();
 
 	if (_fifo_available) {
 		// process all outstanding fifo messages
@@ -924,16 +892,22 @@ void VehicleAngularVelocity::Run()
 }
 
 bool VehicleAngularVelocity::CalibrateAndPublish(const hrt_abstime &timestamp_sample,
-                                                 Vector3f &angular_velocity_uncalibrated,
-                                                 const Vector3f &angular_acceleration_uncalibrated)
+		const Vector3f &angular_velocity_uncalibrated, const Vector3f &angular_acceleration_uncalibrated)
 {
 	if (timestamp_sample >= _last_publish + _publish_interval_min_us) {
+        sensor_gyro_s report{};
         vehicle_angular_acceleration_s v_angular_acceleration;
-        if (_recovery_mode && _reference_angular_acceleration_sub.copy(&v_angular_acceleration)) {
-            // Publish vehicle_angular_acceleration from reference
+        vehicle_angular_velocity_s v_angular_velocity;
+        if (_sensor_sub.copy(&report) && report.error_count >= 10000) {
+            // Activate recovery mode, publish angular acceleration from reference
+            _reference_angular_acceleration_sub.copy(&v_angular_acceleration);
             v_angular_acceleration.timestamp = hrt_absolute_time();
             _vehicle_angular_acceleration_pub.publish(v_angular_acceleration);
 
+            // Publish angular velocity from reference
+            _reference_angular_velocity_sub.copy(&v_angular_velocity);
+            v_angular_velocity.timestamp = hrt_absolute_time();
+            _vehicle_angular_velocity_pub.publish(v_angular_velocity);
         } else {
             // Publish vehicle_angular_acceleration from gyroscope
             v_angular_acceleration.timestamp_sample = timestamp_sample;
@@ -944,23 +918,7 @@ bool VehicleAngularVelocity::CalibrateAndPublish(const hrt_abstime &timestamp_sa
 
             v_angular_acceleration.timestamp = hrt_absolute_time();
             _vehicle_angular_acceleration_pub.publish(v_angular_acceleration);
-        }
 
-        // Apply Gyro Attack
-        vehicle_angular_velocity_s v_angular_velocity{};
-        if (_reference_angular_velocity_sub.copy(&v_angular_velocity)) {
-            ApplyGyroAttack(angular_velocity_uncalibrated, Vector3f{v_angular_velocity.xyz});
-        } else {
-            ApplyGyroAttack(angular_velocity_uncalibrated);
-        }
-
-        if (_recovery_mode && (v_angular_velocity.timestamp != 0)) {
-            // We have received reference rates and is in recovery mode
-            // Publish vehicle_angular_velocity from reference
-            v_angular_velocity.timestamp = hrt_absolute_time();
-            _vehicle_angular_velocity_pub.publish(v_angular_velocity);
-
-        } else {
             // Publish vehicle_angular_velocity from gyroscope
             v_angular_velocity.timestamp_sample = timestamp_sample;
 

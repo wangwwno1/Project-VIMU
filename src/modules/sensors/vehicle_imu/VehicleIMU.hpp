@@ -35,12 +35,10 @@
 
 #include "Integrator.hpp"
 
-#include <lib/fault_detector/fault_detector.hpp>
 #include <lib/mathlib/math/Limits.hpp>
 #include <lib/mathlib/math/WelfordMean.hpp>
 #include <lib/matrix/matrix/math.hpp>
 #include <lib/perf/perf_counter.h>
-#include <lib/sensor_attack/sensor_attack.hpp>
 #include <lib/sensor_calibration/Accelerometer.hpp>
 #include <lib/sensor_calibration/Gyroscope.hpp>
 #include <px4_platform_common/log.h>
@@ -54,16 +52,12 @@
 #include <uORB/topics/estimator_sensor_bias.h>
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/sensor_accel.h>
-#include <uORB/topics/sensor_accel_errors.h>
 #include <uORB/topics/sensor_gyro.h>
-#include <uORB/topics/sensor_gyro_errors.h>
 #include <uORB/topics/vehicle_control_mode.h>
 #include <uORB/topics/vehicle_imu.h>
 #include <uORB/topics/vehicle_imu_status.h>
 
 using namespace time_literals;
-using GyroValidator = fault_detector::EMACuSumVector3f;
-using AccelValidator = fault_detector::EMACuSumVector3f;
 
 namespace sensors
 {
@@ -82,10 +76,7 @@ public:
 	void PrintStatus();
 
 private:
-    static constexpr uint8_t MAX_GYRO_SAMPLES = (sizeof(sensor_gyro_errors_s::x) / sizeof(sensor_gyro_errors_s::x[0]));
-    static constexpr uint8_t MAX_ACCEL_SAMPLES = (sizeof(sensor_accel_errors_s::x) / sizeof(sensor_accel_errors_s::x[0]));
-
-    bool ParametersUpdate(bool force = false);
+	bool ParametersUpdate(bool force = false);
 	bool Publish();
 	void Run() override;
 
@@ -101,19 +92,8 @@ private:
 	void SensorCalibrationSaveAccel();
 	void SensorCalibrationSaveGyro();
 
-    bool attack_enabled(const uint8_t &attack_type);
-    void ApplyGyroAttack(sensor_gyro_s &gyro);
-    void ApplyGyroAttack(sensor_gyro_s &gyro, const sensor_gyro_s &ref_gyro);
-    void ApplyAccelAttack(sensor_accel_s &accel);
-    void ApplyAccelAttack(sensor_accel_s &accel, const sensor_accel_s &ref_accel);
-
-    void ValidateGyroData(sensor_gyro_s &gyro);
-    void ValidateAccelData(sensor_accel_s &accel);
-
 	uORB::PublicationMulti<vehicle_imu_s> _vehicle_imu_pub{ORB_ID(vehicle_imu)};
 	uORB::PublicationMulti<vehicle_imu_status_s> _vehicle_imu_status_pub{ORB_ID(vehicle_imu_status)};
-    uORB::PublicationMulti<sensor_gyro_errors_s> _sensor_gyro_errors_pub{ORB_ID(sensor_gyro_errors)};
-    uORB::PublicationMulti<sensor_accel_errors_s> _sensor_accel_errors_pub{ORB_ID(sensor_accel_errors)};
 
 	static constexpr hrt_abstime kIMUStatusPublishingInterval{100_ms};
 
@@ -126,26 +106,6 @@ private:
 	uORB::SubscriptionCallbackWorkItem _sensor_gyro_sub;
 
 	uORB::Subscription _vehicle_control_mode_sub{ORB_ID(vehicle_control_mode)};
-
-    uORB::Subscription _reference_accel_sub{ORB_ID(reference_accel)};
-    uORB::Subscription _reference_gyro_sub{ORB_ID(reference_gyro)};
-
-
-    GyroValidator::ParamStruct  _gyro_validator_params{};
-    AccelValidator::ParamStruct _accel_validator_params{};
-    GyroValidator               _gyro_validator{&_gyro_validator_params};
-    AccelValidator              _accel_validator{&_accel_validator_params};
-    sensor_gyro_s               _last_ref_gyro{};
-    sensor_gyro_errors_s        _last_gyro_errors{};
-    sensor_accel_s              _last_ref_accel{};
-    sensor_accel_errors_s       _last_accel_errors{};
-
-    int  _attack_flag_prev{0};
-    hrt_abstime _attack_timestamp{0};
-
-    // Note: this value is borrowed from data_validator
-    static const constexpr unsigned NORETURN_ERRCOUNT =
-            10000; /**< if the error count reaches this value, return sensor as invalid */
 
 	calibration::Accelerometer _accel_calibration{};
 	calibration::Gyroscope _gyro_calibration{};
@@ -228,37 +188,7 @@ private:
 
 	DEFINE_PARAMETERS(
 		(ParamInt<px4::params::IMU_INTEG_RATE>) _param_imu_integ_rate,
-		(ParamBool<px4::params::SENS_IMU_AUTOCAL>) _param_sens_imu_autocal,
-
-        (ParamInt<px4::params::ATK_APPLY_TYPE>) _param_atk_apply_type,
-        (ParamInt<px4::params::ATK_STEALTH_TYPE>) _param_atk_stealth_type,
-        (ParamInt<px4::params::ATK_COUNTDOWN_MS>) _param_atk_countdown_ms,
-        (ParamInt<px4::params::ATK_MULTI_IMU>) _param_atk_multi_imu,
-        (ParamFloat<px4::params::ATK_GYR_BIAS>) _param_atk_gyr_bias,
-        (ParamFloat<px4::params::ATK_ACC_BIAS>) _param_atk_acc_bias,
-
-        (ParamInt<px4::params::IV_DEBUG_LOG>) _param_iv_debug_log,
-        (ParamInt<px4::params::IV_DELAY_MASK>) _param_iv_delay_mask,
-        (ParamInt<px4::params::IV_TTD_DELAY_MS>) _param_iv_ttd_delay_ms,
-        (ParamFloat<px4::params::IV_GYR_NOISE>) _param_iv_gyr_noise,
-        (ParamExtFloat <px4::params::IV_GYR_CSUM_H>) _param_iv_gyr_csum_h,
-        (ParamExtFloat <px4::params::IV_GYR_MSHIFT>) _param_iv_gyr_mshift,
-        (ParamExtFloat<px4::params::IV_GYR_EMA_H>) _param_iv_gyr_ema_h,
-        (ParamExtFloat<px4::params::IV_GYR_ALPHA>) _param_iv_gyr_alpha,
-        (ParamExtFloat<px4::params::IV_GYR_EMA_CAP>) _param_iv_gyr_ema_cap,
-        (ParamFloat <px4::params::IV_GYR_TWIN_H>) _param_iv_gyr_twin_h,
-        (ParamInt <px4::params::IV_GYR_RST_CNT>) _param_iv_gyr_rst_cnt,
-        (ParamInt <px4::params::IV_GYR_CD_CNT>) _param_iv_gyr_cd_cnt,
-
-        (ParamFloat<px4::params::IV_ACC_NOISE>) _param_iv_acc_noise,
-        (ParamExtFloat <px4::params::IV_ACC_CSUM_H>) _param_iv_acc_csum_h,
-        (ParamExtFloat <px4::params::IV_ACC_MSHIFT>) _param_iv_acc_mshift,
-        (ParamExtFloat<px4::params::IV_ACC_EMA_H>) _param_iv_acc_ema_h,
-        (ParamExtFloat<px4::params::IV_ACC_ALPHA>) _param_iv_acc_alpha,
-        (ParamExtFloat<px4::params::IV_ACC_EMA_CAP>) _param_iv_acc_ema_cap,
-        (ParamFloat <px4::params::IV_ACC_TWIN_H>) _param_iv_acc_twin_h,
-        (ParamInt <px4::params::IV_ACC_RST_CNT>) _param_iv_acc_rst_cnt,
-        (ParamInt <px4::params::IV_ACC_CD_CNT>) _param_iv_acc_cd_cnt
+		(ParamBool<px4::params::SENS_IMU_AUTOCAL>) _param_sens_imu_autocal
 	)
 };
 
