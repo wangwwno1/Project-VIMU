@@ -140,8 +140,12 @@ void VirtualIMU::Run()
             _actuator_state_lpf.reset(_current_actuator_setpoint);
         }
 
-        const hrt_abstime update_start = hrt_absolute_time();
-        const hrt_abstime target_time_us = math::max(update_start - _rate_ctrl_interval_us, act.timestamp);
+        if (act.timestamp >= _newest_act_sp_timestamp) {
+            _newest_actuator_setpoint = matrix::constrain(static_cast<Vector16f>(act.output) * 1e-3f - 1.f, 0.f, 1.f);
+            _newest_act_sp_timestamp = act.timestamp;
+        }
+
+        const hrt_abstime target_time_us = math::max(hrt_absolute_time(), act.timestamp);
         while (_last_update_us <= target_time_us) {
             // Note: Always update land status before actuator output & angular velocity
             UpdateCopterStatus();
@@ -151,11 +155,6 @@ void VirtualIMU::Run()
 
             // State Estimation
             // Update actuator state
-            if (act.timestamp >= _newest_act_sp_timestamp) {
-                _newest_actuator_setpoint = matrix::constrain(static_cast<Vector16f>(act.output) * 1e-3f - 1.f, 0.f, 1.f);
-                _newest_act_sp_timestamp = act.timestamp;
-            }
-
             if ((_current_act_sp_timestamp != _newest_act_sp_timestamp) && (_last_update_us >= _current_act_sp_timestamp)) {
                 _current_actuator_setpoint = _newest_actuator_setpoint;
                 _current_act_sp_timestamp = _newest_act_sp_timestamp;
@@ -188,12 +187,13 @@ void VirtualIMU::Run()
             _accel_integrator.put(_body_acceleration - _accel_bias, _rate_ctrl_interval);
             _gyro_integrator.put(_ekf.getAngularRate(), _rate_ctrl_interval);
 
-            if (_copter_status.publish) {
-                // Publish Angular Rate & Acceleration
-                // The Rate Control frequency are faster than IMU integral, so we publish it every time actuator output generated
-                PublishAngularVelocityAndAcceleration();
-                PublishSensorReference();
-            }
+        }
+
+        if (_copter_status.publish) {
+            // Publish Angular Rate & Acceleration
+            // The Rate Control frequency are faster than IMU integral, so we publish it every time actuator output generated
+            PublishAngularVelocityAndAcceleration();
+            PublishSensorReference();
         }
     }
 
@@ -273,11 +273,14 @@ void VirtualIMU::UpdateSensorBias() {
     if (_copter_status.in_air && _estimator_sensor_bias_sub.update(&bias)) {
         // Update gyro bias after in air
         if (bias.gyro_device_id == 0) {
-            _ekf.setGyroBias(0.95f * _ekf.getGyroBias() + 0.05f * matrix::Vector3f(bias.gyro_bias));
+            _ekf.setGyroBias(0.8f * _ekf.getGyroBias() + 0.2f * matrix::Vector3f(bias.gyro_bias));
         }
 
         if (bias.accel_device_id == 0) {
-            _accel_bias = matrix::Vector3f(bias.accel_bias);
+            _accel_bias = 0.99f * _accel_bias + 0.01f * matrix::Vector3f(bias.accel_bias);
+            if (_accel_bias.abs().max() > 0.01f) {
+                _accel_bias *= 0.95f;
+            }
         }
     }
 }
