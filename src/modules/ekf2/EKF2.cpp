@@ -1290,7 +1290,7 @@ void EKF2::PublishSensorBias(const hrt_abstime &timestamp)
 			_last_gyro_bias_published = gyro_bias;
 		}
 
-		if (((_device_id_accel != 0) || use_reference()) && !(_param_ekf2_aid_mask.get() & MASK_INHIBIT_ACC_BIAS)) {
+		if ((_device_id_accel != 0 || use_reference()) && !(_param_ekf2_aid_mask.get() & MASK_INHIBIT_ACC_BIAS)) {
 			bias.accel_device_id = _device_id_accel;
 			accel_bias.copyTo(bias.accel_bias);
 			bias.accel_bias_limit = _params->acc_bias_lim;
