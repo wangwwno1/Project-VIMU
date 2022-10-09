@@ -212,17 +212,17 @@ bool PX4Accelerometer::ParametersUpdate()
 
         if (_param_atk_apply_type.get() != _attack_flag_prev) {
             const int next_attack_flag = _param_atk_apply_type.get();
-            if (next_attack_flag & sensor_attack::ATK_MASK_GYRO
+            if (next_attack_flag & sensor_attack::ATK_MASK_ACCEL
                 && _param_atk_multi_imu.get() & (1 << get_instance())) {
                 // Enable attack, calculate new timestamp
                 _attack_timestamp = param_update.timestamp + (hrt_abstime) (_param_atk_countdown_ms.get() * 1000);
-                PX4_INFO("Debug - Enable GYRO attack for instance %d, expect start timestamp: %" PRIu64,
+                PX4_INFO("Debug - Enable ACCEL attack for instance %d, expect start timestamp: %" PRIu64,
                          get_instance(), _attack_timestamp);
 
             } else if (_attack_timestamp != 0) {
                 // Disable attack, reset timestamp
                 _attack_timestamp = 0;
-                PX4_INFO("Debug - Attack is disabled for GYRO%d, reset attack timestamp.", get_instance());
+                PX4_INFO("Debug - Attack is disabled for ACCEL%d, reset attack timestamp.", get_instance());
             }
 
             _attack_flag_prev = next_attack_flag;
