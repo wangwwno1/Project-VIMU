@@ -16,6 +16,12 @@ using namespace matrix;
 namespace estimator
 {
 
+struct OutputSample {
+    hrt_abstime time_us{0};
+    matrix::Vector3f angular_rate{0.f, 0.f, 0.f};
+    matrix::Vector3f delta_rate{0.f, 0.f, 0.f};
+};
+
 struct AuxEKFParam {
     float gyro_noise{1.5e-2f};
     float process_noise{0.075f};
@@ -97,23 +103,27 @@ public:
 
         _output_state.time_us = now;
         _output_state.angular_rate += _angular_acceleration * dt;
-
         _delta_rate += _angular_acceleration * dt;
         _down_sampled_time += dt;
 
         const float filter_update_period_s = _param.filter_update_interval_us * 1.e-6f;
-
         if (_down_sampled_time > filter_update_period_s - _down_sample_time_correction) {
+            _output_state.delta_rate = _delta_rate;
             _output_buffer.push(_output_state);
-            PredictState();
+            const OutputSample &output_state_delayed = _output_buffer.get_oldest();
+
+            // Predict State
+            _state += output_state_delayed.delta_rate;
+
+            predictCovariances();
             MeasurementUpdate();
 
+            // Update output state
             _down_sample_time_correction += 0.01f * (_down_sampled_time - filter_update_period_s);
-            _down_sample_time_correction = math::constrain(_down_sample_time_correction,
-                                                           -0.5f * filter_update_period_s,
-                                                           +0.5f * filter_update_period_s);
+            _down_sample_time_correction = constrain(_down_sample_time_correction,
+                                                     -0.5f * filter_update_period_s,
+                                                     +0.5f * filter_update_period_s);
 
-            const RateSample &output_state_delayed = _output_buffer.get_oldest();
             const float time_delay = fmaxf((_output_state.time_us - output_state_delayed.time_us) * 1e-6f, filter_update_period_s);
             const float rate_gain = filter_update_period_s / time_delay;
             const Vector3f rate_correction = rate_gain * (_state - output_state_delayed.angular_rate);
@@ -140,7 +150,7 @@ public:
     }
 
     void reset_buffer() {
-        RateSample newest_output_sample = _output_buffer.get_newest();
+        OutputSample newest_output_sample = _output_buffer.get_newest();
         _output_buffer.pop_first_older_than(newest_output_sample.time_us, &newest_output_sample);
         for (uint8_t i = 0; i < MAX_SENSOR_COUNT; ++i) {
             reset_imu_buffer(i);
@@ -160,7 +170,7 @@ public:
 
 private:
     Vector3f _state{0.f, 0.f, 0.f};
-    RateSample _output_state;
+    OutputSample _output_state;
     RateSample _imu_sample_delayed;
     AuxEKFParam _param;
     bool _filter_initialised{false};
@@ -184,7 +194,7 @@ private:
 
     uint8_t _imu_buffer_length{12};
     uint8_t _output_buffer_length{12};
-    RingBuffer<RateSample> _output_buffer{_output_buffer_length};
+    RingBuffer<OutputSample> _output_buffer{_output_buffer_length};
     imuBuffer* _imu_buffers[MAX_SENSOR_COUNT] {nullptr, nullptr, nullptr, nullptr};
 
     bool allocateBuffer() {
@@ -212,7 +222,7 @@ private:
         reset_buffer();
     }
 
-    void PredictState() {
+    void predictCovariances() {
         const Vector3f corrected_state = _state - _gyro_bias;
         const Vector3f main_inertia = _inertia_matrix.diag();
         const Vector3f inertia_term = main_inertia.cross(Vector3f{1.f, 1.f, 1.f}).edivide(main_inertia);
@@ -233,7 +243,6 @@ private:
             }
         }
 
-        _state += _delta_rate;
         const float rate_var = math::sq(_param.process_noise);
         for (uint8_t row = 0; row < _k_num_states; ++row) {
             for (uint8_t column = 0; column < _k_num_states; ++column) {
@@ -257,7 +266,7 @@ private:
     };
 
     void MeasurementUpdate() {
-        const RateSample output_sample_delayed = _output_buffer.get_oldest();
+        const OutputSample output_sample_delayed = _output_buffer.get_oldest();
         // Looking from the oldest measurement data to the newest
         for (uint8_t i = 0; i < MAX_SENSOR_COUNT; ++i) {
             if (_imu_buffers[i] == nullptr) {
