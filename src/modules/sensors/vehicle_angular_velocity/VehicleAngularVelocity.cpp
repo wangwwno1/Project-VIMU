@@ -896,18 +896,33 @@ bool VehicleAngularVelocity::CalibrateAndPublish(const hrt_abstime &timestamp_sa
 {
 	if (timestamp_sample >= _last_publish + _publish_interval_min_us) {
         sensor_gyro_s report{};
+        if (_sensor_sub.copy(&report)) {
+            const bool recovery_mode = report.error_count >= 10000;
+            if (recovery_mode != _recovery_mode && _estimator_sensor_bias_sub.get_instance() != 0) {
+                _reset_filters = true;
+                _bias.zero();
+                _recovery_mode = recovery_mode;
+            }
+        }
+
+        // Update internal state
         vehicle_angular_acceleration_s v_angular_acceleration;
         vehicle_angular_velocity_s v_angular_velocity;
-        if (_sensor_sub.copy(&report) && report.error_count >= 10000) {
+        if (_recovery_mode) {
             // Activate recovery mode, publish angular acceleration from reference
             _reference_angular_acceleration_sub.copy(&v_angular_acceleration);
+            _angular_acceleration = Vector3f(v_angular_acceleration.xyz);
+
             v_angular_acceleration.timestamp = hrt_absolute_time();
             _vehicle_angular_acceleration_pub.publish(v_angular_acceleration);
 
             // Publish angular velocity from reference
             _reference_angular_velocity_sub.copy(&v_angular_velocity);
+            _angular_velocity = Vector3f(v_angular_velocity.xyz);  // Already corrected in reference, no bias is needed
+
             v_angular_velocity.timestamp = hrt_absolute_time();
             _vehicle_angular_velocity_pub.publish(v_angular_velocity);
+
         } else {
             // Publish vehicle_angular_acceleration from gyroscope
             v_angular_acceleration.timestamp_sample = timestamp_sample;

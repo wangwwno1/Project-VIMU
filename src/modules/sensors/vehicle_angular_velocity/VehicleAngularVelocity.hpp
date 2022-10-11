@@ -179,6 +179,7 @@ private:
 	bool _reset_filters{true};
 	bool _fifo_available{false};
 	bool _update_sample_rate{true};
+    bool _recovery_mode{false};
 
 	perf_counter_t _cycle_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": gyro filter")};
 	perf_counter_t _filter_reset_perf{perf_alloc(PC_COUNT, MODULE_NAME": gyro filter reset")};
