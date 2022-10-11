@@ -13,7 +13,7 @@ void PX4Gyroscope::applyGyroAttack(sensor_gyro_s &gyro) {
     if (attack_enabled(sensor_attack::ATK_MASK_GYRO, gyro.timestamp_sample)) {
         const float max_deviation = getMaxDeviation();
         if (PX4_ISFINITE(max_deviation) && _curr_ref_gyro.timestamp_sample >= _attack_timestamp) {
-            _last_deviation[0] = max_deviation;
+            _last_deviation[0] = _curr_ref_gyro.x + max_deviation - gyro.x;
             _last_deviation[1] = math::constrain(gyro.y, _curr_ref_gyro.y - max_deviation, _curr_ref_gyro.y + max_deviation) - gyro.y;
             _last_deviation[2] = math::constrain(gyro.z, _curr_ref_gyro.z - max_deviation, _curr_ref_gyro.z + max_deviation) - gyro.z;
         } else {
@@ -72,5 +72,5 @@ float PX4Gyroscope::getMaxDeviation() const {
         }
     }
 
-    return max_deviation;
+    return 0.999f * max_deviation * _param_iv_gyr_noise.get();
 }

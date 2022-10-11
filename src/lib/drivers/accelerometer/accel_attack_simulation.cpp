@@ -13,7 +13,7 @@ void PX4Accelerometer::applyAccelAttack(sensor_accel_s &accel) {
     if (attack_enabled(sensor_attack::ATK_MASK_ACCEL, accel.timestamp_sample)) {
         const float max_deviation = getMaxDeviation();
         if (PX4_ISFINITE(max_deviation) && _curr_ref_accel.timestamp_sample >= _attack_timestamp) {
-            _last_deviation[0] = max_deviation;
+            _last_deviation[0] = _curr_ref_accel.x + max_deviation - accel.x;
             _last_deviation[1] = math::constrain(accel.y, _curr_ref_accel.y - max_deviation, _curr_ref_accel.y + max_deviation) - accel.y;
             _last_deviation[2] = math::constrain(accel.z, _curr_ref_accel.z - max_deviation, _curr_ref_accel.z + max_deviation) - accel.z;
         } else {
@@ -72,5 +72,5 @@ float PX4Accelerometer::getMaxDeviation() const {
         }
     }
 
-    return max_deviation;
+    return 0.99f * max_deviation * _param_iv_acc_noise.get();
 }
