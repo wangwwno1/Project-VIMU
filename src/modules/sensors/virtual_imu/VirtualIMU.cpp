@@ -277,9 +277,11 @@ void VirtualIMU::UpdateSensorBias() {
         }
 
         if (bias.accel_device_id == 0) {
-            _accel_bias = 0.99f * _accel_bias + 0.01f * matrix::Vector3f(bias.accel_bias);
-            if (_accel_bias.abs().max() > 0.01f) {
-                _accel_bias *= 0.95f;
+            const Vector3f acc_bias{bias.accel_bias};
+            if (acc_bias.abs().max() > 0.01f) {
+                _accel_bias = 0.99f * _accel_bias + 0.01f * acc_bias;
+            } else {
+                _accel_bias = acc_bias;
             }
         }
     }
