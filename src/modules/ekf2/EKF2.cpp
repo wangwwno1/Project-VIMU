@@ -45,9 +45,6 @@ static px4::atomic<EKF2 *> _objects[EKF2_MAX_INSTANCES] {};
 static px4::atomic<EKF2Selector *> _ekf2_selector {nullptr};
 #endif // !CONSTRAINED_FLASH
 
-// TODO VIMU/SAVIOR get reference_gyro_noise
-// TODO VIMU/SAVIOR get bunch of validator params
-
 EKF2::EKF2(bool multi_mode, const px4::wq_config_t &config, bool replay_mode):
 	ModuleParams(nullptr),
 	ScheduledWorkItem(MODULE_NAME, config),
@@ -306,7 +303,6 @@ void EKF2::Run()
 		updateParams();
 
 		_ekf.set_min_required_gps_health_time(_param_ekf2_req_gps_h.get() * 1_s);
-        // TODO VIMU/SAVIOR specify enhanced detector usage
 
 		// The airspeed scale factor correcton is only available via parameter as used by the airspeed module
 		param_t param_aspd_scale = param_find("ASPD_SCALE_1");
@@ -383,62 +379,6 @@ void EKF2::Run()
 			}
 		}
 	}
-
-    // Only check reference if - 1. we have one; 2. we are not in rest and in air; 3. imu status has updated
-    if (has_reference() &&
-        (hrt_elapsed_time(&_start_time_us) > 3_s) &&
-        (!_ekf.control_status_flags().vehicle_at_rest && _ekf.control_status_flags().in_air)) {
-
-        // Check if current IMU is faulty, switch to reference if necessary
-        sensors_status_imu_s  imu_status;
-        if (_sensors_status_imu_sub.update(&imu_status)) {
-            // Retrieve device id
-            uint32_t device_gyro_id{0};
-            uint32_t device_accel_id{0};
-            // We do not use Subscription here because it would set updated flag as false
-            if (_multi_mode) {
-                uORB::SubscriptionData<vehicle_imu_s> vehicle_imu_sub{ORB_ID(vehicle_imu), _vehicle_imu_sub.get_instance()};
-                device_accel_id = vehicle_imu_sub.get().accel_device_id;
-                device_gyro_id = vehicle_imu_sub.get().gyro_device_id;
-            } else {
-                uORB::SubscriptionData<sensor_selection_s> sensor_selection_sub{ORB_ID(sensor_selection)};
-                device_accel_id = sensor_selection_sub.get().accel_device_id;
-                device_gyro_id = sensor_selection_sub.get().gyro_device_id;
-            }
-
-            // Check imu health status
-            bool healthy = false;
-            if ((device_gyro_id != 0) && (device_accel_id != 0)) {
-                bool accel_healthy{false}, gyro_healthy{false};
-                for (uint8_t uorb_idx = 0; uorb_idx < MAX_NUM_IMUS; ++uorb_idx) {
-                    if (device_accel_id == imu_status.accel_device_ids[uorb_idx]) {
-                        accel_healthy = imu_status.accel_healthy[uorb_idx];
-                    }
-
-                    if (device_gyro_id == imu_status.gyro_device_ids[uorb_idx]) {
-                        gyro_healthy = imu_status.gyro_healthy[uorb_idx];
-                    }
-                }
-                healthy = accel_healthy && gyro_healthy;
-
-                if (!healthy && !use_reference() && _reference_imu_sub.registerCallback()) {
-                    // Switch to reference imu, detach from hardware imu
-                    _sensor_combined_sub.unregisterCallback();
-                    _vehicle_imu_sub.unregisterCallback();
-                    _ekf.setReferenceImuEnabled(true);
-                    PX4_WARN("%d - IMU faulty detected, switch to reference imu %d", _instance, _selected_reference);
-                } else if (healthy && use_reference()) {
-                    // Hardware imu is OK, disconnect from Reference IMU
-                    const bool disconnect = (_multi_mode) ? _vehicle_imu_sub.registerCallback() : _sensor_combined_sub.registerCallback();
-                    if (disconnect) {
-                        _reference_imu_sub.unregisterCallback();
-                        _ekf.setReferenceImuEnabled(false);
-                        PX4_INFO("%d - IMU back to normal, disconnect from reference imu %d", _instance, _selected_reference);
-                    }
-                }
-            }
-        }
-    }
 
 	bool imu_updated = false;
 	imuSample imu_sample_new {};
@@ -628,13 +568,25 @@ void EKF2::Run()
 				const bool was_in_air = _ekf.control_status_flags().in_air;
 				const bool in_air = !vehicle_land_detected.landed;
 
-                if (use_reference() && !in_air) {
-                    // We have landed, disconnect from Reference IMU
-                    const bool disconnect = (_multi_mode) ? _vehicle_imu_sub.registerCallback() : _sensor_combined_sub.registerCallback();
-                    if (disconnect) {
-                        _reference_imu_sub.unregisterCallback();
-                        _ekf.setReferenceImuEnabled(false);
-                        PX4_INFO("%d - Vehicle landed, disconnect from reference imu %d", _instance, _selected_reference);
+                if (has_reference()) {
+                    if (!use_reference() && in_air) {
+                        // We are about to take off, Connect to Reference IMU
+                        vehicle_imu_s ref_imu;
+                        if (_reference_imu_sub.update(&ref_imu) && _reference_imu_sub.registerCallback()) {
+                            _sensor_combined_sub.unregisterCallback();
+                            _vehicle_imu_sub.unregisterCallback();
+                            _ekf.setReferenceImuEnabled(true);
+                            PX4_INFO("%d - Reference IMU synchronized, timestamp: VIMU%d - %" PRIu64 " , IMU - %" PRIu64,
+                                     _instance, _selected_reference , ref_imu.timestamp_sample, imu_sample_new.time_us);
+                        }
+                    } else if (use_reference() && !in_air) {
+                        // We have landed, disconnect from Reference IMU
+                        const bool disconnect = (_multi_mode) ? _vehicle_imu_sub.registerCallback() : _sensor_combined_sub.registerCallback();
+                        if (disconnect) {
+                            _reference_imu_sub.unregisterCallback();
+                            _ekf.setReferenceImuEnabled(false);
+                            PX4_INFO("%d - Vehicle landed, disconnect from reference imu %d", _instance, _selected_reference);
+                        }
                     }
                 }
 
