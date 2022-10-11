@@ -815,7 +815,7 @@ void EKF2Selector::Run()
 			}
 		}
 
-        if ((_selected_instance == _selected_reference) && (hrt_elapsed_time(&_last_instance_change) > 2_s)) {
+        if (_selected_instance == _selected_reference && hrt_elapsed_time(&_last_instance_change) > 10_s) {
             // prefer the best healthy instance using a different IMU
             SelectInstance(best_ekf_different_imu);
         } else if (!_instance[_selected_instance].healthy.get_state()) {
