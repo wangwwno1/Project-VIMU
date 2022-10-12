@@ -53,7 +53,7 @@ void PX4Accelerometer::validateAccel(sensor_accel_s &accel) {
         accel_error.y = error_residuals(1);
         accel_error.z = error_residuals(2);
         accel_error.test_ratio = _accel_validator.test_ratio();
-        accel_error.timestamp_sample = accel.timestamp_sample;
+        accel_error.timestamp_reference = _curr_ref_accel.timestamp_sample;
         accel_error.timestamp = hrt_absolute_time();
         _sensor_accel_errors_pub.publish(accel_error);
     }

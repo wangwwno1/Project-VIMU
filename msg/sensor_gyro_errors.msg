@@ -1,5 +1,5 @@
 uint64 timestamp          # time since system start (microseconds)
-uint64 timestamp_sample   # time at the sample received
+uint64 timestamp_reference   # time at the reference sample received
 
 uint32 device_id          # unique device ID for the sensor that does not change between power cycles
 
