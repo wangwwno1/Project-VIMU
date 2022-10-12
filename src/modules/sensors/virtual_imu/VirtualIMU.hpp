@@ -40,6 +40,7 @@
 #include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
 
 #include <drivers/drv_hrt.h>
+#include <drivers/drv_pwm_output.h>
 #include <matrix/math.hpp>
 #include <lib/mathlib/mathlib.h>
 #include <lib/mathlib/math/filter/AlphaFilter.hpp>
@@ -76,6 +77,7 @@ using Vector16f = matrix::Vector<float, 16>;
 using namespace estimator;
 
 static const uint8_t noutputs = 4;
+using VectorThrust = matrix::Vector<float, noutputs>;
 // Correct Mixer for Roll 0304/08_08_49 - Pitch & Yaw Reversed
 // Note: This is the most likely correct mixer - 0304/09_05_33
 //static const float flat_mat[3 * 4] = {-1,  1,  1,  -1,
@@ -150,11 +152,11 @@ private:
 
     // Actuator timestamps and state
     hrt_abstime _last_update_us{0};
-    Vector16f _current_actuator_setpoint;
+    VectorThrust _current_actuator_setpoint;
     hrt_abstime _current_act_sp_timestamp{0};
-    Vector16f _newest_actuator_setpoint;
+    VectorThrust _newest_actuator_setpoint;
     hrt_abstime _newest_act_sp_timestamp{0};
-    AlphaFilter<Vector16f> _actuator_state_lpf{1.f};
+    AlphaFilter<VectorThrust> _actuator_state_lpf{1.f};
 
     // External Wrench
     Vector3f _external_accel{0.f, 0.f, 0.f};

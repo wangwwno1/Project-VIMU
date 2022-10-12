@@ -99,6 +99,7 @@ void VirtualIMU::reset() {
     _current_actuator_setpoint.zero();
     _newest_actuator_setpoint.zero();
     _accel_bias.zero();
+    _last_update_us = 0;
 
     _ekf.reset_state();
 }
@@ -134,14 +135,20 @@ void VirtualIMU::Run()
     actuator_outputs_s act{};
     if (_actuator_outputs_sub.copy(&act)) {
         if (_last_update_us == 0) {
-            _last_update_us = act.timestamp;
-            _current_actuator_setpoint = matrix::constrain(static_cast<Vector16f>(act.output) * 1e-3f - 1.f, 0.f, 1.f);
+            for (int i = 0; i < noutputs; ++i) {
+                _current_actuator_setpoint(i) = (act.output[i] - PWM_DEFAULT_MIN) / (PWM_DEFAULT_MAX - PWM_DEFAULT_MIN);
+                _current_actuator_setpoint(i) = math::constrain(_current_actuator_setpoint(i), 0.f, 1.f);
+            }
             _current_act_sp_timestamp = act.timestamp;
+            _last_update_us = act.timestamp;
             _actuator_state_lpf.reset(_current_actuator_setpoint);
         }
 
         if (act.timestamp >= _newest_act_sp_timestamp) {
-            _newest_actuator_setpoint = matrix::constrain(static_cast<Vector16f>(act.output) * 1e-3f - 1.f, 0.f, 1.f);
+            for (int i = 0; i < noutputs; ++i) {
+                _newest_actuator_setpoint(i) = (act.output[i] - PWM_DEFAULT_MIN) / (PWM_DEFAULT_MAX - PWM_DEFAULT_MIN);
+                _newest_actuator_setpoint(i) = math::constrain(_newest_actuator_setpoint(i), 0.f, 1.f);
+            }
             _newest_act_sp_timestamp = act.timestamp;
         }
 
@@ -155,7 +162,7 @@ void VirtualIMU::Run()
 
             // State Estimation
             // Update actuator state
-            if ((_current_act_sp_timestamp != _newest_act_sp_timestamp) && (_last_update_us >= _current_act_sp_timestamp)) {
+            if (_current_act_sp_timestamp < _newest_act_sp_timestamp && _last_update_us >= _current_act_sp_timestamp) {
                 _current_actuator_setpoint = _newest_actuator_setpoint;
                 _current_act_sp_timestamp = _newest_act_sp_timestamp;
             }
@@ -170,9 +177,8 @@ void VirtualIMU::Run()
             UpdateAerodynamicWrench();
 
             // Update angular velocity, angular acceleration, and body acceleration into future horizon
-            const Vector<float, noutputs> act_state{_actuator_state_lpf.getState().slice<noutputs, 1>(0, 0)};
-
             Vector3f torque{0.f, 0.f, 0.f};
+            const VectorThrust act_state = _actuator_state_lpf.getState();
             if (_copter_status.in_air) {
                 // Use prediction from VIMU instead of the static torque
                 torque = static_cast<Vector3f>(QuadTorque * act_state).emult(_phys_model_params.torque_coeff);
@@ -455,7 +461,6 @@ bool VirtualIMU::CheckAndSyncTimestamp(const uint8_t i, const hrt_abstime &imu_t
             // Do synchronization again
             PX4_WARN("%" PRIu64 ": %d - slipping detected, re-sync vimu sample timestamp: (%" PRIu64 " -> %" PRIu64 ")" ,
                      hrt_absolute_time(), i, _last_integrator_reset, imu_timestamp);
-            // TODO Declare a slipping
         }
         _gyro_integrator.reset();
         _accel_integrator.reset();
