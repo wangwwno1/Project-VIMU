@@ -15,18 +15,9 @@ namespace sensor_attack {
         if (fabs(north_m) > 0.f || fabs(east_m) > 0.f) {
             double gps_lat = gps_output.lat / 1.0e7;
             double gps_lon = gps_output.lon / 1.0e7;
-            const double lat_rad = math::radians(gps_lat);
-            const double lon_rad = math::radians(gps_lon);
-            const struct map_projection_reference_s fake_ref
-                    {
-                            .timestamp = 0,
-                            .lat_rad = lat_rad,
-                            .lon_rad = lon_rad,
-                            .sin_lat = sin(lat_rad),
-                            .cos_lat = cos(lat_rad),
-                            .init_done = true
-                    };
-            map_projection_reproject(&fake_ref, north_m, east_m, &gps_lat, &gps_lon);
+            const MapProjection fake_ref{gps_lat, gps_lon};
+            fake_ref.reproject(north_m, east_m, gps_lat, gps_lon);
+
             gps_output.lat = (int32_t) (gps_lat * 1.0e7);
             gps_output.lon = (int32_t) (gps_lon * 1.0e7);
         }
