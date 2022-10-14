@@ -60,11 +60,8 @@ VehicleGPSPosition::VehicleGPSPosition() :
     _param_iv_gps_p_ema_h(_pos_validator_params.ema_params.control_limit),
     _param_iv_gps_p_alpha(_pos_validator_params.ema_params.alpha),
     _param_iv_gps_p_ema_cap(_pos_validator_params.ema_params.cap),
-    _param_iv_gps_v_csum_h(_vel_validator_params.cusum_params.control_limit),
-    _param_iv_gps_v_mshift(_vel_validator_params.cusum_params.mean_shift),
-    _param_iv_gps_v_ema_h(_vel_validator_params.ema_params.control_limit),
-    _param_iv_gps_v_alpha(_vel_validator_params.ema_params.alpha),
-    _param_iv_gps_v_ema_cap(_vel_validator_params.ema_params.cap)
+    _param_iv_gps_v_csum_h(_vel_validator_params.control_limit),
+    _param_iv_gps_v_mshift(_vel_validator_params.mean_shift)
 {
 	_vehicle_gps_position_pub.advertise();
 }
