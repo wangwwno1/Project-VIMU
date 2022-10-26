@@ -11,15 +11,19 @@ namespace sensors {
             return;
         }
 
-        if (!_reference_states_sub.advertised()) return;
+        // find corresponding estimated sensor bias
+        if (_estimator_selector_status_sub.updated()) {
+            estimator_selector_status_s estimator_selector_status;
 
-        if (!_reference_states_sub.registered()) {
-            _reference_states_sub.registerCallback();
+            if (_estimator_selector_status_sub.copy(&estimator_selector_status)) {
+                _reference_states_sub.ChangeInstance(estimator_selector_status.primary_instance);
+                _reference_offset_states_sub.ChangeInstance(estimator_selector_status.primary_instance);
+            }
         }
 
         estimator_states_s ref_states;
         estimator_offset_states_s offset_states;
-        if (_reference_states_sub.update(&ref_states) && _vehicle_offset_states_sub.copy(&offset_states)) {
+        if (_reference_states_sub.update(&ref_states) && _reference_offset_states_sub.copy(&offset_states)) {
             RefBaroSample sample;
             sample.time_us = ref_states.timestamp_sample;
             sample.alt_meter = - ref_states.states[9];  // Convert downward relative position to altitude
@@ -63,8 +67,6 @@ namespace sensors {
             }
         }
 
-        if (!_reference_states_sub.advertised()) return;
-
         // Find the real time of height state
         RingBuffer<RefBaroSample> *pBuffer = _ref_baro_buffer[instance];
         const float dt_ekf_avg = (pBuffer->get_newest().time_us != 0) ? pBuffer->get_newest().dt_ekf_avg : (_param_ekf2_predict_us.get() * 1.e-3f);
@@ -82,7 +84,7 @@ namespace sensors {
             pBuffer->pop_first_older_than(pBuffer->get_oldest().time_us, &_ref_baro_delayed);
         }
 
-        const bool ref_baro_ready = (_ref_baro_delayed.time_us != 0) && (timestamp_sample - _ref_baro_delayed.time_us <= 1_s);
+        const bool ref_baro_ready = (_ref_baro_delayed.time_us != 0) && (hrt_elapsed_time(&_ref_baro_delayed.time_us) < time_delay);
 
         if (ref_baro_ready) {
             float pressure_pa = _data_sum[instance] / _data_sum_count[instance];

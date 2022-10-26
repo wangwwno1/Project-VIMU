@@ -221,6 +221,8 @@ bool EKF2::multi_init(int imu, int mag)
 	_odometry_pub.advertise();
 	_wind_pub.advertise();
 
+    _estimator_offset_states_pub.advertise();
+
 	bool changed_instance = _vehicle_imu_sub.ChangeInstance(imu) && _magnetometer_sub.ChangeInstance(mag);
 
 	const int status_instance = _estimator_states_pub.get_instance();
@@ -246,8 +248,7 @@ bool EKF2::multi_init(int imu, int mag)
 bool EKF2::multi_init(int imu, int mag, int ref)
 {
     // advertise all topics to ensure consistent uORB instance numbering
-    // _vehicle_reference_states_pub.advertise();  // Controlled at SoftwareSensor
-    _vehicle_offset_states_pub.advertise();
+    _vehicle_reference_states_pub.advertise();
 
     if (_reference_imu_sub.ChangeInstance(ref)) {
         _selected_reference = _reference_imu_sub.get_instance();
@@ -1291,7 +1292,7 @@ void EKF2::PublishOffsetStates(const hrt_abstime &timestamp)
     offset_states.dt_imu_avg = _ekf.get_dt_imu_avg();
     offset_states.baro_hgt_offset = _ekf.get_baro_hgt_offset();
     offset_states.timestamp = _replay_mode ? timestamp : hrt_absolute_time();
-    _vehicle_offset_states_pub.publish(offset_states);
+    _estimator_offset_states_pub.publish(offset_states);
 }
 
 void EKF2::PublishStatus(const hrt_abstime &timestamp)

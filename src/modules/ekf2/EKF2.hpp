@@ -322,9 +322,9 @@ private:
 	uORB::PublicationMulti<vehicle_odometry_s>           _odometry_pub;
 	uORB::PublicationMulti<wind_s>              _wind_pub;
 
-    // Topics for non-imu sensor detection - TODO: Extend to multi-reference case
-    uORB::Publication<estimator_states_s>           _vehicle_reference_states_pub{ORB_ID(vehicle_reference_states)};
-    uORB::Publication<estimator_offset_states_s>    _vehicle_offset_states_pub{ORB_ID(vehicle_offset_states)};
+    // Topics for non-imu sensor detection
+    uORB::PublicationMulti<estimator_offset_states_s>    _estimator_offset_states_pub{ORB_ID(estimator_offset_states)};
+    uORB::Publication<estimator_states_s>               _vehicle_reference_states_pub{ORB_ID(vehicle_reference_states)};
 
 
 	PreFlightChecker _preflt_checker;

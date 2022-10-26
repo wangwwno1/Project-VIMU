@@ -23,10 +23,14 @@ namespace sensors
             }
         }
 
-        if (!_reference_states_sub.advertised()) return;
+        // find corresponding estimated reference state
+        if (_estimator_selector_status_sub.updated()) {
+            estimator_selector_status_s estimator_selector_status;
 
-        if (!_reference_states_sub.registered()) {
-            _reference_states_sub.registerCallback();
+            if (_estimator_selector_status_sub.copy(&estimator_selector_status)) {
+                _reference_states_sub.ChangeInstance(estimator_selector_status.primary_instance);
+                _reference_offset_states_sub.ChangeInstance(estimator_selector_status.primary_instance);
+            }
         }
 
         // Check global origin Update first
@@ -40,11 +44,9 @@ namespace sensors
         }
 
         // Update reference state, generate reference gps sample
-        estimator_states_s ref_states;
-        estimator_offset_states_s offset_states;
-        if (_reference_states_sub.update(&ref_states) && _vehicle_offset_states_sub.copy(&offset_states)) {
-            _last_reference_timestamp = ref_states.timestamp;
-
+        estimator_states_s ref_states{};
+        estimator_offset_states_s offset_states{};
+        if (_reference_states_sub.update(&ref_states) && _reference_offset_states_sub.copy(&offset_states)) {
             RefGpsSample sample_delayed{};
             sample_delayed.q = Quatf(ref_states.states[0], ref_states.states[1],
                                      ref_states.states[2], ref_states.states[3]);
@@ -87,17 +89,6 @@ namespace sensors
 
         if (_reference_states_sub.advertised() && _ref_gps_buffer) {
             // Start stealthy attack & sensor validation
-            if (hrt_elapsed_time(&_last_reference_timestamp) > 1_s) {
-                // reset validators and buffer
-                _ref_gps_buffer->pop_first_older_than(_ref_gps_buffer->get_newest().time_us, &_ref_gps_delayed);
-                _ref_gps_delayed.time_us = 0;
-                _last_pos_error.zero();
-                _last_vel_error.zero();
-                _pos_validator.reset();
-                _vel_validator.reset();
-                return;
-            }
-
             const float dt_ekf_avg = (_ref_gps_delayed.time_us == 0) ? _ref_gps_delayed.dt_ekf_avg : 0.f;
             const hrt_abstime time_delay = static_cast<hrt_abstime>(_param_ekf2_gps_delay.get() * 1e3f) +
                     static_cast<hrt_abstime>(dt_ekf_avg * 5e5f);
@@ -175,8 +166,8 @@ namespace sensors
                     && _param_iv_delay_mask.get() & (sensor_attack::ATK_GPS_POS | sensor_attack::ATK_GPS_VEL)
                     && _param_iv_ttd_delay_ms.get() > 0) {
                     // Use delay for precise Time to Detection
-                    if (_attack_timestamp != 0 &&
-                        hrt_elapsed_time(&_attack_timestamp) >= (hrt_abstime) (_param_iv_ttd_delay_ms.get() * 1000)) {
+                    if (_attack_timestamp != 0
+                        && hrt_elapsed_time(&_attack_timestamp) >= (hrt_abstime) (_param_iv_ttd_delay_ms.get() * 1000)) {
                         // Declare faulty immediately
                         _gps_healthy = false;
                     } else {
@@ -195,7 +186,7 @@ namespace sensors
                 }
 
                 // Replace corresponding information if gps is unhealthy
-                if ((_pos_validator.test_ratio() >= 1.f) || (_vel_validator.test_ratio() >= 1.f)) {
+                if (!_gps_healthy) {
                     ReplaceGpsPosVelData(gps_position, ref_pos_board, ref_vel_board);
                 }
             }

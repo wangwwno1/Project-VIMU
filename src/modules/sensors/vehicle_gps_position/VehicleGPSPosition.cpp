@@ -77,6 +77,9 @@ bool VehicleGPSPosition::Start()
 	// force initial updates
 	ParametersUpdate(true);
 
+    _reference_states_sub.registerCallback();
+    _estimator_selector_status_sub.registerCallback();
+
 	ScheduleNow();
 
 	return true;
@@ -93,6 +96,7 @@ void VehicleGPSPosition::Stop()
 
 	// clear all registered callbacks
     _reference_states_sub.unregisterCallback();
+    _estimator_selector_status_sub.unregisterCallback();
 	for (auto &sub : _sensor_gps_sub) {
 		sub.unregisterCallback();
 	}
@@ -156,7 +160,7 @@ void VehicleGPSPosition::Run()
 	perf_begin(_cycle_perf);
 	ParametersUpdate();
 
-	// Check all GPS instance
+    // Check all GPS instance
 	bool any_gps_updated = false;
 	bool gps_updated = false;
 

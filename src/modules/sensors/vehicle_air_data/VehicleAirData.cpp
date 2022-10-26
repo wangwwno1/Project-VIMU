@@ -63,6 +63,8 @@ VehicleAirData::~VehicleAirData()
 
 bool VehicleAirData::Start()
 {
+    _reference_states_sub.registerCallback();
+    _estimator_selector_status_sub.registerCallback();
 	ScheduleNow();
 	return true;
 }
@@ -77,6 +79,7 @@ void VehicleAirData::Stop()
 	}
 
     _reference_states_sub.unregisterCallback();
+    _estimator_selector_status_sub.unregisterCallback();
 
     for (auto &buffer : _ref_baro_buffer) {
         if (buffer) {
@@ -176,7 +179,7 @@ void VehicleAirData::Run()
 
 	AirTemperatureUpdate();
 
-	bool updated[MAX_SENSOR_COUNT] {};
+    bool updated[MAX_SENSOR_COUNT] {};
     bool any_sensor_updated = false;
 
 	for (int uorb_index = 0; uorb_index < MAX_SENSOR_COUNT; uorb_index++) {
