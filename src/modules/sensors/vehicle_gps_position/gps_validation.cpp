@@ -94,24 +94,25 @@ namespace sensors
 
     void VehicleGPSPosition::ValidateGpsData(sensor_gps_s &gps_position) {
 
-        if (_reference_states_sub.advertised() && _ref_gps_buffer) {
+        if (_reference_states_sub.advertised() && _ref_gps_buffer && _global_origin.isInitialized()) {
             // Start stealthy attack & sensor validation
-            const float dt_ekf_avg = (_ref_gps_delayed.time_us == 0) ? _ref_gps_delayed.dt_ekf_avg : 0.f;
+            const float dt_ekf_avg = (_ref_gps_delayed.time_us == 0) ? _ref_gps_delayed.dt_ekf_avg : (_param_ekf2_predict_us.get() * 1.e-6f);
             const hrt_abstime time_delay = static_cast<hrt_abstime>(_param_ekf2_gps_delay.get() * 1e3f) +
                     static_cast<hrt_abstime>(dt_ekf_avg * 5e5f);
-            const hrt_abstime actual_timestamp = gps_position.timestamp - time_delay;
+            if (gps_position.timestamp <= time_delay) {
+                // Avoid overflow
+                return;
+            }
+            const hrt_abstime ref_timestamp = gps_position.timestamp - time_delay;
             // In EKF we take the first gps sample older than delayed imu sample
             // _gps_data_ready = _gps_buffer->pop_first_older_than(_imu_sample_delayed.time_us, &_gps_sample_delayed);
             // So at there we take the first reference gps NEWER than gps sample
-            // First discard all sample older than gps_position
-            if (_ref_gps_buffer->get_oldest().time_us != 0
-                && hrt_elapsed_time(&_ref_gps_buffer->get_oldest().time_us) > time_delay) {
-                _ref_gps_buffer->pop_first_older_than(actual_timestamp, &_ref_gps_delayed);
+            _ref_gps_buffer->pop_first_older_than(ref_timestamp, &_ref_gps_delayed);
+            if (_ref_gps_buffer->get_oldest().time_us != 0) {
+                _ref_gps_delayed = _ref_gps_buffer->get_oldest();
             }
-            _ref_gps_delayed = _ref_gps_buffer->get_oldest();
-            const bool ref_gps_ready = (_ref_gps_delayed.time_us != 0) && (hrt_elapsed_time(&_ref_gps_delayed.time_us) <= time_delay);
 
-            if (_global_origin.isInitialized() && ref_gps_ready) {
+            if (_ref_gps_delayed.time_us != 0) {
                 // State Variances
                 // Velocity Covariances in NED inertial frame
                 const float vel_obs_var = math::sq(fmaxf(gps_position.s_variance_m_s, _param_ekf2_gps_v_noise.get()));

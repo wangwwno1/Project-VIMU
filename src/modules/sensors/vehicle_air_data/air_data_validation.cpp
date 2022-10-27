@@ -28,10 +28,10 @@ namespace sensors {
             }
         }
 
-        estimator_states_s ref_states;
-        estimator_offset_states_s offset_states;
+        estimator_states_s ref_states{};
+        estimator_offset_states_s offset_states{};
         if (_reference_states_sub.update(&ref_states) && _reference_offset_states_sub.copy(&offset_states)) {
-            RefBaroSample sample;
+            RefBaroSample sample{};
             sample.time_us = ref_states.timestamp_sample;
             sample.alt_meter = - ref_states.states[9];  // Convert downward relative position to altitude
             sample.alt_var = ref_states.covariances[9];
@@ -76,21 +76,23 @@ namespace sensors {
 
         // Find the real time of height state
         RingBuffer<RefBaroSample> *pBuffer = _ref_baro_buffer[instance];
-        const float dt_ekf_avg = (pBuffer->get_newest().time_us != 0) ? pBuffer->get_newest().dt_ekf_avg : (_param_ekf2_predict_us.get() * 1.e-3f);
-        const hrt_abstime time_delay = static_cast<uint64_t>(_param_ekf2_baro_delay.get() * 1000) +
-                static_cast<uint64_t>(dt_ekf_avg * 5e5f); // seconds to microseconds divided by 2
-        const hrt_abstime ref_timestamp = timestamp_sample - time_delay;
+        const float dt_ekf_avg = (pBuffer->get_newest().time_us != 0) ? pBuffer->get_newest().dt_ekf_avg : (_param_ekf2_predict_us.get() * 1.e-6f);
+        const hrt_abstime time_delay = static_cast<uint64_t>(_param_ekf2_baro_delay.get() * 1000) + static_cast<uint64_t>(dt_ekf_avg * 5e5f); // seconds to microseconds divided by 2
+        if (timestamp_sample <= time_delay) {
+            // Avoid overflow
+            return;
+        }
 
+        const hrt_abstime ref_timestamp = timestamp_sample - time_delay;
         // In EKF we take the first baro sample older than delayed imu sample
         // _baro_data_ready = _baro_buffer->pop_first_older_than(_imu_sample_delayed.time_us, &_baro_sample_delayed);
         // So at there we take the first reference barometer NEWER than the measurement sample
-        if (pBuffer->get_oldest().time_us != 0 && hrt_elapsed_time(&pBuffer->get_oldest().time_us) > time_delay) {
-            pBuffer->pop_first_older_than(ref_timestamp, &_ref_baro_delayed);
+        pBuffer->pop_first_older_than(ref_timestamp, &_ref_baro_delayed);
+        if (pBuffer->get_oldest().time_us != 0) {
+            _ref_baro_delayed = pBuffer->get_oldest();
         }
-        _ref_baro_delayed = pBuffer->get_oldest();
-        const bool ref_baro_ready = (_ref_baro_delayed.time_us != 0) && (hrt_elapsed_time(&_ref_baro_delayed.time_us) <= time_delay);
 
-        if (ref_baro_ready) {
+        if (_ref_baro_delayed.time_us != 0) {
             float pressure_pa = _data_sum[instance] / _data_sum_count[instance];
             const float temperature = _temperature_sum[instance] / _data_sum_count[instance];
 
