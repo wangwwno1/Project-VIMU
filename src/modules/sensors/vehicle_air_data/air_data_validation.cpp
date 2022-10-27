@@ -77,14 +77,11 @@ namespace sensors {
         // In EKF we take the first baro sample older than delayed imu sample
         // _baro_data_ready = _baro_buffer->pop_first_older_than(_imu_sample_delayed.time_us, &_baro_sample_delayed);
         // So at there we take the first reference barometer NEWER than the measurement sample
-        // First discard all sample older than gps_position
-        pBuffer->pop_first_older_than(ref_timestamp, &_ref_baro_delayed);
-        if (pBuffer->get_oldest().time_us != 0) {
-            // We have the data, take the oldest sample
-            pBuffer->pop_first_older_than(pBuffer->get_oldest().time_us, &_ref_baro_delayed);
+        if (pBuffer->get_oldest().time_us != 0 && hrt_elapsed_time(&pBuffer->get_oldest().time_us) > time_delay) {
+            pBuffer->pop_first_older_than(ref_timestamp, &_ref_baro_delayed);
         }
-
-        const bool ref_baro_ready = (_ref_baro_delayed.time_us != 0) && (hrt_elapsed_time(&_ref_baro_delayed.time_us) < time_delay);
+        _ref_baro_delayed = pBuffer->get_oldest();
+        const bool ref_baro_ready = (_ref_baro_delayed.time_us != 0) && (hrt_elapsed_time(&_ref_baro_delayed.time_us) <= time_delay);
 
         if (ref_baro_ready) {
             float pressure_pa = _data_sum[instance] / _data_sum_count[instance];
