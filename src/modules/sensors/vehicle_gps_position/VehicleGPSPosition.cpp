@@ -77,9 +77,6 @@ bool VehicleGPSPosition::Start()
 	// force initial updates
 	ParametersUpdate(true);
 
-    _reference_states_sub.registerCallback();
-    _estimator_selector_status_sub.registerCallback();
-
 	ScheduleNow();
 
 	return true;

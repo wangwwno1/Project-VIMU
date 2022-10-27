@@ -11,6 +11,13 @@ namespace sensors {
             return;
         }
 
+        if (!_reference_states_sub.registered()) {
+            _reference_states_sub.registerCallback();
+        }
+        if (!_estimator_selector_status_sub.registered()) {
+            _estimator_selector_status_sub.registerCallback();
+        }
+
         // find corresponding estimated sensor bias
         if (_estimator_selector_status_sub.updated()) {
             estimator_selector_status_s estimator_selector_status;

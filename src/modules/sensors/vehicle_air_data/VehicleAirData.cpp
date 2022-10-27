@@ -63,8 +63,6 @@ VehicleAirData::~VehicleAirData()
 
 bool VehicleAirData::Start()
 {
-    _reference_states_sub.registerCallback();
-    _estimator_selector_status_sub.registerCallback();
 	ScheduleNow();
 	return true;
 }
