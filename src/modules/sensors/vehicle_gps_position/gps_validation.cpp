@@ -97,12 +97,12 @@ namespace sensors
             // _gps_data_ready = _gps_buffer->pop_first_older_than(_imu_sample_delayed.time_us, &_gps_sample_delayed);
             // So at there we take the first reference gps NEWER than gps sample
             // First discard all sample older than gps_position
-            _ref_gps_buffer->pop_first_older_than(actual_timestamp, &_ref_gps_delayed);
-            if (_ref_gps_buffer->get_oldest().time_us != 0) {
-                // We have the data, take the oldest sample
-                _ref_gps_buffer->pop_first_older_than(_ref_gps_buffer->get_oldest().time_us,&_ref_gps_delayed);
+            if (_ref_gps_buffer->get_oldest().time_us != 0
+                && hrt_elapsed_time(&_ref_gps_buffer->get_oldest().time_us) > time_delay) {
+                _ref_gps_buffer->pop_first_older_than(actual_timestamp, &_ref_gps_delayed);
             }
-            const bool ref_gps_ready = (_ref_gps_delayed.time_us != 0) && (hrt_elapsed_time(&_ref_gps_delayed.time_us) < time_delay);
+            _ref_gps_delayed = _ref_gps_buffer->get_oldest();
+            const bool ref_gps_ready = (_ref_gps_delayed.time_us != 0) && (hrt_elapsed_time(&_ref_gps_delayed.time_us) <= time_delay);
 
             if (_global_origin.isInitialized() && ref_gps_ready) {
                 // State Variances
