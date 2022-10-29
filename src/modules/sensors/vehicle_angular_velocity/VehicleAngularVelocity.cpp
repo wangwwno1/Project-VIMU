@@ -898,7 +898,7 @@ bool VehicleAngularVelocity::CalibrateAndPublish(const hrt_abstime &timestamp_sa
         sensor_gyro_s report{};
         if (_sensor_sub.copy(&report)) {
             const bool recovery_mode = report.error_count >= 10000;
-            if (recovery_mode != _recovery_mode && _estimator_sensor_bias_sub.get_instance() != 0) {
+            if (recovery_mode != _recovery_mode) {
                 _reset_filters = true;
                 _bias.zero();
                 _recovery_mode = recovery_mode;
