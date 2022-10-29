@@ -81,6 +81,7 @@ void SoftwareSensor::Run() {
     }
 
     PublishReferenceIMU();
+    UpdateImuStatus();
 
     // Run() will be invoked when actuator_output receive update
     actuator_outputs_s act{};
@@ -150,6 +151,20 @@ void SoftwareSensor::UpdateCopterStatus() {
     }
 }
 
+void SoftwareSensor::UpdateImuStatus() {
+    sensors_status_imu_s sensors_status_imu;
+    if (_sensors_status_imu_sub.update(&sensors_status_imu)) {
+        _all_gyro_compromised = true;
+        for (unsigned i = 0; i < MAX_SENSOR_COUNT; i++) {
+            // check for gyros with excessive difference to mean using accumulated error
+            if (sensors_status_imu.gyro_device_ids[i] != 0 && sensors_status_imu.gyro_healthy[i]) {
+                _all_gyro_compromised = false;
+                break;
+            }
+        }
+    }
+}
+
 void SoftwareSensor::UpdatePosVelState() {
     if (_local_pos_sub.updated()) {
         vehicle_local_position_setpoint_s lpos_sp{};
@@ -187,10 +202,39 @@ void SoftwareSensor::UpdateAttitude() {
         _att_model.setTargetState(target);
     }
 
-    // Note Linear Model cannot handle yaw warping at -pi and +pi
-    _att_model.update();
-    _state.att = _att_model.getOutputState();
-    _state.att(2) = wrap_pi(_state.att(2));
+    if (_all_gyro_compromised) {
+        // use supplementary compensation to correct attitude output
+        vehicle_magnetometer_s mag{};
+        if (_vehicle_magnetometer_sub.update(&mag)){
+            sensor_combined_s combined{};
+            _sensor_combined_sub.copy(&combined);
+            const Vector3f acceleration{combined.accelerometer_m_s2};
+            const Vector3f mag_meas{mag.magnetometer_ga};
+
+            const float roll = atan2(acceleration(1), -acceleration(2));
+            const float pitch = atan2(acceleration(0), -acceleration(2));
+            const float c_r = cos(roll);
+            const float s_r = sin(roll);
+            const float c_p = cos(pitch);
+            const float s_p = sin(pitch);
+
+            // We take different formula here because PX4 attitude rotation is 3-2-1
+            const float yaw = atan2(mag_meas(1) * c_r - mag_meas(2) * s_r,
+                                    mag_meas(0) * c_p + mag_meas(1) * s_p * s_r - mag_meas(2) * c_r * s_p);
+
+            // Update attitude model's internal state
+            _state.att = Vector3f(roll, pitch, wrap_pi(yaw));
+            _att_model.setState(_state.att);
+        }
+    } else {
+        // Note Linear Model cannot handle yaw warping at -pi and +pi
+        _att_model.update();
+        _state.att = _att_model.getOutputState();
+        if (abs(wrap_pi(_state.att(2)) - _state.att(2)) > 0.01f) {
+            _state.att(2) = wrap_pi(_state.att(2));
+            _att_model.setState(_state.att);
+        }
+    }
 
 }
 

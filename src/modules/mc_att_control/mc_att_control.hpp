@@ -48,6 +48,8 @@
 #include <uORB/topics/manual_control_setpoint.h>
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/autotune_attitude_control_status.h>
+#include <uORB/topics/sensors_status_imu.h>
+#include <uORB/topics/estimator_states.h>
 #include <uORB/topics/vehicle_attitude.h>
 #include <uORB/topics/vehicle_attitude_setpoint.h>
 #include <uORB/topics/vehicle_control_mode.h>
@@ -112,6 +114,15 @@ private:
 
 	uORB::SubscriptionCallbackWorkItem _vehicle_attitude_sub{this, ORB_ID(vehicle_attitude)};
 
+    static constexpr uint8_t MAX_SENSOR_COUNT = 4;
+    bool _all_gyro_compromised{false};
+    matrix::Quatf _current_reference{};
+    matrix::Quatf _next_reference{};
+    hrt_abstime   _current_reference_timestamp{0};
+    hrt_abstime   _next_reference_timestamp{0};
+    uORB::Subscription _reference_state_sub{ORB_ID(vehicle_reference_states)};
+    uORB::Subscription _sensors_status_imu_sub{ORB_ID(sensors_status_imu)};
+
 	uORB::Publication<vehicle_rates_setpoint_s>	_v_rates_sp_pub{ORB_ID(vehicle_rates_setpoint)};			/**< rate setpoint publication */
 	uORB::Publication<vehicle_attitude_setpoint_s>	_vehicle_attitude_setpoint_pub;
 
@@ -162,5 +173,9 @@ private:
 		(ParamInt<px4::params::MC_AIRMODE>) _param_mc_airmode,
 		(ParamFloat<px4::params::MC_MAN_TILT_TAU>) _param_mc_man_tilt_tau
 	)
+
+    void updateImuStatus();
+
+    void updateReferenceAttitude(vehicle_attitude_s &v_att);
 };
 

@@ -32,7 +32,7 @@ namespace lsm {
 
         Vector3f getTargetState() const;
 
-        void setState(const Vector3f &state);
+        void setState(const Vector3f &output_state);
 
         void setTargetState(const Vector3f &target);
 
@@ -46,6 +46,8 @@ namespace lsm {
         SquareMatrix3f _param_B;
         SquareMatrix3f _param_C;
         SquareMatrix3f _param_D;
+        SquareMatrix3f _param_C_inv;
+        bool _valid_inv_param_C{false};
         Vector3f _state;
         Vector3f _output_state;
         Vector3f _target;

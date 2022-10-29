@@ -10,12 +10,14 @@ namespace lsm {
         _param_B.zero();
         _param_C.zero();
         _param_D.zero();
+        _param_C_inv.zero();
+        _valid_inv_param_C = false;
         reset_state();
     }
 
     LinearStateModel::LinearStateModel(const SquareMatrix3f &A, const SquareMatrix3f &B,
-                                       const SquareMatrix3f &C, const SquareMatrix3f &D) :
-            _param_A(A), _param_B(B), _param_C(C), _param_D(D) {
+                                       const SquareMatrix3f &C, const SquareMatrix3f &D) {
+        setModelParam(A, B, C, D);
         reset_state();
     }
 
@@ -41,10 +43,16 @@ namespace lsm {
         _param_B = B;
         _param_C = C;
         _param_D = D;
+        _valid_inv_param_C = inv(C, _param_C_inv);
     }
 
-    void LinearStateModel::setState(const Vector3f &state) {
-        setIfNotNan(_state, state);
+    void LinearStateModel::setState(const Vector3f &output_state) {
+        if (_valid_inv_param_C) {
+            const Vector3f new_state = _param_C_inv * (output_state - _param_D * _target);
+            setIfNotNan(_state, new_state);
+            update();
+            setIfNotNan(_output_state, output_state);
+        }
     }
 
     void LinearStateModel::setTargetState(const Vector3f &target) {

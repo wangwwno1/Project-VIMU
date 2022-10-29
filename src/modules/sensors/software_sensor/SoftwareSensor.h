@@ -25,11 +25,13 @@
 #include <uORB/topics/estimator_states.h>
 #include <uORB/topics/sensor_accel.h>
 #include <uORB/topics/sensor_combined.h>
+#include <uORB/topics/sensors_status_imu.h>
 #include <uORB/topics/sensor_gyro.h>
 #include <uORB/topics/vehicle_angular_velocity.h>
 #include <uORB/topics/vehicle_angular_acceleration.h>
-#include <uORB/topics/vehicle_land_detected.h>
 #include <uORB/topics/vehicle_imu.h>
+#include <uORB/topics/vehicle_land_detected.h>
+#include <uORB/topics/vehicle_magnetometer.h>
 
 #include <uORB/topics/actuator_outputs.h>
 #include <uORB/topics/parameter_update.h>
@@ -79,6 +81,7 @@ private:
     void ParameterUpdate(bool force = false);
 
     void UpdateCopterStatus();
+    void UpdateImuStatus();
     void UpdatePosVelState();
     void UpdateAttitude();
     void UpdateAngularVelocityAndAcceleration();
@@ -159,6 +162,12 @@ private:
     uORB::Subscription                                  _vehicle_angular_velocity_sub{ORB_ID(vehicle_angular_velocity)};
     uORB::Subscription                                  _vehicle_rates_setpoint_sub{ORB_ID(vehicle_rates_setpoint)};
     uORB::Subscription                                  _vehicle_land_detected_sub{ORB_ID(vehicle_land_detected)};
+
+    // Supplementary Compensation
+    bool _all_gyro_compromised{false};
+    uORB::Subscription                                  _sensors_status_imu_sub{ORB_ID(sensors_status_imu)};
+    uORB::Subscription                                  _vehicle_magnetometer_sub{ORB_ID(vehicle_magnetometer)};
+    uORB::Subscription                                  _sensor_combined_sub{ORB_ID(sensor_combined)};
 
     // Parameters
     DEFINE_PARAMETERS(

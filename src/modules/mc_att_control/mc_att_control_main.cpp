@@ -243,6 +243,8 @@ MulticopterAttitudeControl::Run()
 		parameters_updated();
 	}
 
+    updateImuStatus();
+
 	// run controller on attitude updates
 	vehicle_attitude_s v_att;
 
@@ -252,7 +254,9 @@ MulticopterAttitudeControl::Run()
 		const float dt = math::constrain(((v_att.timestamp_sample - _last_run) * 1e-6f), 0.0002f, 0.02f);
 		_last_run = v_att.timestamp_sample;
 
-		const Quatf q{v_att.q};
+        updateReferenceAttitude(v_att);
+
+        const Quatf q{v_att.q};
 
 		// Check for new attitude setpoint
 		if (_vehicle_attitude_setpoint_sub.updated()) {
@@ -361,6 +365,70 @@ MulticopterAttitudeControl::Run()
 	}
 
 	perf_end(_loop_perf);
+}
+
+void MulticopterAttitudeControl::updateReferenceAttitude(vehicle_attitude_s &v_att) {
+    estimator_states_s ref_state{};
+    if (_reference_state_sub.copy(&ref_state) && ref_state.timestamp_sample > _next_reference_timestamp) {
+        _current_reference_timestamp = _next_reference_timestamp;
+        _current_reference = _next_reference;
+        _next_reference_timestamp = ref_state.timestamp_sample;
+        _next_reference = Quatf(ref_state.states[0], ref_state.states[1], ref_state.states[2], ref_state.states[3]);
+    }
+
+    if (_all_gyro_compromised && _current_reference_timestamp != 0) {
+        const hrt_abstime timestamp_sample = v_att.timestamp_sample;
+        Quatf ref_quat{};
+        if (timestamp_sample == _current_reference_timestamp) {
+            ref_quat = _current_reference;
+        } else if (timestamp_sample == _next_reference_timestamp) {
+            _current_reference_timestamp = _next_reference_timestamp;
+            _current_reference = _next_reference;
+            ref_quat = _current_reference;
+        } else if (_current_reference_timestamp < _next_reference_timestamp) {
+            // Do slerp interpolation
+            const float cos_half_delta = _current_reference.dot(_next_reference);
+            const float half_delta = acos(cos_half_delta);
+            const float sin_half_delta = sqrt(1.0f - math::min(sq(cos_half_delta), 1.0f));
+
+            float pct_a, pct_b;
+            pct_b = static_cast<float>(v_att.timestamp_sample - _current_reference_timestamp) /
+                    static_cast<float>(_next_reference_timestamp - _current_reference_timestamp);
+
+            if (abs(sin_half_delta) >= 0.001f) {
+                pct_a = sin((1.f - pct_b) * half_delta) / sin_half_delta;
+                pct_b = sin(pct_b * half_delta) / sin_half_delta;
+            } else {
+                pct_a = 1.f - pct_b;
+            }
+
+            for (uint8_t i = 0; i < 4; ++i) {
+                ref_quat(i) = pct_a * _current_reference(i) + pct_b * _next_reference(i);
+            }
+            ref_quat.normalize();
+        } else {
+            return;
+        }
+
+        v_att.q[0] = ref_quat(0);
+        v_att.q[1] = ref_quat(1);
+        v_att.q[2] = ref_quat(2);
+        v_att.q[3] = ref_quat(3);
+    }
+}
+
+void MulticopterAttitudeControl::updateImuStatus() {
+    sensors_status_imu_s sensors_status_imu;
+    if (_sensors_status_imu_sub.update(&sensors_status_imu)) {
+        _all_gyro_compromised = true;
+        for (unsigned i = 0; i < MAX_SENSOR_COUNT; i++) {
+            // check for gyros with excessive difference to mean using accumulated error
+            if (sensors_status_imu.gyro_device_ids[i] != 0 && sensors_status_imu.gyro_healthy[i]) {
+                _all_gyro_compromised = false;
+                break;
+            }
+        }
+    }
 }
 
 int MulticopterAttitudeControl::task_spawn(int argc, char *argv[])
