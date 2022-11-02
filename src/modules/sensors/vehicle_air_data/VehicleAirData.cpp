@@ -76,8 +76,7 @@ void VehicleAirData::Stop()
 		sub.unregisterCallback();
 	}
 
-    _reference_states_sub.unregisterCallback();
-    _estimator_selector_status_sub.unregisterCallback();
+    _vehicle_local_position_sub.unregisterCallback();
 
     for (auto &buffer : _ref_baro_buffer) {
         if (buffer) {
@@ -317,7 +316,7 @@ void VehicleAirData::Run()
                                           (_voter.get_sensor_state(_selected_sensor_sub_index) == DataValidator::ERROR_FLAG_NO_ERROR) &&
                                           ((_baro_validators[instance] == nullptr) || (_baro_validators[instance]->test_ratio() < 1.f)));
 
-					if (publish && (healthy || timestamp_sample <= _ref_baro_delayed.time_us + 1_s)) {
+					if (publish && healthy) {
                         float pressure_pa = _data_sum[instance] / _data_sum_count[instance];
                         const float temperature = _temperature_sum[instance] / _data_sum_count[instance];
 

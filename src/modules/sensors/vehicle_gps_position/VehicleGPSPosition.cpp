@@ -92,8 +92,7 @@ void VehicleGPSPosition::Stop()
     }
 
 	// clear all registered callbacks
-    _reference_states_sub.unregisterCallback();
-    _estimator_selector_status_sub.unregisterCallback();
+    _vehicle_local_position_sub.unregisterCallback();
 	for (auto &sub : _sensor_gps_sub) {
 		sub.unregisterCallback();
 	}

@@ -48,12 +48,12 @@
 #include <uORB/Subscription.hpp>
 #include <uORB/SubscriptionCallback.hpp>
 #include <uORB/topics/estimator_selector_status.h>
-#include <uORB/topics/estimator_states.h>
 #include <uORB/topics/estimator_offset_states.h>
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/sensor_gps.h>
 #include <uORB/topics/sensor_gps_error.h>
 #include <uORB/topics/sensors_status_gps.h>
+#include <uORB/topics/vehicle_attitude.h>
 #include <uORB/topics/vehicle_gps_position.h>
 #include <uORB/topics/vehicle_local_position.h>
 
@@ -71,9 +71,8 @@ struct RefGpsSample {
     hrt_abstime time_us{0};
     Quatf q;
     Vector3f pos;
-    Vector3f pos_var;
     Vector3f vel;
-    Vector3f vel_var;
+
     Vector3f ang_rate_delayed_raw;
     float    dt_ekf_avg;
 };
@@ -133,10 +132,11 @@ private:
 		{this, ORB_ID(sensor_gps), 1},
 	};
 
-    uORB::SubscriptionCallbackWorkItem  _estimator_selector_status_sub{this, ORB_ID(estimator_selector_status)};
-    uORB::SubscriptionCallbackWorkItem  _reference_states_sub{this, ORB_ID(estimator_states)};
-    uORB::Subscription                  _reference_offset_states_sub{ORB_ID(estimator_offset_states)};
-    uORB::Subscription                  _vehicle_local_position_sub{ORB_ID(vehicle_local_position)};
+    uORB::SubscriptionCallbackWorkItem  _vehicle_local_position_sub{this, ORB_ID(vehicle_local_position)};
+    uORB::Subscription                  _vehicle_attitude_sub{ORB_ID(vehicle_attitude)};
+    uORB::Subscription                  _estimator_offset_states_sub{ORB_ID(estimator_offset_states)};
+    uORB::Subscription                  _estimator_selector_status_sub{ORB_ID(estimator_selector_status)};
+
 
     Vector3f            _last_pos_error{0.f, 0.f, 0.f};
     Vector3f            _last_vel_error{0.f , 0.f, 0.f};
