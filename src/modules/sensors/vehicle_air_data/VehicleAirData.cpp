@@ -325,16 +325,6 @@ void VehicleAirData::Run()
                         uint32_t device_id = _calibration[instance].device_id();
                         uint8_t calibration_count = _calibration[instance].calibration_count();
 
-                        if (!healthy) {
-                            // fallback to reference baro
-                            const float hgt_offset = (_ref_baro_buffer[instance]->get_newest().time_us != 0) ?
-                                    _ref_baro_buffer[instance]->get_newest().hgt_offset : _ref_baro_delayed.hgt_offset;
-                            altitude = _ref_baro_delayed.alt_meter + hgt_offset;
-                            pressure_pa = AltitudeToPressure(altitude, temperature);
-                            device_id = 0;
-                            calibration_count = 0;
-                        }
-
 						// calculate air density
 						float air_density = pressure_pa / (CONSTANTS_AIR_GAS_CONST * (_air_temperature_celsius -
 										   CONSTANTS_ABSOLUTE_NULL_CELSIUS));
