@@ -11,8 +11,11 @@ namespace sensors {
             return;
         }
 
-        if (!_vehicle_local_position_sub.registered()) {
-            _vehicle_local_position_sub.registerCallback();
+        if (!_reference_states_sub.registered()) {
+            _reference_states_sub.registerCallback();
+        }
+        if (!_estimator_selector_status_sub.registered()) {
+            _estimator_selector_status_sub.registerCallback();
         }
 
         // find corresponding estimated sensor bias
@@ -20,16 +23,18 @@ namespace sensors {
             estimator_selector_status_s estimator_selector_status;
 
             if (_estimator_selector_status_sub.copy(&estimator_selector_status)) {
-                _estimator_offset_states_sub.ChangeInstance(estimator_selector_status.primary_instance);
+                _reference_states_sub.ChangeInstance(estimator_selector_status.primary_instance);
+                _reference_offset_states_sub.ChangeInstance(estimator_selector_status.primary_instance);
             }
         }
 
-        vehicle_local_position_s local_pos{};
+        estimator_states_s ref_states{};
         estimator_offset_states_s offset_states{};
-        if (_vehicle_local_position_sub.update(&local_pos) && _estimator_offset_states_sub.copy(&offset_states)) {
+        if (_reference_states_sub.update(&ref_states) && _reference_offset_states_sub.copy(&offset_states)) {
             RefBaroSample sample{};
-            sample.time_us = local_pos.timestamp_sample;
-            sample.alt_meter = -local_pos.z;  // Convert downward relative position to altitude
+            sample.time_us = ref_states.timestamp_sample;
+            sample.alt_meter = - ref_states.states[9];  // Convert downward relative position to altitude
+            sample.alt_var = ref_states.covariances[9];
             sample.dt_ekf_avg = offset_states.dt_ekf_avg;
             sample.hgt_offset = offset_states.baro_hgt_offset;
 
@@ -96,7 +101,7 @@ namespace sensors {
             const float hgt_offset = (pBuffer->get_newest().time_us != 0) ?
                                      pBuffer->get_newest().hgt_offset : _ref_baro_delayed.hgt_offset;
             const float hgt_error = _ref_baro_delayed.alt_meter + hgt_offset - altitude;
-            const float variance = math::sq(fmaxf(_param_ekf2_baro_noise.get(), 0.01f));
+            const float variance = math::sq(fmaxf(_param_ekf2_baro_noise.get(), 0.01f)) + _ref_baro_delayed.alt_var;
             _baro_validators[instance]->validate(hgt_error / sqrt(variance));
 
             _baro_error_status.timestamp_reference[instance] = _ref_baro_delayed.time_us;

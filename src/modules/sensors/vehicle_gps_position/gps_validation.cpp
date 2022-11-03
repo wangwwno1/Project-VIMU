@@ -23,8 +23,11 @@ namespace sensors
             }
         }
 
-        if (!_vehicle_local_position_sub.registered()) {
-            _vehicle_local_position_sub.registerCallback();
+        if (!_reference_states_sub.registered()) {
+            _reference_states_sub.registerCallback();
+        }
+        if (!_estimator_selector_status_sub.registered()) {
+            _estimator_selector_status_sub.registerCallback();
         }
 
         // find corresponding estimated reference state
@@ -32,13 +35,12 @@ namespace sensors
             estimator_selector_status_s estimator_selector_status;
 
             if (_estimator_selector_status_sub.copy(&estimator_selector_status)) {
-                _estimator_offset_states_sub.ChangeInstance(estimator_selector_status.primary_instance);
+                _reference_states_sub.ChangeInstance(estimator_selector_status.primary_instance);
+                _reference_offset_states_sub.ChangeInstance(estimator_selector_status.primary_instance);
             }
         }
 
-        // Update reference state, generate reference gps sample
         // Check global origin Update first
-
         vehicle_local_position_s local_pos{};
         if (_vehicle_local_position_sub.update(&local_pos)) {
             if (local_pos.ref_timestamp != _global_origin.getProjectionReferenceTimestamp()) {
@@ -46,40 +48,53 @@ namespace sensors
                 _global_origin.initReference(local_pos.ref_lat, local_pos.ref_lon, local_pos.ref_timestamp);
                 _gps_alt_ref = local_pos.ref_alt;
             }
+        }
 
-            vehicle_attitude_s att{};
-            estimator_offset_states_s offset_states{};
-            if (_vehicle_attitude_sub.copy(&att) && _estimator_offset_states_sub.copy(&offset_states)) {
-                RefGpsSample sample_delayed{};
-                sample_delayed.q = Quatf(att.q);
+        // Update reference state, generate reference gps sample
+        estimator_states_s ref_states{};
+        estimator_offset_states_s offset_states{};
+        if (_reference_states_sub.update(&ref_states) && _reference_offset_states_sub.copy(&offset_states)) {
+            RefGpsSample sample_delayed{};
+            sample_delayed.q = Quatf(ref_states.states[0], ref_states.states[1],
+                                     ref_states.states[2], ref_states.states[3]);
 
-                sample_delayed.ang_rate_delayed_raw = Vector3f(
-                        offset_states.ang_rate_delayed_raw[0],
-                        offset_states.ang_rate_delayed_raw[1],
-                        offset_states.ang_rate_delayed_raw[2]
-                );
-                sample_delayed.dt_ekf_avg = offset_states.dt_ekf_avg;
+            // Velocity in NED inertial frame
+            sample_delayed.vel(0) = ref_states.states[4];
+            sample_delayed.vel(1) = ref_states.states[5];
+            sample_delayed.vel(2) = ref_states.states[6];
 
-                // Velocity in NED inertial frame
-                sample_delayed.vel(0) = local_pos.vx;
-                sample_delayed.vel(1) = local_pos.vy;
-                sample_delayed.vel(2) = local_pos.vz;
+            // Position in NED inertial frame
+            sample_delayed.pos(0) = ref_states.states[7];
+            sample_delayed.pos(1) = ref_states.states[8];
+            sample_delayed.pos(2) = ref_states.states[9];
 
-                // Position in NED inertial frame
-                sample_delayed.pos(0) = local_pos.x;
-                sample_delayed.pos(1) = local_pos.y;
-                sample_delayed.pos(2) = local_pos.z;
+            // State Variances
+            // Velocity Covariances in NED inertial frame
+            sample_delayed.vel_var(0) = ref_states.covariances[4];
+            sample_delayed.vel_var(1) = ref_states.covariances[5];
+            sample_delayed.vel_var(2) = ref_states.covariances[6];
 
-                sample_delayed.time_us = local_pos.timestamp_sample;
+            // Position Covariances in NED inertial frame
+            sample_delayed.pos_var(0) = ref_states.covariances[7];
+            sample_delayed.pos_var(1) = ref_states.covariances[8];
+            sample_delayed.pos_var(2) = ref_states.covariances[9];
 
-                _ref_gps_buffer->push(sample_delayed);
-            }
+            sample_delayed.ang_rate_delayed_raw = Vector3f(
+                    offset_states.ang_rate_delayed_raw[0],
+                    offset_states.ang_rate_delayed_raw[1],
+                    offset_states.ang_rate_delayed_raw[2]
+            );
+            sample_delayed.dt_ekf_avg = offset_states.dt_ekf_avg;
+
+            sample_delayed.time_us = ref_states.timestamp_sample;
+
+            _ref_gps_buffer->push(sample_delayed);
         }
     }
 
     void VehicleGPSPosition::ValidateGpsData(sensor_gps_s &gps_position) {
 
-        if (_vehicle_local_position_sub.advertised() && _ref_gps_buffer && _global_origin.isInitialized()) {
+        if (_reference_states_sub.advertised() && _ref_gps_buffer && _global_origin.isInitialized()) {
             // Start stealthy attack & sensor validation
             const float dt_ekf_avg = (_ref_gps_delayed.time_us == 0) ? _ref_gps_delayed.dt_ekf_avg : (_param_ekf2_predict_us.get() * 1.e-6f);
             const hrt_abstime time_delay = static_cast<hrt_abstime>(_param_ekf2_gps_delay.get() * 1e3f) +
@@ -101,7 +116,7 @@ namespace sensors
                 // State Variances
                 // Velocity Covariances in NED inertial frame
                 const float vel_obs_var = math::sq(fmaxf(gps_position.s_variance_m_s, _param_ekf2_gps_v_noise.get()));
-                _last_vel_vars.zero();
+                _last_vel_vars = _ref_gps_delayed.vel_var;
                 _last_vel_vars.xy() += vel_obs_var;
                 _last_vel_vars(2) += vel_obs_var * math::sq(1.5f);
 
@@ -109,7 +124,7 @@ namespace sensors
                 const float lower_limit = fmaxf(_param_ekf2_gps_p_noise.get(), 0.01f);
                 const float pos_xy_var = math::sq(fmaxf(gps_position.eph, lower_limit));
                 const float pos_z_var = math::sq(fmaxf(gps_position.epv, lower_limit) * 1.5f);
-                _last_pos_vars.zero();
+                _last_pos_vars = _ref_gps_delayed.pos_var;
                 _last_pos_vars.xy() += pos_xy_var;
                 _last_pos_vars(2) += pos_z_var;
 

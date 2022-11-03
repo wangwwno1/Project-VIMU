@@ -60,8 +60,8 @@
 #include <lib/fault_detector/fault_detector.hpp>
 #include <modules/ekf2/EKF/RingBuffer.h>
 #include <uORB/topics/estimator_selector_status.h>
+#include <uORB/topics/estimator_states.h>
 #include <uORB/topics/estimator_offset_states.h>
-#include <uORB/topics/vehicle_local_position.h>
 
 using namespace time_literals;
 using BaroValidator = fault_detector::CuSumf;
@@ -72,6 +72,7 @@ namespace sensors
 struct RefBaroSample {
     hrt_abstime time_us{0};
     float alt_meter;
+    float alt_var;
     float dt_ekf_avg;
     float hgt_offset;
 };
@@ -119,10 +120,9 @@ private:
 		{this, ORB_ID(sensor_baro), 3},
 	};
 
-
-    uORB::SubscriptionCallbackWorkItem  _vehicle_local_position_sub{this, ORB_ID(vehicle_local_position)};
-    uORB::Subscription                  _estimator_selector_status_sub{ORB_ID(estimator_selector_status)};
-    uORB::Subscription                  _estimator_offset_states_sub{ORB_ID(estimator_offset_states)};
+    uORB::SubscriptionCallbackWorkItem  _estimator_selector_status_sub{this, ORB_ID(estimator_selector_status)};
+    uORB::SubscriptionCallbackWorkItem  _reference_states_sub{this, ORB_ID(estimator_states)};
+    uORB::Subscription                  _reference_offset_states_sub{ORB_ID(estimator_offset_states)};
 
 	calibration::Barometer _calibration[MAX_SENSOR_COUNT];
 
