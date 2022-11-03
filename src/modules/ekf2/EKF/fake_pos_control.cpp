@@ -46,7 +46,8 @@ void Ekf::controlFakePosFusion()
 
 	if (fake_pos_data_ready) {
 		const bool continuing_conditions_passing = !isHorizontalAidingActive();
-		const bool starting_conditions_passing = continuing_conditions_passing;
+        // Start fake pos fusion after dead-reckoning timeout according to commit f753b92
+		const bool starting_conditions_passing = continuing_conditions_passing && _deadreckon_time_exceeded;
 
 		if (_using_synthetic_position) {
 			if (continuing_conditions_passing) {
