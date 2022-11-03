@@ -178,10 +178,11 @@ namespace sensors
                     PublishErrorStatus();
                 }
 
-                // Replace corresponding information if gps is unhealthy
-                if (!_gps_healthy) {
-                    ReplaceGpsPosVelData(gps_position, ref_pos_board, ref_vel_board);
-                }
+//                // Replace corresponding information if gps is unhealthy
+//                if (!_gps_healthy) {
+//                    ReplaceGpsPosVelData(gps_position, ref_pos_board, ref_vel_board);
+//                    _gps_healthy = true;
+//                }
             }
 
         } else {
@@ -199,7 +200,7 @@ namespace sensors
             status.vel_test_ratio = _vel_validator.test_ratio();
             status.test_ratio = fmaxf(_pos_validator.test_ratio(), _vel_validator.test_ratio());
             status.healthy = _gps_healthy;
-            status.ref_gps_enabled = !_gps_healthy;
+            status.ref_gps_enabled = false;
             status.timestamp = hrt_absolute_time();
             _sensors_status_gps_pub.publish(status);
 
