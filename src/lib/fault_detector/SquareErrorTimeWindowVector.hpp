@@ -89,9 +89,9 @@ namespace fault_detector {
 
         const VectorN &error_sum() const { return _sum_squared_error; }
 
-        const Type error_offset() const { return _error_offset(0) * _param->control_limit; }
+        const Type error_offset() const { return _error_offset(0) * sqrt(detect_threshold()); }
 
-        const VectorN error_offsets() const { return _error_offset * _param->control_limit; }
+        const VectorN error_offsets() const { return _error_offset * sqrt(detect_threshold()); }
 
         void reset_error_offset() { _error_offset.setAll(+Type(0.)); }
 
