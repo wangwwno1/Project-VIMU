@@ -1,14 +1,10 @@
 #pragma once
 
 #include "common.hpp"
-#include "AbsErrorTimeWindowVector.hpp"
 
 namespace fault_detector {
     template<typename Type, size_t N>
     class DetectorVector;
-
-    template<typename Type, size_t N>
-    class AbsErrorTimeWindowVector;
 
     template<typename Type, size_t N = 1>
     class SquareErrorTimeWindowVector : public DetectorVector<Type, N> {
@@ -24,7 +20,7 @@ namespace fault_detector {
         ~SquareErrorTimeWindowVector() = default;
 
         void reset() {
-            _sum_square_error.setAll(+Type(0.) * _param->control_limit);
+            _sum_squared_error.setAll(+Type(0.) * _param->control_limit);
             reset_error_offset();
 
             _sample_counter = 0;
@@ -56,20 +52,19 @@ namespace fault_detector {
                         _error_cusum.setAll(+Type(0.));
                         _normal_sample_counter = 0;
                     }
-                    _sum_square_error.setAll(+Type(0.));
+                    _sum_squared_error.setAll(+Type(0.));
                     _sample_counter = 0;
                 };
 
                 // validate the ratio
                 _is_running = true;
-                const VectorN error = innov_ratios / _param->control_limit;
-                const VectorN corrected_error = error - _error_offset;
+                const VectorN relative_error = innov_ratios / sqrt(detect_threshold());
+                const VectorN corrected_error = relative_error - _error_offset;
 
-                _sum_square_error += corrected_error.emult(corrected_error);
-                _sum_square_error = matrix::constrain(_sum_square_error, Type(0.), +Type(1.05));
+                _sum_squared_error += corrected_error.emult(corrected_error);
                 _sample_counter++;
 
-                if (_sum_square_error.max() >= +Type(1.0)) {
+                if (test_ratio() >= +Type(1.0)) {
                     // Declare faulty, discard all previous normal samples, reset safe counter
                     _error_cusum.setAll(+Type(0.));
                     _normal_sample_counter = 0;
@@ -77,8 +72,8 @@ namespace fault_detector {
                     _is_normal = false;
                 } else {
                     if (!_is_normal) _safe_counter++;
-                    // Only count error offsets in normal
-                    _error_cusum += error;
+                    // Only count relative_error offsets in normal
+                    _error_cusum += relative_error;
                     _normal_sample_counter++;
                 }
 
@@ -92,7 +87,7 @@ namespace fault_detector {
             }
         }
 
-        const VectorN &error_sum() const { return _sum_square_error; }
+        const VectorN &error_sum() const { return _sum_squared_error; }
 
         const Type error_offset() const { return _error_offset(0) * _param->control_limit; }
 
@@ -100,17 +95,22 @@ namespace fault_detector {
 
         void reset_error_offset() { _error_offset.setAll(+Type(0.)); }
 
+        const Type detect_threshold() const {
+            return _param->control_limit / static_cast<Type>(math::max(_param->reset_samples, 1));
+        }
+
         const Type test_ratio() const {
-            return _is_normal ? _sum_square_error.max() : math::max(_sum_square_error.max(), Type(+1.0001));
+            const Type test_ratio = test_ratios().max();
+            return _is_normal ? test_ratio : math::max(test_ratio, Type(+1.0001));
         }
 
         const VectorN test_ratios() const {
-            return _sum_square_error;
+            return _sum_squared_error / static_cast<Type>(math::max(_param->reset_samples, 1));
         }
 
     private:
         ParamStruct *_param;
-        VectorN _sum_square_error;
+        VectorN _sum_squared_error;
         VectorN _error_cusum;
         VectorN _error_offset;
         int32_t _sample_counter{0};
