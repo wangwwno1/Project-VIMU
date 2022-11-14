@@ -622,6 +622,15 @@ void EKF2::Run()
 		UpdateAuxVelSample(ekf2_timestamps);
         UpdateBaroSample(ekf2_timestamps);
 		UpdateFlowSample(ekf2_timestamps);
+        if (_sensors_status_gps_sub.updated()) {
+            sensors_status_gps_s gps_stat{};
+            if (_sensors_status_gps_sub.copy(&gps_stat)) {
+                if (!gps_stat.healthy && gps_stat.healthy != _gps_healthy_prev) {
+                    _ekf.resetGpsBuffer();
+                }
+                _gps_healthy_prev = gps_stat.healthy;
+            }
+        }
 		UpdateGpsSample(ekf2_timestamps);
         // Attempt to switch magnetometer if is VIMU-EKF and current mag is faulty
         if (has_reference()) {
@@ -675,7 +684,6 @@ void EKF2::Run()
 			PublishStatus(now);
 			PublishStatusFlags(now);
 			PublishYawEstimatorStatus(now);
-
 			UpdateAccelCalibration(now);
 			UpdateGyroCalibration(now);
 			UpdateMagCalibration(now);

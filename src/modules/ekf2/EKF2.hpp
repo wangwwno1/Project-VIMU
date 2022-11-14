@@ -83,6 +83,7 @@
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/sensor_combined.h>
 #include <uORB/topics/sensor_selection.h>
+#include <uORB/topics/sensors_status_gps.h>
 #include <uORB/topics/vehicle_air_data.h>
 #include <uORB/topics/vehicle_attitude.h>
 #include <uORB/topics/vehicle_command.h>
@@ -266,6 +267,7 @@ private:
 	uORB::Subscription _magnetometer_sub{ORB_ID(vehicle_magnetometer)};
 	uORB::Subscription _optical_flow_sub{ORB_ID(optical_flow)};
 	uORB::Subscription _sensor_selection_sub{ORB_ID(sensor_selection)};
+    uORB::Subscription _sensors_status_gps_sub{ORB_ID(sensors_status_gps)};
     uORB::Subscription _status_sub{ORB_ID(vehicle_status)};
     uORB::Subscription _vehicle_command_sub{ORB_ID(vehicle_command)};
     uORB::Subscription _vehicle_gps_position_sub{ORB_ID(vehicle_gps_position)};
@@ -288,6 +290,7 @@ private:
 
     hrt_abstime _last_mag_faulty_time[MAX_NUM_MAGS]{0};
     uint8_t _attack_flag_prev{0};
+    bool _gps_healthy_prev{true};
 
 	uint32_t _filter_control_status{0};
 	uint32_t _filter_fault_status{0};

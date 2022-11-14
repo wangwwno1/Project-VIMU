@@ -354,6 +354,11 @@ public:
         _mag_validator.reset();
     }
 
+    void resetGpsBuffer() {
+        gpsSample gps_sample;
+        _gps_buffer->pop_first_older_than(_gps_buffer->get_newest().time_us, &gps_sample);
+    }
+
 private:
 
 	// set the internal states and status to their default value
