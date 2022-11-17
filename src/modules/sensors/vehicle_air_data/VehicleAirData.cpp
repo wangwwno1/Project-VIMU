@@ -506,7 +506,7 @@ void VehicleAirData::UpdateStatus()
 		sensors_status.timestamp = hrt_absolute_time();
 		_sensors_status_baro_pub.publish(sensors_status);
 
-        if (_status_updated && _param_iv_debug_log.get()) {
+        if (_param_iv_debug_log.get() && (_status_updated || hrt_elapsed_time(&_baro_error_status.timestamp) >= 1_s)) {
             // publish baro error status
             _baro_error_status.device_id_primary = _calibration[_selected_sensor_sub_index].device_id();
             for (int sensor_index = 0; sensor_index < MAX_SENSOR_COUNT; sensor_index++) {
