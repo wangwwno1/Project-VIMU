@@ -150,6 +150,10 @@ void EstimatorInterface::setGpsData(const gps_message &gps)
 	if ((gps.time_usec - _time_last_gps) > _min_obs_interval_us) {
 		_time_last_gps = gps.time_usec;
 
+		if (!gps.vel_ned_valid) {
+			return;
+		}
+
 		gpsSample gps_sample_new;
 
 		gps_sample_new.time_us = gps.time_usec - static_cast<uint64_t>(_params.gps_delay_ms * 1000);
@@ -157,7 +161,6 @@ void EstimatorInterface::setGpsData(const gps_message &gps)
 
 		gps_sample_new.vel = gps.vel_ned;
 
-		_gps_speed_valid = gps.vel_ned_valid;
 		gps_sample_new.sacc = gps.sacc;
 		gps_sample_new.hacc = gps.eph;
 		gps_sample_new.vacc = gps.epv;
