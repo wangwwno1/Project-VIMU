@@ -150,7 +150,7 @@ void EstimatorInterface::setGpsData(const gps_message &gps)
 	if ((gps.time_usec - _time_last_gps) > _min_obs_interval_us) {
 		_time_last_gps = gps.time_usec;
 
-		if (!gps.vel_ned_valid) {
+		if (!gps.vel_ned_valid || (gps.fix_type == 0)) {
 			return;
 		}
 
