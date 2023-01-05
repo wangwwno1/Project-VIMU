@@ -987,7 +987,8 @@ void Ekf::controlAirDataFusion()
 	const bool airspeed_timed_out = isTimedOut(_time_last_arsp_fuse, (uint64_t)10e6);
 	const bool sideslip_timed_out = isTimedOut(_time_last_beta_fuse, (uint64_t)10e6);
 
-	if (_using_synthetic_position || (airspeed_timed_out && sideslip_timed_out && !(_params.fusion_mode & MASK_USE_DRAG))) {
+    // FIXME DragEKF should use other flag to indicate the exclusive usage of hardware imu in V-EKF
+	if (_using_synthetic_position || (airspeed_timed_out && sideslip_timed_out && !(_params.fusion_mode & MASK_USE_DRAG || _use_reference_imu))) {
 		_control_status.flags.wind = false;
 	}
 
@@ -1054,8 +1055,9 @@ void Ekf::controlBetaFusion()
 
 void Ekf::controlDragFusion()
 {
-	if ((_params.fusion_mode & MASK_USE_DRAG) && _drag_buffer &&
-	    !_using_synthetic_position && _control_status.flags.in_air && !_mag_inhibit_yaw_reset_req) {
+    // FIXME DragEKF should use other flag to indicate the exclusive usage of hardware imu in V-EKF
+	if ((_params.fusion_mode & MASK_USE_DRAG || _use_reference_imu) && _drag_buffer &&
+        !_using_synthetic_position && _control_status.flags.in_air && !_mag_inhibit_yaw_reset_req) {
 
 		if (!_control_status.flags.wind) {
 			// reset the wind states and covariances when starting drag accel fusion

@@ -431,8 +431,9 @@ def predict_drag(
                     state[State.vz])
     vel_rel_body = R_to_body * vel_rel
 
-    bluff_body_drag = -0.5 * rho * cd * sf.V2(vel_rel_body) * vel_rel_body.norm(epsilon=epsilon)
-    momentum_drag = -cm * sf.V2(vel_rel_body)
+    horz_vel_rel_body = sf.V2(vel_rel_body.x, vel_rel_body.y)
+    bluff_body_drag = -0.5 * rho * cd * horz_vel_rel_body * vel_rel_body.norm(epsilon=epsilon)
+    momentum_drag = -cm * horz_vel_rel_body
 
     return bluff_body_drag + momentum_drag
 
@@ -457,6 +458,23 @@ def compute_drag_x_innov_var_and_k(
 
     return (innov_var, K)
 
+def compute_drag_x_innov_var_and_k_full(
+        state: VState,
+        P: MState,
+        rho: sf.Scalar,
+        cd: sf.Scalar,
+        cm: sf.Scalar,
+        R: sf.Scalar,
+        epsilon: sf.Scalar
+) -> (sf.Scalar, sf.Scalar, VState):
+
+    meas_pred = predict_drag(state, rho, cd, cm, epsilon)
+    Hx = sf.V1(meas_pred[0]).jacobian(state)
+    innov_var = (Hx * P * Hx.T + R)[0,0]
+    K = P * Hx.T / sf.Max(innov_var, epsilon)
+
+    return (innov_var, K)
+
 def compute_drag_y_innov_var_and_k(
         state: VState,
         P: MState,
@@ -477,23 +495,43 @@ def compute_drag_y_innov_var_and_k(
 
     return (innov_var, K)
 
-print("Derive EKF2 equations...")
-generate_px4_function(compute_airspeed_innov_and_innov_var, output_names=["innov", "innov_var"])
-generate_px4_function(compute_airspeed_h_and_k, output_names=["H", "K"])
+def compute_drag_y_innov_var_and_k_full(
+        state: VState,
+        P: MState,
+        rho: sf.Scalar,
+        cd: sf.Scalar,
+        cm: sf.Scalar,
+        R: sf.Scalar,
+        epsilon: sf.Scalar
+) -> (sf.Scalar, sf.Scalar, VState):
 
-generate_px4_function(compute_sideslip_innov_and_innov_var, output_names=["innov", "innov_var"])
-generate_px4_function(compute_sideslip_h_and_k, output_names=["H", "K"])
-generate_px4_function(predict_covariance, output_names=["P_new"])
-generate_px4_function(compute_mag_innov_innov_var_and_hx, output_names=["innov", "innov_var", "Hx"])
-generate_px4_function(compute_mag_y_innov_var_and_h, output_names=["innov_var", "H"])
-generate_px4_function(compute_mag_z_innov_var_and_h, output_names=["innov_var", "H"])
-generate_px4_function(compute_yaw_321_innov_var_and_h, output_names=["innov_var", "H"])
-generate_px4_function(compute_yaw_321_innov_var_and_h_alternate, output_names=["innov_var", "H"])
-generate_px4_function(compute_yaw_312_innov_var_and_h, output_names=["innov_var", "H"])
-generate_px4_function(compute_yaw_312_innov_var_and_h_alternate, output_names=["innov_var", "H"])
-generate_px4_function(compute_mag_declination_innov_innov_var_and_h, output_names=["innov", "innov_var", "H"])
-generate_px4_function(compute_flow_xy_innov_var_and_hx, output_names=["innov_var", "H"])
-generate_px4_function(compute_flow_y_innov_var_and_h, output_names=["innov_var", "H"])
-generate_px4_function(compute_gnss_yaw_innon_innov_var_and_h, output_names=["innov", "innov_var", "H"])
+    meas_pred = predict_drag(state, rho, cd, cm, epsilon)
+    Hy = sf.V1(meas_pred[1]).jacobian(state)
+    innov_var = (Hy * P * Hy.T + R)[0,0]
+    K = P * Hy.T / sf.Max(innov_var, epsilon)
+
+    return (innov_var, K)
+
+
+print("Derive EKF2 equations...")
+# generate_px4_function(compute_airspeed_innov_and_innov_var, output_names=["innov", "innov_var"])
+# generate_px4_function(compute_airspeed_h_and_k, output_names=["H", "K"])
+#
+# generate_px4_function(compute_sideslip_innov_and_innov_var, output_names=["innov", "innov_var"])
+# generate_px4_function(compute_sideslip_h_and_k, output_names=["H", "K"])
+# generate_px4_function(predict_covariance, output_names=["P_new"])
+# generate_px4_function(compute_mag_innov_innov_var_and_hx, output_names=["innov", "innov_var", "Hx"])
+# generate_px4_function(compute_mag_y_innov_var_and_h, output_names=["innov_var", "H"])
+# generate_px4_function(compute_mag_z_innov_var_and_h, output_names=["innov_var", "H"])
+# generate_px4_function(compute_yaw_321_innov_var_and_h, output_names=["innov_var", "H"])
+# generate_px4_function(compute_yaw_321_innov_var_and_h_alternate, output_names=["innov_var", "H"])
+# generate_px4_function(compute_yaw_312_innov_var_and_h, output_names=["innov_var", "H"])
+# generate_px4_function(compute_yaw_312_innov_var_and_h_alternate, output_names=["innov_var", "H"])
+# generate_px4_function(compute_mag_declination_innov_innov_var_and_h, output_names=["innov", "innov_var", "H"])
+# generate_px4_function(compute_flow_xy_innov_var_and_hx, output_names=["innov_var", "H"])
+# generate_px4_function(compute_flow_y_innov_var_and_h, output_names=["innov_var", "H"])
+# generate_px4_function(compute_gnss_yaw_innon_innov_var_and_h, output_names=["innov", "innov_var", "H"])
 generate_px4_function(compute_drag_x_innov_var_and_k, output_names=["innov_var", "K"])
 generate_px4_function(compute_drag_y_innov_var_and_k, output_names=["innov_var", "K"])
+generate_px4_function(compute_drag_x_innov_var_and_k_full, output_names=["innov_var", "K"])
+generate_px4_function(compute_drag_y_innov_var_and_k_full, output_names=["innov_var", "K"])

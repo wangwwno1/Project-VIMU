@@ -90,7 +90,23 @@ void EstimatorInterface::setIMUData(const imuSample &imu_sample)
 		_min_obs_interval_us = (imu_sample.time_us - _imu_sample_delayed.time_us) / (_obs_buffer_length - 1);
 	}
 
-	setDragData(imu_sample);
+    if (!_use_reference_imu) {
+        setDragData(imu_sample);
+    }
+}
+
+// Store hardware imu sample if using virtual imu in setIMUData
+void EstimatorInterface::setDragIMUData(const imuSample &imu_sample)
+{
+    // TODO: resolve misplaced responsibility
+    if (!_initialised) {
+        _initialised = init(imu_sample.time_us);
+    }
+
+    // push hardware imu to the buffer when new downsampled data becomes available
+    if (_use_reference_imu) {
+        setDragData(imu_sample);
+    }
 }
 
 void EstimatorInterface::setMagData(const magSample &mag_sample)
@@ -385,7 +401,8 @@ void EstimatorInterface::setDragData(const imuSample &imu)
 {
 	// down-sample the drag specific force data by accumulating and calculating the mean when
 	// sufficient samples have been collected
-	if ((_params.fusion_mode & MASK_USE_DRAG)) {
+    // TODO add extra parameter for drag estimation?
+	if ((_params.fusion_mode & MASK_USE_DRAG) || _use_reference_imu) {
 
 		// Allocate the required buffer size if not previously done
 		if (_drag_buffer == nullptr) {

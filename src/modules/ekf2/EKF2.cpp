@@ -634,24 +634,13 @@ void EKF2::Run()
             }
         }
 		UpdateGpsSample(ekf2_timestamps);
-        // Attempt to switch magnetometer if is VIMU-EKF and current mag is faulty
         if (has_reference()) {
-            float mag_test_ratio = NAN;
-            if (_ekf.control_status_flags().mag_hdg) {
-                _ekf.getHeadingInnovRatio(mag_test_ratio);
-            } else if (_ekf.control_status_flags().mag_3D) {
-                _ekf.getMagInnovRatio(mag_test_ratio);
-            }
-
-            if (PX4_ISFINITE(mag_test_ratio) && (mag_test_ratio >= 1.f)) {
-                const uint8_t mag_uorb_idx = _magnetometer_sub.get_instance();
-                if (mag_uorb_idx < MAX_NUM_MAGS) {
-                    _last_mag_faulty_time[mag_uorb_idx] = hrt_absolute_time();
-                }
-                FindNewMagnetometer();
-            }
+            // TODO better doc
+            // Put hardware IMU sample and set the bias
+            UpdateDragImuSample();
+            // Attempt to switch magnetometer if is VIMU-EKF and current mag is faulty
+            CheckMagStatus();
         }
-
         UpdateMagSample(ekf2_timestamps);
 		UpdateRangeSample(ekf2_timestamps);
 
@@ -1869,20 +1858,97 @@ void EKF2::UpdateGpsSample(ekf2_timestamps_s &ekf2_timestamps)
 	}
 }
 
-void EKF2::FindNewMagnetometer() {
-    // Iteratively select new magnetometer
-    for (uint8_t idx = 0; idx < MAX_NUM_MAGS; ++idx) {
-        uORB::SubscriptionData<vehicle_magnetometer_s> mag_sub{ORB_ID(vehicle_magnetometer), idx};
-        mag_sub.update();
-        if (mag_sub.advertised()) {
-            if (mag_sub.get().device_id == _device_id_mag) {
-                continue;
+void EKF2::UpdateDragImuSample() {
+    estimator_selector_status_s selector_status{};
+    if (_estimator_selector_status_sub.update(&selector_status)) {
+        // reset the state
+        _last_valid_imu = INVALID_INSTANCE;
+        _last_bias_source = selector_status.primary_instance;
+        if (selector_status.gyro_device_id != 0) {
+            sensors_status_imu_s imu_status{};
+            _sensors_status_imu_sub.copy(&imu_status);
+            for (uint8_t imu = 0; imu < MAX_SENSOR_COUNT; ++imu) {
+                // Although we only take gyro measurement, we should also check accelerometer status
+                // Since the attack against accelerometer could be also used against gyroscope.
+                if (imu_status.gyro_device_ids[imu] == selector_status.gyro_device_id) {
+                    if (imu_status.gyro_healthy[imu] && imu_status.accel_healthy[imu]) {
+                        _last_valid_imu = imu;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    if (_estimator_sensor_bias_sub.get_instance() != _last_bias_source && _last_bias_source != INVALID_INSTANCE) {
+        _estimator_sensor_bias_sub.ChangeInstance(_last_bias_source);
+        return;
+    }
+
+    if (_vehicle_imu_sub.get_instance() == _last_valid_imu) {
+        vehicle_imu_s imu;
+        if (_vehicle_imu_sub.update(&imu)) {
+            imuSample imu_sample;
+            imu_sample.time_us = imu.timestamp_sample;
+            imu_sample.delta_ang_dt = imu.delta_angle_dt * 1.e-6f;
+            imu_sample.delta_ang = Vector3f{imu.delta_angle};
+            imu_sample.delta_vel_dt = imu.delta_velocity_dt * 1.e-6f;
+            imu_sample.delta_vel = Vector3f{imu.delta_velocity};
+
+            if (imu.delta_velocity_clipping > 0) {
+                imu_sample.delta_vel_clipping[0] = imu.delta_velocity_clipping & vehicle_imu_s::CLIPPING_X;
+                imu_sample.delta_vel_clipping[1] = imu.delta_velocity_clipping & vehicle_imu_s::CLIPPING_Y;
+                imu_sample.delta_vel_clipping[2] = imu.delta_velocity_clipping & vehicle_imu_s::CLIPPING_Z;
             }
 
-            if ((hrt_elapsed_time(&_last_mag_faulty_time[idx]) > 5_s) && _magnetometer_sub.ChangeInstance(idx)) {
-                // Clear all previous mag samples
-                _ekf.resetMagBuffer();
-                break;
+            imu_dt = imu.delta_angle_dt;
+            _ekf.setDragIMUData(imu_sample);
+        }
+    } else if (_last_valid_imu != INVALID_INSTANCE) {
+        _vehicle_imu_sub.ChangeInstance(_last_valid_imu);
+    }
+
+    if (_estimator_sensor_bias_sub.get_instance() == _last_bias_source) {
+        estimator_sensor_bias_s bias{};
+        if (_estimator_sensor_bias_sub.update(&bias)) {
+            if (bias.accel_bias_valid) {
+                _ekf.setDragAccBias(Vector3f{bias.accel_bias});
+            }
+        }
+    } else if (_last_bias_source != INVALID_INSTANCE) {
+        _estimator_sensor_bias_sub.ChangeInstance(_last_bias_source);
+    }
+}
+
+void EKF2::CheckMagStatus() {
+    float mag_test_ratio = NAN;
+    if (_ekf.control_status_flags().mag_hdg) {
+        _ekf.getHeadingInnovRatio(mag_test_ratio);
+    } else if (_ekf.control_status_flags().mag_3D) {
+        _ekf.getMagInnovRatio(mag_test_ratio);
+    }
+
+    if (PX4_ISFINITE(mag_test_ratio) && (mag_test_ratio >= 1.f)) {
+        const uint8_t mag_uorb_idx = _magnetometer_sub.get_instance();
+        if (mag_uorb_idx < MAX_NUM_MAGS) {
+            _last_mag_faulty_time[mag_uorb_idx] = hrt_absolute_time();
+        }
+
+        // Iteratively select new magnetometer
+        for (uint8_t idx = 0; idx < MAX_NUM_MAGS; ++idx) {
+            uORB::SubscriptionData<vehicle_magnetometer_s> magSub{ORB_ID(vehicle_magnetometer), idx};
+            magSub.update();
+            if (magSub.advertised()) {
+                if (magSub.get().device_id == _device_id_mag) {
+                    continue;
+                }
+
+                if ((hrt_elapsed_time(&_last_mag_faulty_time[idx]) > 5operator) &&
+                    _magnetometer_sub.ChangeInstance(idx)) {
+                    // Clear all previous mag samples
+                    _ekf.resetMagBuffer();
+                    break;
+                }
             }
         }
     }

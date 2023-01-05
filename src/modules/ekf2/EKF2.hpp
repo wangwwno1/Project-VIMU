@@ -67,12 +67,10 @@
 #include <uORB/topics/airspeed_validated.h>
 #include <uORB/topics/distance_sensor.h>
 #include <uORB/topics/ekf2_timestamps.h>
-#include <uORB/topics/estimator_aero_wrench.h>
 #include <uORB/topics/estimator_baro_bias.h>
 #include <uORB/topics/estimator_event_flags.h>
 #include <uORB/topics/estimator_gps_status.h>
 #include <uORB/topics/estimator_innovations.h>
-#include <uORB/topics/estimator_offset_states.h>
 #include <uORB/topics/estimator_optical_flow_vel.h>
 #include <uORB/topics/estimator_sensor_bias.h>
 #include <uORB/topics/estimator_states.h>
@@ -83,7 +81,6 @@
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/sensor_combined.h>
 #include <uORB/topics/sensor_selection.h>
-#include <uORB/topics/sensors_status_gps.h>
 #include <uORB/topics/vehicle_air_data.h>
 #include <uORB/topics/vehicle_attitude.h>
 #include <uORB/topics/vehicle_command.h>
@@ -97,6 +94,13 @@
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/wind.h>
 #include <uORB/topics/yaw_estimator_status.h>
+
+// Extra header files for V-EKF
+#include <uORB/topics/estimator_aero_wrench.h>
+#include <uORB/topics/estimator_offset_states.h>
+#include <uORB/topics/estimator_selector_status.h>
+#include <uORB/topics/sensors_status_imu.h>
+#include <uORB/topics/sensors_status_gps.h>
 
 
 extern pthread_mutex_t ekf2_module_mutex;
@@ -137,7 +141,7 @@ public:
     bool use_reference() const { return has_reference() && _reference_imu_sub.registered(); }
 
 private:
-
+    static constexpr uint8_t INVALID_INSTANCE{UINT8_MAX};
 	static constexpr uint8_t MAX_NUM_IMUS = 4;
 	static constexpr uint8_t MAX_NUM_MAGS = 4;
 
@@ -177,9 +181,10 @@ private:
 	void UpdateGyroCalibration(const hrt_abstime &timestamp);
 	void UpdateMagCalibration(const hrt_abstime &timestamp);
 
-    void FindNewMagnetometer();
+    void CheckMagStatus();
+    void UpdateDragImuSample();
 
-	/*
+    /*
 	 * Calculate filtered WGS84 height from estimated AMSL height
 	 */
 	float filter_altitude_ellipsoid(float amsl_hgt);
@@ -262,14 +267,19 @@ private:
 	uORB::Subscription _magnetometer_sub{ORB_ID(vehicle_magnetometer)};
 	uORB::Subscription _optical_flow_sub{ORB_ID(optical_flow)};
 	uORB::Subscription _sensor_selection_sub{ORB_ID(sensor_selection)};
-    uORB::Subscription _sensors_status_gps_sub{ORB_ID(sensors_status_gps)};
     uORB::Subscription _status_sub{ORB_ID(vehicle_status)};
     uORB::Subscription _vehicle_command_sub{ORB_ID(vehicle_command)};
     uORB::Subscription _vehicle_gps_position_sub{ORB_ID(vehicle_gps_position)};
     uORB::Subscription _vehicle_land_detected_sub{ORB_ID(vehicle_land_detected)};
 
-	uORB::SubscriptionCallbackWorkItem _sensor_combined_sub{this, ORB_ID(sensor_combined)};
+    uORB::SubscriptionCallbackWorkItem _sensor_combined_sub{this, ORB_ID(sensor_combined)};
 	uORB::SubscriptionCallbackWorkItem _vehicle_imu_sub{this, ORB_ID(vehicle_imu)};
+
+    // Extra subscription for V-EKF
+    uORB::Subscription _sensors_status_gps_sub{ORB_ID(sensors_status_gps)};
+    uORB::Subscription _sensors_status_imu_sub{ORB_ID(sensors_status_imu)};
+    uORB::Subscription _estimator_selector_status_sub{ORB_ID(estimator_selector_status)};
+    uORB::Subscription _estimator_sensor_bias_sub{ORB_ID(estimator_sensor_bias)};
     uORB::SubscriptionCallbackWorkItem _reference_imu_sub{this, ORB_ID(reference_imu)};
 
 	uORB::SubscriptionMultiArray<distance_sensor_s> _distance_sensor_subs{ORB_ID::distance_sensor};
@@ -283,9 +293,12 @@ private:
 
 	hrt_abstime _last_range_sensor_update{0};
 
+    // For V-EKF mag switch, simulate attack, and gps status monitor
     hrt_abstime _last_mag_faulty_time[MAX_NUM_MAGS]{0};
     uint8_t _attack_flag_prev{0};
     bool _gps_healthy_prev{true};
+    uint8_t _last_valid_imu{INVALID_INSTANCE};
+    uint8_t _last_bias_source{INVALID_INSTANCE};
 
 	uint32_t _filter_control_status{0};
 	uint32_t _filter_fault_status{0};

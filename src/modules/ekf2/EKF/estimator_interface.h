@@ -82,6 +82,11 @@ public:
 
 	void setIMUData(const imuSample &imu_sample);
 
+    // if using virtual imu, the imu_sample received in setIMUData is come from physical model
+    // use this API to set hardware imu sample for drag estimation
+    void setDragIMUData(const imuSample &imu_sample);
+    void setDragAccBias(const Vector3f &acc_bias) { _drag_acc_bias = acc_bias; }
+
 	void setMagData(const magSample &mag_sample);
 
 	void setGpsData(const gps_message &gps);
@@ -270,6 +275,7 @@ protected:
 	virtual bool init(uint64_t timestamp) = 0;
 
     bool _use_reference_imu{false};
+    Vector3f _drag_acc_bias{};  // Applied to drag fusion when the primary imu is virtual imu.
 
 	parameters _params{};		// filter parameters
 
