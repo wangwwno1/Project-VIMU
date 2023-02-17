@@ -199,7 +199,6 @@ private:
     struct SensorHealthStatus {
         SensorHealthStatus() {
             for (uint8_t imu = 0; imu < IMU_STATUS_SIZE; ++imu) {
-                imu_test_ratios[imu] = 0.f;
                 accel_device_ids[imu] = 0;
                 accel_healthy[imu] = false;
                 gyro_device_ids[imu] = 0;

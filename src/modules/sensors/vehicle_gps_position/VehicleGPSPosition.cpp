@@ -230,8 +230,6 @@ void VehicleGPSPosition::Publish(const sensor_gps_s &gps, uint8_t selected)
 
 	gps_output.selected = selected;
 
-	ConductAttack(gps_output);
-
 	_vehicle_gps_position_pub.publish(gps_output);
 }
 
