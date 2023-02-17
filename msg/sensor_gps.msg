@@ -40,4 +40,3 @@ float32 heading			# heading angle of XYZ body frame rel to NED. Set to NaN if no
 float32 heading_offset		# heading offset of dual antenna array in body frame. Set to NaN if not applicable. (rad, [-PI, PI])
 float32 heading_accuracy	# heading accuracy (rad, [0, 2PI])
 
-# TOPICS sensor_gps reference_gps
