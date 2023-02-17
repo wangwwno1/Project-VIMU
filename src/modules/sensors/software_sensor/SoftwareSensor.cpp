@@ -62,7 +62,7 @@ void SoftwareSensor::reset() {
     _vel_model.reset_state();
     _att_model.reset_state();
     _rate_model.reset_state();
-    _angular_accel_filter.reset();
+    _angular_accel_filter.reset(Vector3f{0.f, 0.f, 0.f});
 }
 
 void SoftwareSensor::Run() {
@@ -150,59 +150,26 @@ void SoftwareSensor::UpdateCopterStatus() {
 
 void SoftwareSensor::UpdatePosVelState() {
     if (_local_pos_sub.updated()) {
-        // adjust existing (or older) offsets with EKF reset deltas
-        AdjustOffset();
-
         vehicle_local_position_setpoint_s lpos_sp{};
         if (_local_pos_sp_sub.update(&lpos_sp)) {
             const Vector3f pos_sp{lpos_sp.x, lpos_sp.y, lpos_sp.z};
             const Vector3f vel_sp{lpos_sp.vx, lpos_sp.vy, lpos_sp.vz};
 
             // Convert setpoints to initial frame before update target state
-            _pos_model.setTargetState(pos_sp - _offsets.pos_offset);
-            _vel_model.setTargetState(vel_sp - _offsets.vel_offset);
+            _pos_model.setTargetState(pos_sp);
+            _vel_model.setTargetState(vel_sp);
         }
 
         _pos_model.update();
-        _state.pos = _pos_model.getOutputState() + _offsets.pos_offset;
+        _state.pos = _pos_model.getOutputState();
 
         // Use model internal state to eliminate change in offset
         const Vector3f prev_vel = _vel_model.getOutputState();
         _vel_model.update();
         _delta_vel = _vel_model.getOutputState() - prev_vel;
-        _state.vel = _vel_model.getOutputState() + _offsets.vel_offset;
+        _state.vel = _vel_model.getOutputState();
 
         _avg_acceleration = _delta_vel / _filter_update_period;
-    }
-}
-
-void SoftwareSensor::AdjustOffset() {
-    vehicle_local_position_s local_pos{};
-    if (_local_pos_sub.update(&local_pos)) {
-        if (_offsets.timestamp < local_pos.timestamp) {
-            // Update position and velocity offsets
-            if (local_pos.vxy_reset_counter != _vxy_reset_counter) {
-                _offsets.vel_offset(0) += local_pos.delta_vxy[0];
-                _offsets.vel_offset(1) += local_pos.delta_vxy[1];
-            }
-
-            if (local_pos.vz_reset_counter != _vz_reset_counter) {
-                _offsets.vel_offset(2) += local_pos.delta_vz;
-            }
-
-            if (local_pos.xy_reset_counter != _xy_reset_counter) {
-                _offsets.pos_offset(0) += local_pos.delta_xy[0];
-                _offsets.pos_offset(1) += local_pos.delta_xy[1];
-            }
-
-            if (local_pos.z_reset_counter != _z_reset_counter) {
-                _offsets.pos_offset(2) += local_pos.delta_z;
-            }
-
-//                if (local_pos.heading_reset_counter != _heading_reset_counter) {
-//                    _setpoint.yaw += local_pos.delta_heading;
-//                }
-        }
     }
 }
 
@@ -345,7 +312,7 @@ void SoftwareSensor::PublishReferenceIMU() {
 }
 
 void SoftwareSensor::PublishReferenceState() {
-    if (_estimator_states_sub.update(&_reference_states)) {
+    if (_copter_status.publish && _estimator_states_sub.update(&_reference_states)) {
         // Replace internal states
         // Attitude Quaternion
         const Quatf q{_state.att};
