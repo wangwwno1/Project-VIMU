@@ -21,7 +21,7 @@ namespace fault_detector {
         ~AbsErrorTimeWindowVector() = default;
 
         void reset() {
-            _sum_absolute_error.setAll(+Type(0.) * _param->control_limit);
+            _sum_absolute_error.setAll(+Type(0.));
             reset_error_offset();
 
             _sample_counter = 0;

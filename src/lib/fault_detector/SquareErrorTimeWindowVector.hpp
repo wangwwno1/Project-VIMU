@@ -20,7 +20,7 @@ namespace fault_detector {
         ~SquareErrorTimeWindowVector() = default;
 
         void reset() {
-            _sum_squared_error.setAll(+Type(0.) * _param->control_limit);
+            _sum_squared_error.setAll(+Type(0.));
             reset_error_offset();
 
             _sample_counter = 0;
