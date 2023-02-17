@@ -126,18 +126,6 @@ private:
     Vector3f                _delta_vel{0.f, 0.f, 0.f};
     AlphaFilter<Vector3f>   _angular_accel_filter{0.2f};
 
-    struct LocalPosVelOffset {
-        hrt_abstime timestamp{0};
-        Vector3f    pos_offset{0.f, 0.f, 0.f};
-        Vector3f    vel_offset{0.f, 0.f, 0.f};
-    };
-
-    LocalPosVelOffset       _offsets{};
-    uint8_t                 _vxy_reset_counter{0};
-    uint8_t                 _vz_reset_counter{0};
-    uint8_t                 _xy_reset_counter{0};
-    uint8_t                 _z_reset_counter{0};
-
     struct VehicleState {
         Vector3f pos{0.f, 0.f, 0.f};
         Vector3f vel{0.f, 0.f, 0.f};
@@ -179,7 +167,6 @@ private:
             (ParamInt<px4::params::IMU_GYRO_RATEMAX>)       _param_imu_gyro_ratemax
     )
 
-    void AdjustOffset();
 };
 
 #endif //PX4_SOFTWARESENSOR_H
