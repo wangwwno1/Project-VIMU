@@ -156,7 +156,6 @@ private:
     hrt_abstime _current_act_sp_timestamp{0};
     VectorThrust _newest_actuator_setpoint;
     hrt_abstime _newest_act_sp_timestamp{0};
-    AlphaFilter<VectorThrust> _actuator_state_lpf{1.f};
 
     // External Wrench
     Vector3f _external_accel{0.f, 0.f, 0.f};
@@ -171,7 +170,8 @@ private:
         float mass{0.8f};
         float Ct{4.00f};
         float Cd{0.05f};
-        float motor_time_constant{0.005f};  // 5ms for jMAVSim default
+        // SAVIOR model does not consider the spin effect, so we comment this param.
+        // float motor_time_constant{0.005f};  // 5ms for jMAVSim default
         Vector2f length{0.33f / (2.0f * sqrt(2.0f)), 0.33f / (2.0f * sqrt(2.0f))};  // 0.11667262
         Vector3f torque_coeff{Ct * length(0), Ct * length(1), Cd};
         Vector3f thrust_coeff{0.f, 0.f, -Ct / mass};
@@ -217,7 +217,6 @@ private:
             (ParamFloat<px4::params::EKF2_ACC_NOISE>)       _param_ekf2_acc_noise,
             (ParamExtFloat<px4::params::VM_MASS>)           _param_vm_mass,
             (ParamExtFloat<px4::params::VM_THR_FACTOR>)     _param_vm_thr_factor,
-            (ParamExtFloat<px4::params::VM_MOTOR_TAU>)      _param_vm_motor_tau,
             (ParamExtFloat<px4::params::VM_DRAG_FACTOR>)    _param_vm_drag_factor,
             (ParamExtFloat<px4::params::VM_ANG_ACC_NOISE>)  _param_vm_ang_acc_noise,
             (ParamFloat<px4::params::VM_INERTIA_XX>)        _param_vm_inertia_xx,

@@ -40,7 +40,6 @@ VirtualIMU::VirtualIMU():
     _param_ekf2_gyr_noise(_ekf_params->gyro_noise),
     _param_vm_mass(_phys_model_params.mass),
     _param_vm_thr_factor(_phys_model_params.Ct),
-    _param_vm_motor_tau(_phys_model_params.motor_time_constant),
     _param_vm_drag_factor(_phys_model_params.Cd),
     _param_vm_ang_acc_noise(_ekf_params->process_noise),
     _param_iv_imu_delay_us(_ekf_params->imu_fuse_delay_us),
@@ -141,7 +140,6 @@ void VirtualIMU::Run()
             }
             _current_act_sp_timestamp = act.timestamp;
             _last_update_us = act.timestamp;
-            _actuator_state_lpf.reset(_current_actuator_setpoint);
         }
 
         if (act.timestamp >= _newest_act_sp_timestamp) {
@@ -171,14 +169,14 @@ void VirtualIMU::Run()
             _last_update_us += _rate_ctrl_interval_us;
 
             // Use AlphaFilter to approximate the motor's spin-up effect
-            _actuator_state_lpf.update(_current_actuator_setpoint);
+            // NOTE: SAVIOR does not consider the spin-up effect in their physical model, so no alpha filter here
 
             UpdateSensorBias();
             UpdateAerodynamicWrench();
 
             // Update angular velocity, angular acceleration, and body acceleration into future horizon
             Vector3f torque{0.f, 0.f, 0.f};
-            const VectorThrust act_state = _actuator_state_lpf.getState();
+            const VectorThrust act_state = _current_actuator_setpoint;
             if (_copter_status.in_air) {
                 // Use prediction from VIMU instead of the static torque
                 torque = static_cast<Vector3f>(QuadTorque * act_state).emult(_phys_model_params.torque_coeff);
@@ -326,12 +324,6 @@ void VirtualIMU::ParameterUpdate(bool force) {
             _imu_integration_interval_us = 1e6f / imu_integration_rate_hz;
             _rate_ctrl_interval = 1.f / rate_control_rate_hz;
             _rate_ctrl_interval_us = 1e6f / rate_control_rate_hz;
-
-            if (_phys_model_params.motor_time_constant > 0.f) {
-                _actuator_state_lpf.setAlpha(1.f - std::exp(- _rate_ctrl_interval / _phys_model_params.motor_time_constant));
-            } else {
-                _actuator_state_lpf.setAlpha(1.f);
-            }
 
             // This integration_interval is a threshold for IMU delay.
             const uint8_t integral_samples = math::max(1, (int)roundf(_imu_integration_interval / _rate_ctrl_interval));
