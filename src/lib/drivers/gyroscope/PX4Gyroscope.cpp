@@ -54,11 +54,9 @@ PX4Gyroscope::PX4Gyroscope(uint32_t device_id, enum Rotation rotation) :
     ModuleParams(nullptr),
 	_device_id{device_id},
 	_rotation{rotation},
-    _param_iv_gyr_csum_h(_gyro_validator_params.cusum_params.control_limit),
-    _param_iv_gyr_mshift(_gyro_validator_params.cusum_params.mean_shift),
-    _param_iv_gyr_ema_h(_gyro_validator_params.ema_params.control_limit),
-    _param_iv_gyr_alpha(_gyro_validator_params.ema_params.alpha),
-    _param_iv_gyr_ema_cap(_gyro_validator_params.ema_params.cap)
+    _param_iv_gyr_twin_h(_gyro_validator_params.control_limit),
+    _param_iv_gyr_rst_cnt(_gyro_validator_params.reset_samples),
+    _param_iv_gyr_cd_cnt(_gyro_validator_params.safe_count)
 {
 	// advertise immediately to keep instance numbering in sync
 	_sensor_pub.advertise();
