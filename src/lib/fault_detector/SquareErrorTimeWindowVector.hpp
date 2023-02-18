@@ -105,7 +105,7 @@ namespace fault_detector {
         }
 
         const VectorN test_ratios() const {
-            return _sum_squared_error / static_cast<Type>(math::max(_param->reset_samples, 1));
+            return _sum_squared_error / static_cast<Type>(math::max(_sample_counter, 1));
         }
 
     private:
