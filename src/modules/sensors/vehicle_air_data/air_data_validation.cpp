@@ -88,7 +88,11 @@ namespace sensors {
             const float hgt_offset = (pBuffer->get_newest().time_us != 0) ?
                                      pBuffer->get_newest().hgt_offset : _ref_baro_delayed.hgt_offset;
             const float hgt_error = _ref_baro_delayed.alt_meter + hgt_offset - altitude;
-            const float variance = math::sq(fmaxf(_param_ekf2_baro_noise.get(), 0.01f));
+            if (_baro_validators[instance]->test_ratio() < 1.f) {
+                const float variance = math::sq(fmaxf(_param_ekf2_baro_noise.get(), 0.01f)) + _ref_baro_delayed.alt_var;
+            } else {
+                const float variance = math::sq(fmaxf(_param_ekf2_baro_noise.get(), 0.01f));
+            }
             _baro_validators[instance]->validate(hgt_error / sqrt(variance));
 
             _baro_error_status.timestamp_reference[instance] = _ref_baro_delayed.time_us;
