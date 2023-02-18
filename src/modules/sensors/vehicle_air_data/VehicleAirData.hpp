@@ -63,7 +63,7 @@
 #include <uORB/topics/estimator_offset_states.h>
 
 using namespace time_literals;
-using BaroValidator = fault_detector::CuSumf;
+using fault_detector::BaroValidator;
 
 namespace sensors
 {

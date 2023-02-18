@@ -48,7 +48,7 @@
 #include <uORB/topics/sensor_gyro_errors.h>
 
 using namespace time_literals;
-using GyroValidator = fault_detector::EMACuSumVector3f;
+using fault_detector::GyroValidator;
 
 class PX4Gyroscope : public ModuleParams
 {

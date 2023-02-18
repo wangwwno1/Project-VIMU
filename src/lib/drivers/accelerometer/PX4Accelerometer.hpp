@@ -48,7 +48,7 @@
 #include <uORB/topics/sensor_accel_errors.h>
 
 using namespace time_literals;
-using AccelValidator = fault_detector::EMACuSumVector3f;
+using fault_detector::AccelValidator;
 
 class PX4Accelerometer : public ModuleParams
 {

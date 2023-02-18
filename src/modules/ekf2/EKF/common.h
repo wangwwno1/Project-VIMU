@@ -56,7 +56,7 @@ using matrix::Quatf;
 using matrix::Vector2f;
 using matrix::Vector3f;
 using matrix::wrap_pi;
-using MagValidator = fault_detector::CuSumVector3f;
+using fault_detector::MagValidator;
 
 enum class velocity_frame_t : uint8_t {
 	LOCAL_FRAME_FRD,

@@ -59,8 +59,8 @@
 #include "gps_blending.hpp"
 
 using namespace time_literals;
-using GPSPosValidator = fault_detector::EMACuSumVector3f;
-using GPSVelValidator = fault_detector::CuSumVector3f;
+using fault_detector::GPSPosValidator;
+using fault_detector::GPSVelValidator;
 using matrix::Quatf;
 
 namespace sensors
