@@ -13,9 +13,17 @@ void PX4Accelerometer::applyAccelAttack(sensor_accel_s &accel) {
     if (attack_enabled(sensor_attack::ATK_MASK_ACCEL, accel.timestamp_sample)) {
         const float max_deviation = getMaxDeviation();
         if (PX4_ISFINITE(max_deviation) && _curr_ref_accel.timestamp_sample >= _attack_timestamp) {
-            _last_deviation[0] = _curr_ref_accel.x + max_deviation - accel.x;
-            _last_deviation[1] = math::constrain(accel.y, _curr_ref_accel.y - max_deviation, _curr_ref_accel.y + max_deviation) - accel.y;
-            _last_deviation[2] = math::constrain(accel.z, _curr_ref_accel.z - max_deviation, _curr_ref_accel.z + max_deviation) - accel.z;
+            Vector3f extra_offset{0.f, 0.f, 0.f};
+            if (_param_atk_stealth_type.get() & sensor_attack::DET_TIME_WINDOW) {
+                extra_offset = _accel_validator.error_offsets() * _param_iv_acc_noise.get();
+            }
+            _last_deviation[0] = _curr_ref_accel.x + max_deviation + extra_offset(0) - accel.x;
+            _last_deviation[1] = math::constrain(accel.y,
+                                                 _curr_ref_accel.y + extra_offset(1) - max_deviation,
+                                                 _curr_ref_accel.y + extra_offset(1) + max_deviation) - accel.y;
+            _last_deviation[2] = math::constrain(accel.z,
+                                                 _curr_ref_accel.z + extra_offset(2) - max_deviation,
+                                                 _curr_ref_accel.z + extra_offset(2) + max_deviation) - accel.z;
         } else {
             _last_deviation[0] = _param_atk_acc_bias.get();
             _last_deviation[1] = 0.f;

@@ -55,13 +55,12 @@ VehicleGPSPosition::VehicleGPSPosition() :
     _param_atk_gps_v_cap(_vel_atk_params.max_deviation),
     _param_atk_gps_v_hdg(_vel_atk_params.heading_deg),
     _param_atk_gps_v_pitch(_vel_atk_params.pitch_deg),
-    _param_iv_gps_p_csum_h(_pos_validator_params.cusum_params.control_limit),
-    _param_iv_gps_p_mshift(_pos_validator_params.cusum_params.mean_shift),
-    _param_iv_gps_p_ema_h(_pos_validator_params.ema_params.control_limit),
-    _param_iv_gps_p_alpha(_pos_validator_params.ema_params.alpha),
-    _param_iv_gps_p_ema_cap(_pos_validator_params.ema_params.cap),
-    _param_iv_gps_v_csum_h(_vel_validator_params.control_limit),
-    _param_iv_gps_v_mshift(_vel_validator_params.mean_shift)
+    _param_iv_gps_p_twin_h(_pos_validator_params.control_limit),
+    _param_iv_gps_p_rst_cnt(_pos_validator_params.reset_samples),
+    _param_iv_gps_p_cd_cnt(_pos_validator_params.safe_count),
+    _param_iv_gps_v_twin_h(_vel_validator_params.control_limit),
+    _param_iv_gps_v_rst_cnt(_vel_validator_params.reset_samples),
+    _param_iv_gps_v_cd_cnt(_vel_validator_params.safe_count)
 {
 	_vehicle_gps_position_pub.advertise();
 }

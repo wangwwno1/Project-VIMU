@@ -568,8 +568,9 @@ private:
 		(ParamExtFloat<px4::params::EKF2_GSF_TAS>)
 		_param_ekf2_gsf_tas_default,	///< default value of true airspeed assumed during fixed wing operation
 
-        (ParamExtFloat<px4::params::IV_MAG_CSUM_H>)  _param_iv_mag_csum_h,
-        (ParamExtFloat<px4::params::IV_MAG_MSHIFT>)  _param_iv_mag_mshift
+        (ParamExtFloat <px4::params::IV_MAG_TWIN_H>)   _param_iv_mag_twin_h,
+        (ParamExtInt <px4::params::IV_MAG_RST_CNT>)    _param_iv_mag_rst_cnt,
+        (ParamExtInt <px4::params::IV_MAG_CD_CNT>)     _param_iv_mag_cd_cnt
 	)
 };
 #endif // !EKF2_HPP

@@ -128,7 +128,7 @@ namespace sensors
                 const Dcmf R_to_earth{_ref_gps_delayed.q};
                 const Vector3f vel_offset_body = _ref_gps_delayed.ang_rate_delayed_raw % _gps_pos_body;
                 const Vector3f vel_offset_earth = R_to_earth * vel_offset_body;
-                const Vector3f ref_vel_board = _ref_gps_delayed.vel + vel_offset_earth;
+                Vector3f ref_vel_board = _ref_gps_delayed.vel + vel_offset_earth;
 
                 // Convert reference GPS to board frame - the reverse of gps correction
                 const Vector3f pos_offset_earth = R_to_earth * _gps_pos_body;
@@ -159,7 +159,7 @@ namespace sensors
                 _last_pos_error(2) = ref_pos_board(2) + (gps_position.alt * 1.e-3f - _gps_alt_ref);
 
                 // test ratio = residual / std_error = residual / sqrt(vars)
-                // Error offset will be applied internally in the AbsErrorTimeWindow detector
+                // Error offset will be applied internally in the SquareErrorTimeWindow detector
                 const Vector3f pos_std_var = _last_pos_vars.sqrt();
                 const Vector3f vel_std_var = _last_vel_vars.sqrt();
                 _pos_validator.validate(_last_pos_error.edivide(pos_std_var));
@@ -199,6 +199,10 @@ namespace sensors
 
                 // Replace corresponding information if gps is unhealthy
                 if (!_gps_healthy) {
+                    // Correct cumulative error before apply Software Sensor recovery
+                    // Consistent with original paper
+                    ref_pos_board -= _pos_validator.error_offsets().emult(pos_std_var);
+                    ref_vel_board -= _vel_validator.error_offsets().emult(vel_std_var);
                     ReplaceGpsPosVelData(gps_position, ref_pos_board, ref_vel_board);
                 }
             }

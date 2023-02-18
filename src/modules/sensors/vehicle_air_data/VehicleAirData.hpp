@@ -174,8 +174,9 @@ private:
         (ParamInt<px4::params::ATK_COUNTDOWN_MS>)       _param_atk_countdown_ms,
         (ParamInt<px4::params::ATK_MULTI_BARO>)         _param_atk_multi_baro,
         (ParamInt<px4::params::IV_DEBUG_LOG>)           _param_iv_debug_log,
-        (ParamExtFloat<px4::params::IV_BARO_CSUM_H>)    _param_iv_baro_csum_h,
-        (ParamExtFloat<px4::params::IV_BARO_MSHIFT>)    _param_iv_baro_mshift
+        (ParamExtFloat <px4::params::IV_BARO_TWIN_H>)   _param_iv_baro_twin_h,
+        (ParamExtInt <px4::params::IV_BARO_RST_CNT>)    _param_iv_baro_rst_cnt,
+        (ParamExtInt <px4::params::IV_BARO_CD_CNT>)     _param_iv_baro_cd_cnt
 	)
 };
 }; // namespace sensors

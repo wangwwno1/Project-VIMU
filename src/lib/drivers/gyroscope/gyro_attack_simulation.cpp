@@ -13,9 +13,17 @@ void PX4Gyroscope::applyGyroAttack(sensor_gyro_s &gyro) {
     if (attack_enabled(sensor_attack::ATK_MASK_GYRO, gyro.timestamp_sample)) {
         const float max_deviation = getMaxDeviation();
         if (PX4_ISFINITE(max_deviation) && _curr_ref_gyro.timestamp_sample >= _attack_timestamp) {
-            _last_deviation[0] = _curr_ref_gyro.x + max_deviation - gyro.x;
-            _last_deviation[1] = math::constrain(gyro.y, _curr_ref_gyro.y - max_deviation, _curr_ref_gyro.y + max_deviation) - gyro.y;
-            _last_deviation[2] = math::constrain(gyro.z, _curr_ref_gyro.z - max_deviation, _curr_ref_gyro.z + max_deviation) - gyro.z;
+            Vector3f extra_offset{0.f, 0.f, 0.f};
+            if (_param_atk_stealth_type.get() & sensor_attack::DET_TIME_WINDOW) {
+                extra_offset = _gyro_validator.error_offsets() * _param_iv_gyr_noise.get();
+            }
+            _last_deviation[0] = _curr_ref_gyro.x + max_deviation + extra_offset(0) - gyro.x;
+            _last_deviation[1] = math::constrain(gyro.y,
+                                                 _curr_ref_gyro.y + extra_offset(1) - max_deviation,
+                                                 _curr_ref_gyro.y + extra_offset(1) + max_deviation) - gyro.y;
+            _last_deviation[2] = math::constrain(gyro.z,
+                                                 _curr_ref_gyro.z + extra_offset(2) - max_deviation,
+                                                 _curr_ref_gyro.z + extra_offset(2) + max_deviation) - gyro.z;
         } else {
             _last_deviation[0] = _param_atk_gyr_bias.get();
             _last_deviation[1] = 0.f;
