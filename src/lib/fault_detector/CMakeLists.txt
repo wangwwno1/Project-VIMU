@@ -1,6 +1,6 @@
 ############################################################################
 #
-#   Copyright (c) 2017 PX4 Development Team. All rights reserved.
+#   Copyright (c) 2015-2018 ECL Development Team. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -12,7 +12,7 @@
 #    notice, this list of conditions and the following disclaimer in
 #    the documentation and/or other materials provided with the
 #    distribution.
-# 3. Neither the name PX4 nor the names of its contributors may be
+# 3. Neither the name ECL nor the names of its contributors may be
 #    used to endorse or promote products derived from this software
 #    without specific prior written permission.
 #
@@ -31,46 +31,21 @@
 #
 ############################################################################
 
-add_subdirectory(airspeed)
-add_subdirectory(avoidance)
-add_subdirectory(battery)
-add_subdirectory(bezier)
-add_subdirectory(button)
-add_subdirectory(cdev)
-add_subdirectory(circuit_breaker)
-add_subdirectory(collision_prevention)
-add_subdirectory(component_information)
-add_subdirectory(controllib)
-add_subdirectory(conversion)
-add_subdirectory(crypto)
-add_subdirectory(drivers)
-add_subdirectory(fault_detector)
-add_subdirectory(field_sensor_bias_estimator)
-add_subdirectory(geo)
-add_subdirectory(hysteresis)
-add_subdirectory(l1)
-add_subdirectory(landing_slope)
-add_subdirectory(led)
-add_subdirectory(matrix)
-add_subdirectory(mathlib)
-add_subdirectory(mixer)
-add_subdirectory(mixer_module)
-add_subdirectory(motion_planning)
-add_subdirectory(npfg)
-add_subdirectory(perf)
-add_subdirectory(pid)
-add_subdirectory(pid_design)
-add_subdirectory(pwm)
-add_subdirectory(rc)
-add_subdirectory(sensor_attack)
-add_subdirectory(sensor_calibration)
-add_subdirectory(slew_rate)
-add_subdirectory(systemlib)
-add_subdirectory(system_identification)
-add_subdirectory(tecs)
-add_subdirectory(terrain_estimation)
-add_subdirectory(tunes)
-add_subdirectory(version)
-add_subdirectory(weather_vane)
-add_subdirectory(wind_estimator)
-add_subdirectory(world_magnetic_model)
+add_library(fault_detector
+		common.hpp
+		fault_detector.hpp
+		Detector.hpp
+		CuSumVector.hpp
+		EMAVector.hpp
+		EMACuSumVector.hpp
+		HorzVertDetector.hpp
+        AbsErrorTimeWindowVector.hpp
+        SquareErrorTimeWindowVector.hpp
+)
+
+add_dependencies(fault_detector prebuild_targets)
+
+set_target_properties(fault_detector PROPERTIES PUBLIC_HEADER "fault_detector.hpp")
+set_target_properties(fault_detector PROPERTIES LINKER_LANGUAGE CXX)
+
+target_compile_options(fault_detector PRIVATE -fno-associative-math)
