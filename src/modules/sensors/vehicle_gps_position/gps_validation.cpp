@@ -114,9 +114,18 @@ namespace sensors
 
             if (_ref_gps_delayed.time_us != 0) {
                 // State Variances
+                if (_gps_healthy_prev) {
+                    // Add variance from reference state
+                    _last_vel_vars = _ref_gps_delayed.vel_var;
+                    _last_pos_vars = _ref_gps_delayed.pos_var;
+                } else {
+                    // Discard the possibly diverged variance, which would lower the test ratio and cause false negative.
+                    _last_vel_vars.zero();
+                    _last_pos_vars.zero();
+                }
+
                 // Velocity Covariances in NED inertial frame
                 const float vel_obs_var = math::sq(fmaxf(gps_position.s_variance_m_s, _param_ekf2_gps_v_noise.get()));
-                _last_vel_vars.zero();
                 _last_vel_vars.xy() += vel_obs_var;
                 _last_vel_vars(2) += vel_obs_var * math::sq(1.5f);
 
@@ -124,7 +133,6 @@ namespace sensors
                 const float lower_limit = fmaxf(_param_ekf2_gps_p_noise.get(), 0.01f);
                 const float pos_xy_var = math::sq(fmaxf(gps_position.eph, lower_limit));
                 const float pos_z_var = math::sq(fmaxf(gps_position.epv, lower_limit) * 1.5f);
-                _last_pos_vars.zero();
                 _last_pos_vars.xy() += pos_xy_var;
                 _last_pos_vars(2) += pos_z_var;
 
