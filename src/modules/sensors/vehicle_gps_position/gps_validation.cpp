@@ -23,21 +23,8 @@ namespace sensors
             }
         }
 
-        if (!_reference_states_sub.registered()) {
-            _reference_states_sub.registerCallback();
-        }
-        if (!_estimator_selector_status_sub.registered()) {
-            _estimator_selector_status_sub.registerCallback();
-        }
-
-        // find corresponding estimated reference state
-        if (_estimator_selector_status_sub.updated()) {
-            estimator_selector_status_s estimator_selector_status;
-
-            if (_estimator_selector_status_sub.copy(&estimator_selector_status)) {
-                _reference_states_sub.ChangeInstance(estimator_selector_status.primary_instance);
-                _reference_offset_states_sub.ChangeInstance(estimator_selector_status.primary_instance);
-            }
+        if (!_vehicle_reference_states_sub.registered()) {
+            _vehicle_reference_states_sub.registerCallback();
         }
 
         // Check global origin Update first
@@ -53,7 +40,7 @@ namespace sensors
         // Update reference state, generate reference gps sample
         estimator_states_s ref_states{};
         estimator_offset_states_s offset_states{};
-        if (_reference_states_sub.update(&ref_states) && _reference_offset_states_sub.copy(&offset_states)) {
+        if (_vehicle_reference_states_sub.update(&ref_states) && _reference_offset_states_sub.copy(&offset_states)) {
             RefGpsSample sample_delayed{};
             sample_delayed.q = Quatf(ref_states.states[0], ref_states.states[1],
                                      ref_states.states[2], ref_states.states[3]);
@@ -94,7 +81,7 @@ namespace sensors
 
     void VehicleGPSPosition::ValidateGpsData(sensor_gps_s &gps_position) {
 
-        if (_reference_states_sub.advertised() && _ref_gps_buffer && _global_origin.isInitialized()) {
+        if (_vehicle_reference_states_sub.advertised() && _ref_gps_buffer && _global_origin.isInitialized()) {
             // Start stealthy attack & sensor validation
             const float dt_ekf_avg = (_ref_gps_delayed.time_us == 0) ? _ref_gps_delayed.dt_ekf_avg : (_param_ekf2_predict_us.get() * 1.e-6f);
             const hrt_abstime time_delay = static_cast<hrt_abstime>(_param_ekf2_gps_delay.get() * 1e3f) +

@@ -47,7 +47,6 @@
 #include <uORB/Publication.hpp>
 #include <uORB/Subscription.hpp>
 #include <uORB/SubscriptionCallback.hpp>
-#include <uORB/topics/estimator_selector_status.h>
 #include <uORB/topics/estimator_states.h>
 #include <uORB/topics/estimator_offset_states.h>
 #include <uORB/topics/parameter_update.h>
@@ -133,8 +132,7 @@ private:
 		{this, ORB_ID(sensor_gps), 1},
 	};
 
-    uORB::SubscriptionCallbackWorkItem  _estimator_selector_status_sub{this, ORB_ID(estimator_selector_status)};
-    uORB::SubscriptionCallbackWorkItem  _reference_states_sub{this, ORB_ID(estimator_states)};
+    uORB::SubscriptionCallbackWorkItem  _vehicle_reference_states_sub{this, ORB_ID(vehicle_reference_states)};
     uORB::Subscription                  _reference_offset_states_sub{ORB_ID(estimator_offset_states)};
     uORB::Subscription                  _vehicle_local_position_sub{ORB_ID(vehicle_local_position)};
 
