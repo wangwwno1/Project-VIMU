@@ -70,11 +70,8 @@ PX4Accelerometer::PX4Accelerometer(uint32_t device_id, enum Rotation rotation) :
     ModuleParams(nullptr),
 	_device_id{device_id},
 	_rotation{rotation},
-    _param_iv_acc_csum_h(_accel_validator_params.cusum_params.control_limit),
-    _param_iv_acc_mshift(_accel_validator_params.cusum_params.mean_shift),
-    _param_iv_acc_ema_h(_accel_validator_params.ema_params.control_limit),
-    _param_iv_acc_alpha(_accel_validator_params.ema_params.alpha),
-    _param_iv_acc_ema_cap(_accel_validator_params.ema_params.cap)
+    _param_iv_acc_csum_h(_accel_validator_params.control_limit),
+    _param_iv_acc_mshift(_accel_validator_params.mean_shift)
 {
 	// advertise immediately to keep instance numbering in sync
 	_sensor_pub.advertise();
