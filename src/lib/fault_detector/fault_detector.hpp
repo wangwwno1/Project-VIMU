@@ -16,10 +16,10 @@
 
 namespace fault_detector {
     // Modify the usage to specify the detector class
-    using GPSPosValidator = fault_detector::EMACuSumVector3f;
-    using GPSVelValidator = fault_detector::CuSumVector3f;
-    using MagValidator = fault_detector::CuSumVector3f;
-    using BaroValidator = fault_detector::CuSumf;
-    using GyroValidator = fault_detector::EMACuSumVector3f;
-    using AccelValidator = fault_detector::EMACuSumVector3f;
+    using GPSPosValidator = fault_detector::AbsErrorTimeWindowVector3f;
+    using GPSVelValidator = fault_detector::AbsErrorTimeWindowVector3f;
+    using MagValidator = fault_detector::AbsErrorTimeWindowVector3f;
+    using BaroValidator = fault_detector::AbsErrorTimeWindowf;
+    using GyroValidator = fault_detector::AbsErrorTimeWindowVector3f;
+    using AccelValidator = fault_detector::AbsErrorTimeWindowVector3f;
 }
