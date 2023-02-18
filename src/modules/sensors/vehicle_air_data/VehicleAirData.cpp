@@ -76,8 +76,7 @@ void VehicleAirData::Stop()
 		sub.unregisterCallback();
 	}
 
-    _reference_states_sub.unregisterCallback();
-    _estimator_selector_status_sub.unregisterCallback();
+    _vehicle_reference_states_sub.unregisterCallback();
 
     for (auto &buffer : _ref_baro_buffer) {
         if (buffer) {

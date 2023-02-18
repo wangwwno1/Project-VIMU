@@ -59,7 +59,6 @@
 #include <lib/sensor_attack/sensor_attack.hpp>
 #include <lib/fault_detector/fault_detector.hpp>
 #include <modules/ekf2/EKF/RingBuffer.h>
-#include <uORB/topics/estimator_selector_status.h>
 #include <uORB/topics/estimator_states.h>
 #include <uORB/topics/estimator_offset_states.h>
 
@@ -120,8 +119,7 @@ private:
 		{this, ORB_ID(sensor_baro), 3},
 	};
 
-    uORB::SubscriptionCallbackWorkItem  _estimator_selector_status_sub{this, ORB_ID(estimator_selector_status)};
-    uORB::SubscriptionCallbackWorkItem  _reference_states_sub{this, ORB_ID(estimator_states)};
+    uORB::SubscriptionCallbackWorkItem  _vehicle_reference_states_sub{this, ORB_ID(vehicle_reference_states)};
     uORB::Subscription                  _reference_offset_states_sub{ORB_ID(estimator_offset_states)};
 
 	calibration::Barometer _calibration[MAX_SENSOR_COUNT];

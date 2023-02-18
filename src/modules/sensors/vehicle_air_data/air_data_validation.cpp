@@ -11,26 +11,13 @@ namespace sensors {
             return;
         }
 
-        if (!_reference_states_sub.registered()) {
-            _reference_states_sub.registerCallback();
-        }
-        if (!_estimator_selector_status_sub.registered()) {
-            _estimator_selector_status_sub.registerCallback();
-        }
-
-        // find corresponding estimated sensor bias
-        if (_estimator_selector_status_sub.updated()) {
-            estimator_selector_status_s estimator_selector_status;
-
-            if (_estimator_selector_status_sub.copy(&estimator_selector_status)) {
-                _reference_states_sub.ChangeInstance(estimator_selector_status.primary_instance);
-                _reference_offset_states_sub.ChangeInstance(estimator_selector_status.primary_instance);
-            }
+        if (!_vehicle_reference_states_sub.registered()) {
+            _vehicle_reference_states_sub.registerCallback();
         }
 
         estimator_states_s ref_states{};
         estimator_offset_states_s offset_states{};
-        if (_reference_states_sub.update(&ref_states) && _reference_offset_states_sub.copy(&offset_states)) {
+        if (_vehicle_reference_states_sub.update(&ref_states) && _reference_offset_states_sub.copy(&offset_states)) {
             RefBaroSample sample{};
             sample.time_us = ref_states.timestamp_sample;
             sample.alt_meter = - ref_states.states[9];  // Convert downward relative position to altitude
