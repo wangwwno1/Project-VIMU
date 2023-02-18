@@ -84,6 +84,7 @@
 #include <uORB/topics/sensor_combined.h>
 #include <uORB/topics/sensor_selection.h>
 #include <uORB/topics/sensors_status_gps.h>
+#include <uORB/topics/sensors_status_imu.h>
 #include <uORB/topics/vehicle_air_data.h>
 #include <uORB/topics/vehicle_attitude.h>
 #include <uORB/topics/vehicle_command.h>
@@ -267,6 +268,7 @@ private:
 	uORB::Subscription _optical_flow_sub{ORB_ID(optical_flow)};
 	uORB::Subscription _sensor_selection_sub{ORB_ID(sensor_selection)};
     uORB::Subscription _sensors_status_gps_sub{ORB_ID(sensors_status_gps)};
+    uORB::Subscription _sensors_status_imu_sub{ORB_ID(sensors_status_imu)};
     uORB::Subscription _status_sub{ORB_ID(vehicle_status)};
     uORB::Subscription _vehicle_command_sub{ORB_ID(vehicle_command)};
     uORB::Subscription _vehicle_gps_position_sub{ORB_ID(vehicle_gps_position)};
@@ -326,7 +328,6 @@ private:
 
     // Topics for non-imu sensor detection
     uORB::PublicationMulti<estimator_offset_states_s>    _estimator_offset_states_pub{ORB_ID(estimator_offset_states)};
-    uORB::Publication<estimator_states_s>               _vehicle_reference_states_pub{ORB_ID(vehicle_reference_states)};
 
 
 	PreFlightChecker _preflt_checker;
