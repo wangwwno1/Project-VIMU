@@ -18,13 +18,17 @@ void PX4Accelerometer::updateReference(const hrt_abstime &timestamp_sample) {
 void PX4Accelerometer::validateAccel(sensor_accel_s &accel) {
     // Update until the reference is catch up accel
     if (_curr_ref_accel.timestamp_sample == 0 || hrt_elapsed_time(&_curr_ref_accel.timestamp_sample) >= 20_ms) {
+        _accel_filter.reset(Vector3f(accel.x, accel.y, accel.z));
         return;
+    } else {
+        _accel_filter.update(Vector3f(accel.x, accel.y, accel.z));
     }
 
     Vector3f error_residuals{0.f, 0.f, 0.f};
-    error_residuals(0) = accel.x - _curr_ref_accel.x;
-    error_residuals(1) = accel.y - _curr_ref_accel.y;
-    error_residuals(2) = accel.z - _curr_ref_accel.z;
+    const Vector3f filter_state = _accel_filter.getState();
+    error_residuals(0) = filter_state(0) - _curr_ref_accel.x;
+    error_residuals(1) = filter_state(1) - _curr_ref_accel.y;
+    error_residuals(2) = filter_state(2) - _curr_ref_accel.z;
 
     const float inv_acc_noise = 1.f / fmaxf(_param_iv_acc_noise.get(), 0.01f);
     const Vector3f error_ratio = error_residuals * inv_acc_noise;

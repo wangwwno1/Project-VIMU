@@ -18,7 +18,10 @@ void PX4Gyroscope::updateReference(const hrt_abstime &timestamp_sample) {
 void PX4Gyroscope::validateGyro(sensor_gyro_s &gyro) {
     // Update until the reference is catch up accel
     if (_curr_ref_gyro.timestamp_sample == 0 || hrt_elapsed_time(&_curr_ref_gyro.timestamp_sample) >= 20_ms) {
+        _gyro_filter.reset(Vector3f(gyro.x, gyro.y, gyro.z));
         return;
+    } else {
+        _gyro_filter.update(Vector3f(gyro.x, gyro.y, gyro.z));
     }
 
     // fixme remove
@@ -28,9 +31,10 @@ void PX4Gyroscope::validateGyro(sensor_gyro_s &gyro) {
     }
 
     Vector3f error_residuals{0.f, 0.f, 0.f};
-    error_residuals(0) = gyro.x - _curr_ref_gyro.x;
-    error_residuals(1) = gyro.y - _curr_ref_gyro.y;
-    error_residuals(2) = gyro.z - _curr_ref_gyro.z;
+    const Vector3f filter_state = _gyro_filter.getState();
+    error_residuals(0) = filter_state(0) - _curr_ref_gyro.x;
+    error_residuals(1) = filter_state(1) - _curr_ref_gyro.y;
+    error_residuals(2) = filter_state(2) - _curr_ref_gyro.z;
 
     const float inv_gyr_noise = 1.f / fmaxf(_param_iv_gyr_noise.get(), 0.01f);
     const Vector3f error_ratio = error_residuals * inv_gyr_noise;

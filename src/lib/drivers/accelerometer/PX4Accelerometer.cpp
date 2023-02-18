@@ -208,6 +208,9 @@ bool PX4Accelerometer::ParametersUpdate()
 
         updateParams();
 
+        // FIXME Replace hard-code cutoff freq with parameter
+        _accel_filter.setCutoffFreq(250.f, 10.f);
+
         if (_param_atk_apply_type.get() != _attack_flag_prev) {
             const int next_attack_flag = _param_atk_apply_type.get();
             if (next_attack_flag & sensor_attack::ATK_MASK_ACCEL

@@ -39,6 +39,7 @@
 #include <lib/conversion/rotation.h>
 #include <lib/fault_detector/fault_detector.hpp>
 #include <lib/sensor_attack/sensor_attack.hpp>
+#include <mathlib/math/filter/AlphaFilter.hpp>
 #include <uORB/Subscription.hpp>
 #include <uORB/SubscriptionInterval.hpp>
 #include <uORB/PublicationMulti.hpp>
@@ -114,6 +115,7 @@ private:
     GyroValidator               _gyro_validator{&_gyro_validator_params};
     sensor_gyro_s               _curr_ref_gyro{};
     sensor_gyro_s               _next_ref_gyro{};
+    AlphaFilter<Vector3f>       _gyro_filter{};
 
     int  _attack_flag_prev{0};
     hrt_abstime _attack_timestamp{0};

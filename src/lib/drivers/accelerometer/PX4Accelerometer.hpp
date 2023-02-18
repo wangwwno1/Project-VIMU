@@ -38,6 +38,7 @@
 #include <lib/conversion/rotation.h>
 #include <lib/fault_detector/fault_detector.hpp>
 #include <lib/sensor_attack/sensor_attack.hpp>
+#include <mathlib/math/filter/AlphaFilter.hpp>
 #include <lib/geo/geo.h>
 #include <uORB/Subscription.hpp>
 #include <uORB/SubscriptionInterval.hpp>
@@ -118,6 +119,7 @@ private:
     AccelValidator               _accel_validator{&_accel_validator_params};
     sensor_accel_s               _curr_ref_accel{};
     sensor_accel_s               _next_ref_accel{};
+    AlphaFilter<Vector3f>       _accel_filter{};
 
     int  _attack_flag_prev{0};
     hrt_abstime _attack_timestamp{0};
