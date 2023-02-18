@@ -186,9 +186,7 @@ void VehicleGPSPosition::Run()
 		if (_gps_blending.isNewOutputDataAvailable()) {
             sensor_gps_s gps_data = _gps_blending.getOutputGpsData();
             ValidateGpsData(gps_data);
-			if (_gps_healthy) {
-                Publish(gps_data, _gps_blending.getSelectedGps());
-            }
+            Publish(gps_data, _gps_blending.getSelectedGps());
 		}
 	}
 

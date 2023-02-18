@@ -193,11 +193,19 @@ namespace sensors
                     PublishErrorStatus();
                 }
 
-//                // Replace corresponding information if gps is unhealthy
-//                if (!_gps_healthy) {
-//                    ReplaceGpsPosVelData(gps_position, ref_pos_board, ref_vel_board);
-//                    _gps_healthy = true;
-//                }
+                if (_gps_healthy != _gps_healthy_prev) {
+                    _gps_healthy_prev = _gps_healthy;
+                    if (_gps_healthy) {
+                        PX4_INFO("GPS fault diminished, switch back to GPS measurement.");
+                    } else {
+                        PX4_WARN("GPS fault detected, switch to reference GPS.");
+                    }
+                }
+
+                // Replace corresponding information if gps is unhealthy
+                if (!_gps_healthy) {
+                    ReplaceGpsPosVelData(gps_position, ref_pos_board, ref_vel_board);
+                }
             }
 
         } else {
@@ -215,19 +223,10 @@ namespace sensors
             status.vel_test_ratio = _vel_validator.test_ratio();
             status.test_ratio = fmaxf(_pos_validator.test_ratio(), _vel_validator.test_ratio());
             status.healthy = _gps_healthy;
-            status.ref_gps_enabled = false;
+            status.ref_gps_enabled = !_gps_healthy;
             status.timestamp = hrt_absolute_time();
             _sensors_status_gps_pub.publish(status);
 
-            if (_gps_healthy != _gps_healthy_prev) {
-                if (_gps_healthy) {
-                    PX4_INFO("GPS fault diminished, switch back to GPS measurement.");
-                } else {
-                    PX4_WARN("GPS fault detected, switch to reference GPS.");
-                }
-            }
-
-            _gps_healthy_prev = _gps_healthy;
             _last_health_status_publish = status.timestamp;
         }
 
