@@ -144,7 +144,7 @@ PARAM_DEFINE_FLOAT(IV_GPS_V_ALPHA, 1.f);
 PARAM_DEFINE_FLOAT(IV_GPS_V_EMA_CAP, 0.f);
 
 /**
- * Control limit for Time Window (TWIN) validation of the gps position innovation, expressed in standard deviations.
+ * Control limit for Time Window (TWIN) validation of the gps position innovation, expressed in squared of standard deviations.
  *
  * Set zero to inhibit validation.
  *
@@ -175,7 +175,7 @@ PARAM_DEFINE_INT32(IV_GPS_P_RST_CNT, 1);
 PARAM_DEFINE_INT32(IV_GPS_P_CD_CNT, 1);
 
 /**
- * Control limit for Time Window (TWIN) validation of the gps velocity innovation, expressed in standard deviations.
+ * Control limit for Time Window (TWIN) validation of the gps velocity innovation, expressed in squared of standard deviations.
  *
  * Set zero to inhibit validation.
  *
@@ -230,7 +230,7 @@ PARAM_DEFINE_FLOAT(IV_BARO_CSUM_H, 0.f);
 PARAM_DEFINE_FLOAT(IV_BARO_MSHIFT, 1.f);
 
 /**
- * Control limit for Time Window (TWIN) validation of the barometer rate innovation, expressed in standard deviations.
+ * Control limit for Time Window (TWIN) validation of the barometer rate innovation, expressed in squared of standard deviations.
  *
  * Set zero to inhibit validation.
  *
@@ -286,7 +286,7 @@ PARAM_DEFINE_FLOAT(IV_MAG_CSUM_H, 0.f);
 PARAM_DEFINE_FLOAT(IV_MAG_MSHIFT, 1.f);
 
 /**
- * Control limit for Time Window (TWIN) validation of the magnetometer rate innovation, expressed in standard deviations.
+ * Control limit for Time Window (TWIN) validation of the magnetometer rate innovation, expressed in squared of standard deviations.
  *
  * Set zero to inhibit validation.
  *
@@ -387,7 +387,7 @@ PARAM_DEFINE_FLOAT(IV_ACC_ALPHA, 1.f);
 PARAM_DEFINE_FLOAT(IV_ACC_EMA_CAP, 0.f);
 
 /**
- * Control limit for Time Window (TWIN) validation for acceleration, expressed in standard deviations.
+ * Control limit for Time Window (TWIN) validation for acceleration, expressed in squared of standard deviations.
  *
  * Set zero to inhibit validation.
  *
@@ -485,7 +485,7 @@ PARAM_DEFINE_FLOAT(IV_GYR_ALPHA, 1.f);
 PARAM_DEFINE_FLOAT(IV_GYR_EMA_CAP, 0.f);
 
 /**
- * Control limit for Time Window (TWIN) validation of the gyro rate innovation, expressed in standard deviations.
+ * Control limit for Time Window (TWIN) validation of the gyro rate innovation, expressed in squared of standard deviations.
  *
  * Set zero to inhibit validation.
  *
