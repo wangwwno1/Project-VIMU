@@ -72,5 +72,5 @@ float PX4Gyroscope::getMaxDeviation() const {
         }
     }
 
-    return 0.999f * max_deviation * _param_iv_gyr_noise.get();
+    return 0.99f * max_deviation * _param_iv_gyr_noise.get();
 }
