@@ -59,7 +59,7 @@ namespace sensors
             Vector3f extra_offset{0.f, 0.f, 0.f};
             if (type_mask & sensor_attack::DET_TIME_WINDOW &&
                 _param_iv_gps_v_twin_h.get() > 0.f && _param_iv_gps_v_rst_cnt.get() >= 1) {
-                const float twin_deviation = sqrt(_param_iv_gps_v_twin_h.get() / _param_iv_gps_v_rst_cnt.get());
+                const float twin_deviation = _param_iv_gps_v_twin_h.get() / _param_iv_gps_v_rst_cnt.get();
                 if (!PX4_ISFINITE(max_deviation) || twin_deviation <= max_deviation) {
                     max_deviation = twin_deviation;
                     extra_offset = _vel_validator.error_offsets();
@@ -160,7 +160,7 @@ namespace sensors
             Vector3f extra_offset{0.f, 0.f, 0.f};
             if (type_mask & sensor_attack::DET_TIME_WINDOW &&
                 (_param_iv_gps_p_twin_h.get() > 0.f) && (_param_iv_gps_p_rst_cnt.get() >= 1)) {
-                const float twin_deviation = sqrt(_param_iv_gps_p_twin_h.get() / _param_iv_gps_p_rst_cnt.get());
+                const float twin_deviation = _param_iv_gps_p_twin_h.get() / _param_iv_gps_p_rst_cnt.get();
                 if (!PX4_ISFINITE(max_deviation) || twin_deviation <= max_deviation) {
                     max_deviation = twin_deviation;
                     extra_offset = _pos_validator.error_offsets();

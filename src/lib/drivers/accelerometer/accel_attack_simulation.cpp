@@ -74,7 +74,7 @@ float PX4Accelerometer::getMaxDeviation() const {
 
     if (type_mask & sensor_attack::DET_TIME_WINDOW &&
         (_param_iv_acc_twin_h.get() > 0.f) && (_param_iv_acc_rst_cnt.get() >= 1)) {
-        const float twin_deviation = sqrt(_param_iv_acc_twin_h.get() / _param_iv_acc_rst_cnt.get());
+        const float twin_deviation = _param_iv_acc_twin_h.get() / _param_iv_acc_rst_cnt.get();
         if (!PX4_ISFINITE(max_deviation) || twin_deviation <= max_deviation) {
             max_deviation = twin_deviation;
         }
