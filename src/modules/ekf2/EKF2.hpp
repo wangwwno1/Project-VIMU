@@ -288,7 +288,6 @@ private:
 	hrt_abstime _last_range_sensor_update{0};
 
     hrt_abstime _last_mag_faulty_time[MAX_NUM_MAGS]{0};
-    uint8_t _attack_flag_prev{0};
     bool _gps_healthy_prev{true};
 
 	uint32_t _filter_control_status{0};

@@ -136,15 +136,6 @@ namespace sensors
                 ref_pos_board.xy() = Vector2f(_ref_gps_delayed.pos.xy()) + Vector2f(pos_offset_earth.xy());
                 ref_pos_board(2) = _ref_gps_delayed.pos(2) - pos_offset_earth(2);  // z-offset is down axis
 
-                // Attempt to apply Stealthy Attack, if failed, fallback to overt attack
-                if (!ConductPositionSpoofing(gps_position, ref_pos_board)) {
-                    ConductPositionSpoofing(gps_position);
-                }
-
-                if (!ConductVelocitySpoofing(gps_position, ref_vel_board)) {
-                    ConductVelocitySpoofing(gps_position);
-                }
-
                 // Update validator
                 // calculate velocity innovations
                 const Vector3f gps_vel{gps_position.vel_n_m_s, gps_position.vel_e_m_s, gps_position.vel_d_m_s};
@@ -165,22 +156,8 @@ namespace sensors
                 _pos_validator.validate(_last_pos_error.edivide(pos_std_var));
                 _vel_validator.validate(_last_vel_error.edivide(vel_std_var));
 
-                if (attack_enabled(sensor_attack::ATK_GPS_POS | sensor_attack::ATK_GPS_VEL)
-                    && _param_iv_delay_mask.get() & (sensor_attack::ATK_GPS_POS | sensor_attack::ATK_GPS_VEL)
-                    && _param_iv_ttd_delay_ms.get() > 0) {
-                    // Use delay for precise Time to Detection
-                    if (_attack_timestamp != 0
-                        && hrt_elapsed_time(&_attack_timestamp) >= (hrt_abstime) (_param_iv_ttd_delay_ms.get() * 1000)) {
-                        // Declare faulty immediately
-                        _gps_healthy = false;
-                    } else {
-                        _gps_healthy = true;
-                    }
-
-                } else {
-                    // Determine health status by validator status
-                    _gps_healthy = (_pos_validator.test_ratio() < 1.f) && (_vel_validator.test_ratio() < 1.f);
-                }
+                // Determine health status by validator status
+                _gps_healthy = (_pos_validator.test_ratio() < 1.f) && (_vel_validator.test_ratio() < 1.f);
 
                 PublishSensorStatus();
                 if (_param_iv_debug_log.get()) {
@@ -203,10 +180,6 @@ namespace sensors
                 }
             }
 
-        } else {
-            // Fallback to Overt Attack & Skip detection
-            ConductVelocitySpoofing(gps_position);
-            ConductPositionSpoofing(gps_position);
         }
 
     }

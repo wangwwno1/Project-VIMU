@@ -11,30 +11,6 @@
 PARAM_DEFINE_INT32(IV_DEBUG_LOG, 0);
 
 /**
- * Set the delay that force the detector raise alarm after the attack is initiated, for debug only.
- *
- * Will override the default sensor detection mechanism if greater than zero.
- *
- * @group Innovation Validator
- */
-PARAM_DEFINE_INT32(IV_TTD_DELAY_MS, 0);
-
-/**
- * Sensor Injection Attack Control Mask.
- *
- * Set bits in the following positions to set which detector is applied with fixed TTD. Set to zero to disable.
- *
- * @group Innovation Validator
- * @min 0
- * @max 15
- * @bit 0 Gyroscope
- * @bit 1 Accelerometer
- * @bit 2 Gps position
- * @bit 3 Gps velocity
- */
-PARAM_DEFINE_INT32(IV_DELAY_MASK, 0);
-
-/**
  * Control limit for CuScore validation of the gps position innovation, expressed in standard deviations. Set zero to inhibit validation.
  *
  * @group Innovation Validator

@@ -36,7 +36,6 @@
 #include <lib/fault_detector/fault_detector.hpp>
 #include <lib/mathlib/math/Limits.hpp>
 #include <lib/matrix/matrix/math.hpp>
-#include <lib/sensor_attack/sensor_attack.hpp>
 #include <lib/perf/perf_counter.h>
 #include <modules/ekf2/EKF/RingBuffer.h>
 #include <px4_platform_common/log.h>
@@ -99,11 +98,6 @@ private:
 
     void UpdateReferenceState();
 
-    bool attack_enabled(const uint8_t &attack_type) const;
-	void ConductVelocitySpoofing(sensor_gps_s &gps_position);
-    bool ConductVelocitySpoofing(sensor_gps_s &gps_position, const Vector3f &ref_vel_board);
-    void ConductPositionSpoofing(sensor_gps_s &gps_position);
-    bool ConductPositionSpoofing(sensor_gps_s &gps_position, const Vector3f &ref_pos_board);
     void ValidateGpsData(sensor_gps_s &gps_position);
     void ReplaceGpsPosVelData(sensor_gps_s &gps_position, const Vector3f &ref_pos_board, const Vector3f &ref_vel_board);
 
@@ -149,8 +143,6 @@ private:
     GPSPosValidator                 _pos_validator{&_pos_validator_params};
     GPSVelValidator                 _vel_validator{&_vel_validator_params};
 
-    int                 _attack_flag_prev{0};
-    hrt_abstime         _attack_timestamp{0};
     hrt_abstime         _last_health_status_publish{0};
     bool                _gps_healthy_prev{true};
     bool                _gps_healthy{true};
@@ -161,11 +153,6 @@ private:
 	perf_counter_t _cycle_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": cycle")};
 
 	GpsBlending _gps_blending;
-
-    sensor_attack::DeviationParams                  _pos_atk_params{};
-    static px4::atomic<sensor_attack::Deviation *>  _pos_deviation {nullptr};
-    sensor_attack::DeviationParams                  _vel_atk_params{};
-    static px4::atomic<sensor_attack::Deviation *>  _vel_deviation {nullptr};
 
 	DEFINE_PARAMETERS(
 		(ParamInt<px4::params::SENS_GPS_MASK>)          _param_sens_gps_mask,
@@ -190,25 +177,7 @@ private:
         (ParamFloat<px4::params::EKF2_GPS_V_GATE>) _param_ekf2_gps_v_gate,
         ///< GPS velocity innovation consistency gate size (STD)
 
-        (ParamInt<px4::params::ATK_APPLY_TYPE>)         _param_atk_apply_type,
-        (ParamInt<px4::params::ATK_STEALTH_TYPE>)       _param_atk_stealth_type,
-        (ParamInt<px4::params::ATK_COUNTDOWN_MS>)       _param_atk_countdown_ms,
-        (ParamInt<px4::params::ATK_GPS_P_CLS>)          _param_atk_gps_p_cls,
-		(ParamExtFloat<px4::params::ATK_GPS_P_IV>)      _param_atk_gps_p_iv,
-		(ParamExtFloat<px4::params::ATK_GPS_P_RATE>)    _param_atk_gps_p_rate,
-		(ParamExtFloat<px4::params::ATK_GPS_P_CAP>)     _param_atk_gps_p_cap,
-		(ParamExtFloat<px4::params::ATK_GPS_P_HDG>)     _param_atk_gps_p_hdg,
-		(ParamExtFloat<px4::params::ATK_GPS_P_PITCH>)   _param_atk_gps_p_pitch,
-        (ParamInt<px4::params::ATK_GPS_V_CLS>)          _param_atk_gps_v_cls,
-        (ParamExtFloat<px4::params::ATK_GPS_V_IV>)      _param_atk_gps_v_iv,
-        (ParamExtFloat<px4::params::ATK_GPS_V_RATE>)    _param_atk_gps_v_rate,
-        (ParamExtFloat<px4::params::ATK_GPS_V_CAP>)     _param_atk_gps_v_cap,
-        (ParamExtFloat<px4::params::ATK_GPS_V_HDG>)     _param_atk_gps_v_hdg,
-        (ParamExtFloat<px4::params::ATK_GPS_V_PITCH>)   _param_atk_gps_v_pitch,
-
         (ParamInt<px4::params::IV_DEBUG_LOG>)           _param_iv_debug_log,
-        (ParamInt<px4::params::IV_DELAY_MASK>)          _param_iv_delay_mask,
-        (ParamInt<px4::params::IV_TTD_DELAY_MS>)        _param_iv_ttd_delay_ms,
         (ParamExtFloat<px4::params::IV_GPS_P_CSUM_H>)   _param_iv_gps_p_csum_h,
         (ParamExtFloat<px4::params::IV_GPS_P_MSHIFT>)   _param_iv_gps_p_mshift,
         (ParamExtFloat<px4::params::IV_GPS_P_EMA_H>)       _param_iv_gps_p_ema_h,

@@ -35,7 +35,6 @@
 
 #include "data_validator/DataValidatorGroup.hpp"
 
-#include <lib/sensor_attack/sensor_attack.hpp>
 #include <lib/sensor_calibration/Magnetometer.hpp>
 #include <lib/conversion/rotation.h>
 #include <lib/mathlib/math/Limits.hpp>
@@ -63,7 +62,6 @@
 #include <uORB/topics/vehicle_magnetometer.h>
 
 using namespace time_literals;
-using sensor_attack::BLK_MAG_FUSE;
 
 namespace sensors
 {
@@ -175,18 +173,11 @@ private:
 
 	bool _armed{false};
 
-    uint8_t     _attack_flag_prev{0};
-    uint8_t     _instance_flag_prev{0};
-    hrt_abstime _attack_timestamp{0};
-
 	DEFINE_PARAMETERS(
 		(ParamInt<px4::params::CAL_MAG_COMP_TYP>) _param_mag_comp_typ,
 		(ParamBool<px4::params::SENS_MAG_MODE>) _param_sens_mag_mode,
 		(ParamFloat<px4::params::SENS_MAG_RATE>) _param_sens_mag_rate,
-		(ParamBool<px4::params::SENS_MAG_AUTOCAL>) _param_sens_mag_autocal,
-        (ParamInt<px4::params::ATK_APPLY_TYPE>)      _param_atk_apply_type,		///< bitmasked integer that selects which of the sensor will be spoofed (gps, imu) or jammed (only affect magnetometer and barometer)
-        (ParamInt<px4::params::ATK_COUNTDOWN_MS>)    _param_atk_countdown_ms,
-        (ParamInt<px4::params::ATK_MULTI_MAG>)       _param_atk_multi_mag
+		(ParamBool<px4::params::SENS_MAG_AUTOCAL>) _param_sens_mag_autocal
 	)
 };
 }; // namespace sensors

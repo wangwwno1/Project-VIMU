@@ -36,7 +36,6 @@ px4_add_library(vehicle_gps_position
 	VehicleGPSPosition.hpp
 	gps_blending.cpp
 	gps_blending.hpp
-    gps_attack.cpp
     gps_validation.cpp
 )
 target_link_libraries(vehicle_gps_position

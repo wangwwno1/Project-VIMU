@@ -139,27 +139,6 @@ bool VehicleAirData::ParametersUpdate(bool force)
 			}
 		}
 
-        if (_param_atk_apply_type.get() != _attack_flag_prev) {
-            const int next_attack_flag = _param_atk_apply_type.get();
-            const int next_instance_flag = _param_atk_multi_baro.get();
-            if (next_attack_flag & sensor_attack::BLK_BARO_HGT && next_instance_flag != 0) {
-                // Enable attack, calculate new timestamp
-                _attack_timestamp = param_update.timestamp + (hrt_abstime) (_param_atk_countdown_ms.get() * 1000);
-                PX4_INFO("Debug - Blocking BARO, expect start timestamp: %" PRIu64, _attack_timestamp);
-                if (next_instance_flag != _instance_flag_prev) {
-                    PX4_INFO("Debug - Affected BARO instance flag has changed: %d -> %d", _instance_flag_prev, next_instance_flag);
-                    _instance_flag_prev = next_instance_flag;
-                }
-
-            } else if (_attack_timestamp != 0) {
-                // Disable attack, reset timestamp
-                _attack_timestamp = 0;
-                PX4_INFO("Debug - BARO Attack disabled, reset attack timestamp.");
-            }
-
-            _attack_flag_prev = next_attack_flag;
-        }
-
 		return true;
 	}
 
@@ -198,11 +177,6 @@ void VehicleAirData::Run()
 		}
 
 		if (_advertised[uorb_index]) {
-            if (_attack_timestamp != 0 && hrt_absolute_time() >= _attack_timestamp && (_instance_flag_prev & (1 << uorb_index))) {
-                // Skip the affected baro to simulate blocking attack
-                continue;
-            }
-
 			sensor_baro_s report;
 
 			while (_sensor_sub[uorb_index].update(&report)) {
@@ -278,18 +252,6 @@ void VehicleAirData::Run()
             _status_updated = _ref_baro_delayed.time_us != 0;  // Update error status because primary instance has been changed.
 		}
 	}
-
-    if (_attack_timestamp != 0 && hrt_absolute_time() >= _attack_timestamp) {
-        if (!_forced_using_soft_baro) {
-            PX4_WARN("Debug - Block baro test start, using reference baro data.");
-        }
-        _forced_using_soft_baro = true;
-    } else if (_attack_timestamp == 0) {
-        if (_forced_using_soft_baro) {
-            PX4_INFO("Debug - Block baro test ended, resume to baro measurement.");
-        }
-        _forced_using_soft_baro = false;
-    }
 
     UpdateReferenceState();
 

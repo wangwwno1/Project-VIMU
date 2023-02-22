@@ -36,7 +36,6 @@
 #include <drivers/drv_hrt.h>
 #include <lib/conversion/rotation.h>
 #include <lib/fault_detector/fault_detector.hpp>
-#include <lib/sensor_attack/sensor_attack.hpp>
 #include <lib/geo/geo.h>
 #include <uORB/Subscription.hpp>
 #include <uORB/PublicationMulti.hpp>

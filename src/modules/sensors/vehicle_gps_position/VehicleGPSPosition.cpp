@@ -45,16 +45,6 @@ VehicleGPSPosition::VehicleGPSPosition() :
     _param_ekf2_gps_pos_x(_gps_pos_body(0)),
     _param_ekf2_gps_pos_y(_gps_pos_body(1)),
     _param_ekf2_gps_pos_z(_gps_pos_body(2)),
-    _param_atk_gps_p_iv(_pos_atk_params.initial_value),
-    _param_atk_gps_p_rate(_pos_atk_params.rate_of_rise),
-    _param_atk_gps_p_cap(_pos_atk_params.max_deviation),
-    _param_atk_gps_p_hdg(_pos_atk_params.heading_deg),
-    _param_atk_gps_p_pitch(_pos_atk_params.pitch_deg),
-    _param_atk_gps_v_iv(_vel_atk_params.initial_value),
-    _param_atk_gps_v_rate(_vel_atk_params.rate_of_rise),
-    _param_atk_gps_v_cap(_vel_atk_params.max_deviation),
-    _param_atk_gps_v_hdg(_vel_atk_params.heading_deg),
-    _param_atk_gps_v_pitch(_vel_atk_params.pitch_deg),
     _param_iv_gps_p_csum_h(_pos_validator_params.cusum_params.control_limit),
     _param_iv_gps_p_mshift(_pos_validator_params.cusum_params.mean_shift),
     _param_iv_gps_p_ema_h(_pos_validator_params.ema_params.control_limit),
@@ -122,32 +112,6 @@ void VehicleGPSPosition::ParametersUpdate(bool force)
 		_gps_blending.setBlendingUseVPosAccuracy(_param_sens_gps_mask.get() & BLEND_MASK_USE_VPOS_ACC);
 		_gps_blending.setBlendingTimeConstant(_param_sens_gps_tau.get());
 		_gps_blending.setPrimaryInstance(_param_sens_gps_prime.get());
-
-        if (_param_atk_apply_type.get() != _attack_flag_prev) {
-            const int next_attack_flag = _param_atk_apply_type.get();
-            if (next_attack_flag & (sensor_attack::ATK_GPS_VEL | sensor_attack::ATK_GPS_POS)) {
-                // Enable attack, calculate new timestamp
-                _attack_timestamp = param_update.timestamp + (hrt_abstime) (_param_atk_countdown_ms.get() * 1000);
-                if (next_attack_flag & sensor_attack::ATK_GPS_POS) {
-                    PX4_INFO("Debug - Enable GPS POS attack, expect start timestamp: %" PRIu64, _attack_timestamp);
-                } else if (_attack_flag_prev & sensor_attack::ATK_GPS_POS) {
-                    PX4_INFO("Debug - GPS POS attack disabled.");
-                }
-
-                if (next_attack_flag & sensor_attack::ATK_GPS_VEL) {
-                    PX4_INFO("Debug - Enable GPS VEL attack, expect start timestamp: %" PRIu64, _attack_timestamp);
-                } else if (_attack_flag_prev & sensor_attack::ATK_GPS_VEL) {
-                    PX4_INFO("Debug - GPS VEL attack disabled.");
-                }
-
-            } else if (_attack_flag_prev & (sensor_attack::ATK_GPS_VEL | sensor_attack::ATK_GPS_POS)) {
-                // Disable attack, reset timestamp
-                _attack_timestamp = 0;
-                PX4_INFO("Debug - GPS attack disabled , reset attack timestamp.");
-            }
-
-            _attack_flag_prev = next_attack_flag;
-        }
 	}
 }
 

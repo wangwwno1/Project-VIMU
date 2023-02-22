@@ -21,12 +21,6 @@ void PX4Gyroscope::validateGyro(sensor_gyro_s &gyro) {
         return;
     }
 
-    // fixme remove
-    if (gyro.timestamp_sample != _curr_ref_gyro.timestamp_sample) {
-        PX4_WARN("%" PRIu64 ": %d - reference async: GYRO %" PRIu64 " vs. REF %" PRIu64 ")" ,
-                 hrt_absolute_time(), get_instance(), gyro.timestamp_sample, _curr_ref_gyro.timestamp_sample);
-    }
-
     Vector3f error_residuals{0.f, 0.f, 0.f};
     error_residuals(0) = gyro.x - _curr_ref_gyro.x;
     error_residuals(1) = gyro.y - _curr_ref_gyro.y;
@@ -35,15 +29,7 @@ void PX4Gyroscope::validateGyro(sensor_gyro_s &gyro) {
     const Vector3f error_ratio = error_residuals * _inv_gyro_noise;
     _gyro_validator.validate(error_ratio);
 
-    if (attack_enabled(sensor_attack::ATK_MASK_GYRO, gyro.timestamp_sample)
-        && _param_iv_delay_mask.get() & sensor_attack::ATK_MASK_GYRO
-        && _param_iv_ttd_delay_ms.get() > 0) {
-        // Use delay for precise Time to Detection
-        if (hrt_elapsed_time(&_attack_timestamp) >= (hrt_abstime) (_param_iv_ttd_delay_ms.get() * 1000)) {
-            // Declare gyro failure immediately by add error count
-            gyro.error_count = fmaxf(gyro.error_count + NORETURN_ERRCOUNT, NORETURN_ERRCOUNT + 1U);
-        }
-    } else if (_gyro_validator.test_ratio() >= 1.f) {
+    if (_gyro_validator.test_ratio() >= 1.f) {
         // Declare gyro failure immediately by add error count
         gyro.error_count = fmaxf(gyro.error_count + NORETURN_ERRCOUNT, NORETURN_ERRCOUNT + 1U);
     }
