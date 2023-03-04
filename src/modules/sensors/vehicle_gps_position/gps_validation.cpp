@@ -182,6 +182,10 @@ namespace sensors
                     _gps_healthy = (_pos_validator.test_ratio() < 1.f) && (_vel_validator.test_ratio() < 1.f);
                 }
 
+                // Synchronize alarm status between time window detectors
+                _pos_validator.set_update_offset(_gps_healthy);
+                _vel_validator.set_update_offset(_gps_healthy);
+
                 PublishSensorStatus();
                 if (_param_iv_debug_log.get()) {
                     // Also publish error status for debug & detector identification
