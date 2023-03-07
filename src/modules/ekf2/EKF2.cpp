@@ -1868,7 +1868,7 @@ void EKF2::UpdateDragImuSample() {
         if (selector_status.gyro_device_id != 0) {
             sensors_status_imu_s imu_status{};
             _sensors_status_imu_sub.copy(&imu_status);
-            for (uint8_t imu = 0; imu < MAX_SENSOR_COUNT; ++imu) {
+            for (uint8_t imu = 0; imu < MAX_NUM_IMUS; ++imu) {
                 // Although we only take gyro measurement, we should also check accelerometer status
                 // Since the attack against accelerometer could be also used against gyroscope.
                 if (imu_status.gyro_device_ids[imu] == selector_status.gyro_device_id) {
@@ -1944,7 +1944,7 @@ void EKF2::CheckMagStatus() {
                     continue;
                 }
 
-                if ((hrt_elapsed_time(&_last_mag_faulty_time[idx]) > 5operator) &&
+                if ((hrt_elapsed_time(&_last_mag_faulty_time[idx]) > 5_s) &&
                     _magnetometer_sub.ChangeInstance(idx)) {
                     // Clear all previous mag samples
                     _ekf.resetMagBuffer();
