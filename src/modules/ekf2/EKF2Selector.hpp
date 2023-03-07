@@ -195,7 +195,6 @@ private:
 	bool _selector_status_publish{false};
 
     // sensor_health_status
-    // TODO Make a special case for heading source
     struct SensorHealthStatus {
         SensorHealthStatus() {
             for (uint8_t imu = 0; imu < IMU_STATUS_SIZE; ++imu) {
