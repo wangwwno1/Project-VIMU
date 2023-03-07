@@ -115,6 +115,7 @@ bool Ekf::update()
 
 		// run a separate filter for terrain estimation
 		runTerrainEstimator();
+        updateAerodynamicWrench();
 
 		updated = true;
 	}
@@ -122,7 +123,6 @@ bool Ekf::update()
 	// the output observer always runs
 	// Use full rate IMU data at the current time horizon
 	calculateOutputStates(_newest_high_rate_imu_sample);
-    updateAerodynamicWrench();
 
 	return updated;
 }

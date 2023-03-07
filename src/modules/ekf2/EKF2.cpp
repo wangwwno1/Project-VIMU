@@ -666,6 +666,8 @@ void EKF2::Run()
 			PublishOdometry(now, imu_sample_new);
 			PublishGlobalPosition(now);
 			PublishWindEstimate(now);
+            // publish estimate air drag applied to the vehicle
+            PublishAerodynamicWrench(now);
 
 			// publish status/logging messages
 			PublishBaroBias(now);
@@ -689,9 +691,6 @@ void EKF2::Run()
 			// ekf no update
 			perf_set_elapsed(_ecl_ekf_update_perf, hrt_elapsed_time(&ekf_update_start));
 		}
-
-        // publish estimate air drag applied to the vehicle
-        PublishAerodynamicWrench(now);
 
 		// publish external visual odometry after fixed frame alignment if new odometry is received
 		if (new_ev_odom) {
