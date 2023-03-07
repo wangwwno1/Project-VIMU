@@ -633,7 +633,10 @@ void EKF2::Run()
                 _gps_healthy_prev = gps_stat.healthy;
             }
         }
-		UpdateGpsSample(ekf2_timestamps);
+        if (!has_reference() || _gps_healthy_prev) {
+            UpdateGpsSample(ekf2_timestamps);
+        }
+
         if (has_reference()) {
             // TODO better doc
             // Put hardware IMU sample and set the bias

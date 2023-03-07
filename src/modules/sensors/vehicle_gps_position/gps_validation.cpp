@@ -197,10 +197,10 @@ namespace sensors
                     }
                 }
 
-                // Replace corresponding information if gps is unhealthy
-                if (!_gps_healthy) {
-                    ReplaceGpsPosVelData(gps_position, ref_pos_board, ref_vel_board);
-                }
+//                // Replace corresponding information if gps is unhealthy
+//                if (!_gps_healthy) {
+//                    ReplaceGpsPosVelData(gps_position, ref_pos_board, ref_vel_board);
+//                }
             }
 
         } else {
