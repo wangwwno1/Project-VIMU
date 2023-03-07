@@ -792,14 +792,39 @@ private:
 		return KHP;
 	}
 
-    bool measurementUpdate(Vector24f &K, float innovation_variance, float innovation)
+    void clearInhibitedStateKalmanGains(Vector24f &K) const
     {
+        // accel bias: states 13, 14, 15
         for (unsigned i = 0; i < 3; i++) {
             if (_accel_bias_inhibit[i]) {
-                K(13 + i) = 0.0f;
+                K(13 + i) = 0.f;
             }
         }
 
+        // mag I: states 16, 17, 18
+        if (!_control_status.flags.mag_3D) {
+            K(16) = 0.f;
+            K(17) = 0.f;
+            K(18) = 0.f;
+        }
+
+        // mag B: states 19, 20, 21
+        if (!_control_status.flags.mag_3D) {
+            K(19) = 0.f;
+            K(20) = 0.f;
+            K(21) = 0.f;
+        }
+
+        // wind: states 22, 23
+        if (!_control_status.flags.wind) {
+            K(22) = 0.f;
+            K(23) = 0.f;
+        }
+    }
+
+    bool measurementUpdate(Vector24f &K, float innovation_variance, float innovation)
+    {
+        clearInhibitedStateKalmanGains(K);
         const Vector24f KS = K * innovation_variance;
         SquareMatrix24f KHP;
 
@@ -831,12 +856,7 @@ private:
 	template <size_t ...Idxs>
 	bool measurementUpdate(Vector24f &K, const SparseVector24f<Idxs...> &H, float innovation)
 	{
-		for (unsigned i = 0; i < 3; i++) {
-			if (_accel_bias_inhibit[i]) {
-				K(13 + i) = 0.0f;
-			}
-		}
-
+        clearInhibitedStateKalmanGains(K);
 		// apply covariance correction via P_new = (I -K*H)*P
 		// first calculate expression for KHP
 		// then calculate P - KHP

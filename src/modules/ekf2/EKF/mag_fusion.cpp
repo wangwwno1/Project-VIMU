@@ -637,7 +637,7 @@ bool Ekf::updateQuaternion(const float innovation, const float variance, const f
 	// only calculate gains for states we are using
 	Vector24f Kfusion;
 
-	for (uint8_t row = 0; row <= 15; row++) {
+	for (uint8_t row = 0; row <= _k_num_states; row++) {
 		for (uint8_t col = 0; col <= 3; col++) {
 			Kfusion(row) += P(row, col) * yaw_jacobian(col);
 		}
@@ -645,15 +645,7 @@ bool Ekf::updateQuaternion(const float innovation, const float variance, const f
 		Kfusion(row) *= heading_innov_var_inv;
 	}
 
-	if (_control_status.flags.wind) {
-		for (uint8_t row = 22; row <= 23; row++) {
-			for (uint8_t col = 0; col <= 3; col++) {
-				Kfusion(row) += P(row, col) * yaw_jacobian(col);
-			}
-
-			Kfusion(row) *= heading_innov_var_inv;
-		}
-	}
+    clearInhibitedStateKalmanGains(Kfusion);
 
 	// innovation test ratio
     _mag_validator.validate(innovation / sqrt(_heading_innov_var));
