@@ -154,7 +154,11 @@ void Ekf::predictCovariance()
 		if (_control_status.flags.vehicle_at_rest) {
 			is_bias_observable = true;
 
-		} else if (_control_status.flags.fake_pos) {
+		} else if (!isVerticalAidingActive()) {
+            // fixme monkey patch for fake_hgt flag
+            is_bias_observable = false;
+
+        } else if (_horizontal_aid_timeout || _control_status.flags.fake_pos) {
 			// when using fake position (but not fake height) only consider an accel bias observable if aligned with the gravity vector
 			is_bias_observable = (fabsf(_R_to_earth(2, index)) > 0.966f); // cos 15 degrees ~= 0.966
 		}

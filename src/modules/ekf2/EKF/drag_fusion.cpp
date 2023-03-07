@@ -39,8 +39,9 @@
 #include "ekf.h"
 #include "python/ekf_derivation/generated/compute_drag_x_innov_var_and_k.h"
 #include "python/ekf_derivation/generated/compute_drag_y_innov_var_and_k.h"
-#include "python/ekf_derivation/generated/compute_drag_x_innov_var_and_k_full.h"
-#include "python/ekf_derivation/generated/compute_drag_y_innov_var_and_k_full.h"
+#include "python/ekf_derivation/generated/compute_drag_x_innov_var_and_k_without_horz_aid.h"
+#include "python/ekf_derivation/generated/compute_drag_y_innov_var_and_k_without_horz_aid.h"
+
 
 #include <mathlib/mathlib.h>
 
@@ -93,7 +94,7 @@ void Ekf::fuseDrag(const dragSample &drag_sample)
 	// perform sequential fusion of XY specific forces
 	for (uint8_t axis_index = 0; axis_index < 2; axis_index++) {
 		// measured drag acceleration corrected for sensor bias
-        const float axis_bias = (_use_reference_imu) ? _drag_acc_bias(axis_index) : _state.delta_vel_bias(axis_index) / _dt_ekf_avg;
+        const float axis_bias = (_use_reference_imu) ? _real_acc_bias(axis_index) : _state.delta_vel_bias(axis_index) / _dt_ekf_avg;
         const float mea_acc = drag_sample.accelXY(axis_index) - axis_bias;
 
 		// Drag is modelled as an arbitrary combination of bluff body drag that proportional to
@@ -105,8 +106,8 @@ void Ekf::fuseDrag(const dragSample &drag_sample)
 				continue;
 			}
 
-            if (_use_reference_imu) {
-                sym::ComputeDragXInnovVarAndKFull(state_vector_prev, P, rho, bcoef_inv(axis_index), mcoef_corrrected, R_ACC, FLT_EPSILON, &_drag_innov_var(axis_index), &Kfusion);
+            if (_horizontal_aid_timeout) {
+                sym::ComputeDragXInnovVarAndKWithoutHorzAid(state_vector_prev, P, rho, bcoef_inv(axis_index), mcoef_corrrected, R_ACC, FLT_EPSILON, &_drag_innov_var(axis_index), &Kfusion);
             } else {
                 sym::ComputeDragXInnovVarAndK(state_vector_prev, P, rho, bcoef_inv(axis_index), mcoef_corrrected, R_ACC, FLT_EPSILON, &_drag_innov_var(axis_index), &Kfusion);
             }
@@ -116,8 +117,8 @@ void Ekf::fuseDrag(const dragSample &drag_sample)
 				continue;
 			}
 
-            if (_use_reference_imu) {
-                sym::ComputeDragYInnovVarAndKFull(state_vector_prev, P, rho, bcoef_inv(axis_index), mcoef_corrrected, R_ACC, FLT_EPSILON, &_drag_innov_var(axis_index), &Kfusion);
+            if (_horizontal_aid_timeout) {
+                sym::ComputeDragYInnovVarAndKWithoutHorzAid(state_vector_prev, P, rho, bcoef_inv(axis_index), mcoef_corrrected, R_ACC, FLT_EPSILON, &_drag_innov_var(axis_index), &Kfusion);
             } else {
                 sym::ComputeDragYInnovVarAndK(state_vector_prev, P, rho, bcoef_inv(axis_index), mcoef_corrrected, R_ACC, FLT_EPSILON, &_drag_innov_var(axis_index), &Kfusion);
             }
@@ -136,7 +137,7 @@ void Ekf::fuseDrag(const dragSample &drag_sample)
 
 		// if the innovation consistency check fails then don't fuse the sample
 		if (_drag_test_ratio(axis_index) <= 1.0f) {
-			measurementUpdate(Kfusion, Hfusion, _drag_innov(axis_index));
+			measurementUpdate(Kfusion, _drag_innov_var(axis_index), _drag_innov(axis_index));
 		}
 	}
 }

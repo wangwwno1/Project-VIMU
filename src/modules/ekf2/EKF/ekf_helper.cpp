@@ -1016,8 +1016,18 @@ void Ekf::update_deadreckoning_status()
 	}
 
 	// report if we have been deadreckoning for too long, initial state is deadreckoning until aiding is present
-	bool deadreckon_time_exceeded = (_time_last_aiding == 0)
-				    || isTimedOut(_time_last_aiding, (uint64_t)_params.valid_timeout_max);
+	bool deadreckon_time_exceeded = (_time_last_aiding == 0);
+    // fixme how to determine the time out?
+//    if (_use_reference_imu) {
+    deadreckon_time_exceeded = deadreckon_time_exceeded
+                               || isTimedOut(_time_last_aiding, (uint64_t) _params.reference_valid_timeout_max);
+    _horizontal_aid_timeout = deadreckon_time_exceeded
+            || isTimedOut(_time_last_aiding, (uint64_t) _params.valid_timeout_max);
+//    } else {
+//        deadreckon_time_exceeded = deadreckon_time_exceeded
+//                || isTimedOut(_time_last_aiding, (uint64_t) _params.valid_timeout_max);
+//        _horizontal_aid_timeout = deadreckon_time_exceeded;
+//    }
 
 	if (!_deadreckon_time_exceeded && deadreckon_time_exceeded) {
 		// deadreckon time now exceeded

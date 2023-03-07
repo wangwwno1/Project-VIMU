@@ -63,7 +63,7 @@ void Ekf::reset()
 
     _drag_acceleration.zero();
     _drag_angular_acceleration.zero();
-    _drag_acc_bias.zero();
+    _real_acc_bias.zero();
 
 	// TODO: who resets the output buffer content?
 	_output_new.vel.setZero();

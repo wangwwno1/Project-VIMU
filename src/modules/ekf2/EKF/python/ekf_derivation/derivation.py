@@ -33,7 +33,9 @@ File: derivation.py
 Description:
 """
 
-import symforce.symbolic as sf
+import symforce
+symforce.set_epsilon_to_number(1e-5)
+
 from derivation_utils import *
 
 class State:
@@ -438,6 +440,48 @@ def predict_drag(
     return bluff_body_drag + momentum_drag
 
 
+def predict_drag_without_wind(
+        state: VState,
+        rho: sf.Scalar,
+        cd: sf.Scalar,
+        cm: sf.Scalar,
+        epsilon: sf.Scalar
+        ):
+    q_att = sf.V4(state[State.qw], state[State.qx], state[State.qy], state[State.qz])
+    R_to_earth = quat_to_rot(q_att)
+    R_to_body = R_to_earth.T
+
+    vel_rel = sf.V3(state[State.vx], state[State.vy], state[State.vz])
+    vel_rel_body = R_to_body * vel_rel
+
+    horz_vel_rel_body = sf.V2(vel_rel_body.x, vel_rel_body.y)
+    bluff_body_drag = -0.5 * rho * cd * horz_vel_rel_body * vel_rel_body.norm(epsilon=epsilon)
+    momentum_drag = -cm * horz_vel_rel_body
+
+    return bluff_body_drag + momentum_drag
+
+
+def predict_drag_without_wind(
+        state: VState,
+        rho: sf.Scalar,
+        cd: sf.Scalar,
+        cm: sf.Scalar,
+        epsilon: sf.Scalar
+        ):
+    q_att = sf.V4(state[State.qw], state[State.qx], state[State.qy], state[State.qz])
+    R_to_earth = quat_to_rot(q_att)
+    R_to_body = R_to_earth.T
+
+    vel_rel = sf.V3(state[State.vx], state[State.vy], state[State.vz])
+    vel_rel_body = R_to_body * vel_rel
+
+    horz_vel_rel_body = sf.V2(vel_rel_body.x, vel_rel_body.y)
+    bluff_body_drag = -0.5 * rho * cd * horz_vel_rel_body * vel_rel_body.norm(epsilon=epsilon)
+    momentum_drag = -cm * horz_vel_rel_body
+
+    return bluff_body_drag + momentum_drag
+
+
 def compute_drag_x_innov_var_and_k(
         state: VState,
         P: MState,
@@ -448,7 +492,7 @@ def compute_drag_x_innov_var_and_k(
         epsilon: sf.Scalar
 ) -> (sf.Scalar, sf.Scalar, VState):
 
-    meas_pred = predict_drag(state, rho, cd, cm, epsilon)
+    meas_pred = predict_drag_without_wind(state, rho, cd, cm, epsilon)
     Hx = sf.V1(meas_pred[0]).jacobian(state)
     innov_var = (Hx * P * Hx.T + R)[0,0]
     Ktotal = P * Hx.T / sf.Max(innov_var, epsilon)
@@ -458,7 +502,7 @@ def compute_drag_x_innov_var_and_k(
 
     return (innov_var, K)
 
-def compute_drag_x_innov_var_and_k_full(
+def compute_drag_x_innov_var_and_k_without_horz_aid(
         state: VState,
         P: MState,
         rho: sf.Scalar,
@@ -468,10 +512,22 @@ def compute_drag_x_innov_var_and_k_full(
         epsilon: sf.Scalar
 ) -> (sf.Scalar, sf.Scalar, VState):
 
-    meas_pred = predict_drag(state, rho, cd, cm, epsilon)
+    meas_pred = predict_drag_without_wind(state, rho, cd, cm, epsilon)
     Hx = sf.V1(meas_pred[0]).jacobian(state)
-    innov_var = (Hx * P * Hx.T + R)[0,0]
-    K = P * Hx.T / sf.Max(innov_var, epsilon)
+    innov_var = (Hx * P * Hx.T + R)[0, 0]
+    # K = P * Hx.T / sf.Max(innov_var, epsilon)
+    Ktotal = P * Hx.T / sf.Max(innov_var, epsilon)
+    K = VState()
+
+    # Velocity
+    K[State.vx] = Ktotal[State.vx]
+    K[State.vy] = Ktotal[State.vy]
+    K[State.vz] = Ktotal[State.vz]
+
+    # Position
+    K[State.px] = Ktotal[State.px]
+    K[State.py] = Ktotal[State.py]
+    K[State.pz] = Ktotal[State.pz]
 
     return (innov_var, K)
 
@@ -485,7 +541,7 @@ def compute_drag_y_innov_var_and_k(
         epsilon: sf.Scalar
 ) -> (sf.Scalar, sf.Scalar, VState):
 
-    meas_pred = predict_drag(state, rho, cd, cm, epsilon)
+    meas_pred = predict_drag_without_wind(state, rho, cd, cm, epsilon)
     Hy = sf.V1(meas_pred[1]).jacobian(state)
     innov_var = (Hy * P * Hy.T + R)[0,0]
     Ktotal = P * Hy.T / sf.Max(innov_var, epsilon)
@@ -495,7 +551,7 @@ def compute_drag_y_innov_var_and_k(
 
     return (innov_var, K)
 
-def compute_drag_y_innov_var_and_k_full(
+def compute_drag_y_innov_var_and_k_without_horz_aid(
         state: VState,
         P: MState,
         rho: sf.Scalar,
@@ -505,10 +561,22 @@ def compute_drag_y_innov_var_and_k_full(
         epsilon: sf.Scalar
 ) -> (sf.Scalar, sf.Scalar, VState):
 
-    meas_pred = predict_drag(state, rho, cd, cm, epsilon)
+    meas_pred = predict_drag_without_wind(state, rho, cd, cm, epsilon)
     Hy = sf.V1(meas_pred[1]).jacobian(state)
     innov_var = (Hy * P * Hy.T + R)[0,0]
-    K = P * Hy.T / sf.Max(innov_var, epsilon)
+    # K = P * Hy.T / sf.Max(innov_var, epsilon)
+
+    Ktotal = P * Hy.T / sf.Max(innov_var, epsilon)
+    K = VState()
+    # Velocity
+    K[State.vx] = Ktotal[State.vx]
+    K[State.vy] = Ktotal[State.vy]
+    K[State.vz] = Ktotal[State.vz]
+
+    # Position
+    K[State.px] = Ktotal[State.px]
+    K[State.py] = Ktotal[State.py]
+    K[State.pz] = Ktotal[State.pz]
 
     return (innov_var, K)
 
@@ -533,5 +601,5 @@ print("Derive EKF2 equations...")
 # generate_px4_function(compute_gnss_yaw_innon_innov_var_and_h, output_names=["innov", "innov_var", "H"])
 generate_px4_function(compute_drag_x_innov_var_and_k, output_names=["innov_var", "K"])
 generate_px4_function(compute_drag_y_innov_var_and_k, output_names=["innov_var", "K"])
-generate_px4_function(compute_drag_x_innov_var_and_k_full, output_names=["innov_var", "K"])
-generate_px4_function(compute_drag_y_innov_var_and_k_full, output_names=["innov_var", "K"])
+generate_px4_function(compute_drag_x_innov_var_and_k_without_horz_aid, output_names=["innov_var", "K"])
+generate_px4_function(compute_drag_y_innov_var_and_k_without_horz_aid, output_names=["innov_var", "K"])

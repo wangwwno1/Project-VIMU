@@ -84,8 +84,8 @@ public:
 
     // if using virtual imu, the imu_sample received in setIMUData is come from physical model
     // use this API to set hardware imu sample for drag estimation
-    void setDragIMUData(const imuSample &imu_sample);
-    void setDragAccBias(const Vector3f &acc_bias) { _drag_acc_bias = acc_bias; }
+    void setRealIMUData(const imuSample &imu_sample);
+    void setRealAccBias(const Vector3f &acc_bias) { _real_acc_bias = acc_bias; }
 
 	void setMagData(const magSample &mag_sample);
 
@@ -183,10 +183,14 @@ public:
 	// Return true if at least one source of horizontal aiding is active
 	// the flags considered are opt_flow, gps, ev_vel and ev_pos
 	bool isHorizontalAidingActive() const;
+    bool isVerticalAidingActive() const;
 
 	int getNumberOfActiveHorizontalAidingSources() const;
 
-	bool isVerticalVelocityAidingActive() const;
+    bool isVerticalPositionAidingActive() const;
+    int getNumberOfActiveVerticalPositionAidingSources() const;
+
+    bool isVerticalVelocityAidingActive() const;
 	int getNumberOfActiveVerticalVelocityAidingSources() const;
 
 	const matrix::Quatf &getQuaternion() const { return _output_new.quat_nominal; }
@@ -275,7 +279,7 @@ protected:
 	virtual bool init(uint64_t timestamp) = 0;
 
     bool _use_reference_imu{false};
-    Vector3f _drag_acc_bias{};  // Applied to drag fusion when the primary imu is virtual imu.
+    Vector3f _real_acc_bias{};  // Applied to drag fusion when the primary imu is virtual imu.
 
 	parameters _params{};		// filter parameters
 
@@ -358,6 +362,7 @@ protected:
 	innovation_fault_status_u _innov_check_fail_status{};
 
 	bool _deadreckon_time_exceeded{true};	// true if the horizontal nav solution has been deadreckoning for too long and is invalid
+    bool _horizontal_aid_timeout{true};
 
 	float _gps_horizontal_position_drift_rate_m_s{NAN}; // Horizontal position drift rate (m/s)
 	float _gps_vertical_position_drift_rate_m_s{NAN};   // Vertical position drift rate (m/s)

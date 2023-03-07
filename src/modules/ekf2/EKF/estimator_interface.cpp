@@ -96,17 +96,15 @@ void EstimatorInterface::setIMUData(const imuSample &imu_sample)
 }
 
 // Store hardware imu sample if using virtual imu in setIMUData
-void EstimatorInterface::setDragIMUData(const imuSample &imu_sample)
+void EstimatorInterface::setRealIMUData(const imuSample &imu_sample)
 {
     // TODO: resolve misplaced responsibility
-    if (!_initialised) {
-        _initialised = init(imu_sample.time_us);
+    if (!_initialised || !_use_reference_imu) {
+        return;
     }
 
-    // push hardware imu to the buffer when new downsampled data becomes available
-    if (_use_reference_imu) {
-        setDragData(imu_sample);
-    }
+    // push hardware imu to the buffer when new data becomes available
+    setDragData(imu_sample);
 }
 
 void EstimatorInterface::setMagData(const magSample &mag_sample)
@@ -401,8 +399,7 @@ void EstimatorInterface::setDragData(const imuSample &imu)
 {
 	// down-sample the drag specific force data by accumulating and calculating the mean when
 	// sufficient samples have been collected
-    // TODO add extra parameter for drag estimation?
-	if ((_params.fusion_mode & MASK_USE_DRAG) || _use_reference_imu) {
+	if (_params.fusion_mode & MASK_USE_DRAG) {
 
 		// Allocate the required buffer size if not previously done
 		if (_drag_buffer == nullptr) {
@@ -540,14 +537,30 @@ int EstimatorInterface::getNumberOfActiveHorizontalAidingSources() const
 	       + int(_control_status.flags.ev_vel)
 	       // Combined airspeed and sideslip fusion allows sustained wind relative dead reckoning
 	       // and so is treated as a single aiding source.
-	       + int(_control_status.flags.fuse_aspd && _control_status.flags.fuse_beta)
-           // Enforce dead reckoning if using reference imu
-           + int(_use_reference_imu);
+	       + int(_control_status.flags.fuse_aspd && _control_status.flags.fuse_beta);
 }
 
 bool EstimatorInterface::isHorizontalAidingActive() const
 {
 	return getNumberOfActiveHorizontalAidingSources() > 0;
+}
+
+bool EstimatorInterface::isVerticalPositionAidingActive() const
+{
+    return getNumberOfActiveVerticalPositionAidingSources() > 0;
+}
+
+int EstimatorInterface::getNumberOfActiveVerticalPositionAidingSources() const
+{
+    return int(_control_status.flags.gps_hgt)
+           + int(_control_status.flags.baro_hgt)
+           + int(_control_status.flags.rng_hgt)
+           + int(_control_status.flags.ev_hgt);
+}
+
+bool EstimatorInterface::isVerticalAidingActive() const
+{
+    return isVerticalPositionAidingActive() || isVerticalVelocityAidingActive();
 }
 
 bool EstimatorInterface::isVerticalVelocityAidingActive() const

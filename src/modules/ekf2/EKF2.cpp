@@ -640,7 +640,7 @@ void EKF2::Run()
         if (has_reference()) {
             // TODO better doc
             // Put hardware IMU sample and set the bias
-            UpdateDragImuSample();
+            UpdateRealImuSample();
             // Attempt to switch magnetometer if is VIMU-EKF and current mag is faulty
             CheckMagStatus();
         }
@@ -1861,7 +1861,7 @@ void EKF2::UpdateGpsSample(ekf2_timestamps_s &ekf2_timestamps)
 	}
 }
 
-void EKF2::UpdateDragImuSample() {
+void EKF2::UpdateRealImuSample() {
     estimator_selector_status_s selector_status{};
     if (_estimator_selector_status_sub.update(&selector_status)) {
         // reset the state
@@ -1904,8 +1904,7 @@ void EKF2::UpdateDragImuSample() {
                 imu_sample.delta_vel_clipping[2] = imu.delta_velocity_clipping & vehicle_imu_s::CLIPPING_Z;
             }
 
-            imu_dt = imu.delta_angle_dt;
-            _ekf.setDragIMUData(imu_sample);
+            _ekf.setRealIMUData(imu_sample);
         }
     } else if (_last_valid_imu != INVALID_INSTANCE) {
         _vehicle_imu_sub.ChangeInstance(_last_valid_imu);
@@ -1915,7 +1914,7 @@ void EKF2::UpdateDragImuSample() {
         estimator_sensor_bias_s bias{};
         if (_estimator_sensor_bias_sub.update(&bias)) {
             if (bias.accel_bias_valid) {
-                _ekf.setDragAccBias(Vector3f{bias.accel_bias});
+                _ekf.setRealAccBias(Vector3f{bias.accel_bias});
             }
         }
     } else if (_last_bias_source != INVALID_INSTANCE) {

@@ -182,7 +182,7 @@ private:
 	void UpdateMagCalibration(const hrt_abstime &timestamp);
 
     void CheckMagStatus();
-    void UpdateDragImuSample();
+    void UpdateRealImuSample();
 
     /*
 	 * Calculate filtered WGS84 height from estimated AMSL height
@@ -575,7 +575,7 @@ private:
 
 		// Used by EKF-GSF experimental yaw estimator
 		(ParamExtFloat<px4::params::EKF2_GSF_TAS>)
-		_param_ekf2_gsf_tas_default	///< default value of true airspeed assumed during fixed wing operation
+		_param_ekf2_gsf_tas_default,	///< default value of true airspeed assumed during fixed wing operation
 
         (ParamExtFloat<px4::params::IV_MAG_CSUM_H>)  _param_iv_mag_csum_h,
         (ParamExtFloat<px4::params::IV_MAG_MSHIFT>)  _param_iv_mag_mshift
