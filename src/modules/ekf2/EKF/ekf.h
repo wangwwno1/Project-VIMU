@@ -792,6 +792,40 @@ private:
 		return KHP;
 	}
 
+    bool measurementUpdate(Vector24f &K, float innovation_variance, float innovation)
+    {
+        for (unsigned i = 0; i < 3; i++) {
+            if (_accel_bias_inhibit[i]) {
+                K(13 + i) = 0.0f;
+            }
+        }
+
+        const Vector24f KS = K * innovation_variance;
+        SquareMatrix24f KHP;
+
+        for (unsigned row = 0; row < _k_num_states; row++) {
+            for (unsigned col = 0; col < _k_num_states; col++) {
+                // Instad of literally computing KHP, use an equvalent
+                // equation involving less mathematical operations
+                KHP(row, col) = KS(row) * K(col);
+            }
+        }
+
+        const bool is_healthy = checkAndFixCovarianceUpdate(KHP);
+
+        if (is_healthy) {
+            // apply the covariance corrections
+            P -= KHP;
+
+            fixCovarianceErrors(true);
+
+            // apply the state corrections
+            fuse(K, innovation);
+        }
+
+        return is_healthy;
+    }
+
 	// measurement update with a single measurement
 	// returns true if fusion is performed
 	template <size_t ...Idxs>
