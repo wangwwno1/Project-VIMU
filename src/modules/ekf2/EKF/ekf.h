@@ -1048,7 +1048,7 @@ private:
 	// yaw : Euler yaw angle (rad)
 	// yaw_variance : yaw error variance (rad^2)
 	// update_buffer : true if the state change should be also applied to the output observer buffer
-	void resetQuatStateYaw(float yaw, float yaw_variance, bool update_buffer);
+	void resetQuatStateYaw(float yaw, float yaw_variance, bool update_buffer = true);
 
 	// Declarations used to control use of the EKF-GSF yaw estimator
 
