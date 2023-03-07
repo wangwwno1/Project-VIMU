@@ -4048,7 +4048,7 @@ void Commander::battery_status_check()
 void Commander::estimator_check()
 {
 	// Check if quality checking of position accuracy and consistency is to be performed
-	const bool run_quality_checks = !_status_flags.circuit_breaker_engaged_posfailure_check;
+	const bool run_quality_checks = !_status_flags.circuit_breaker_engaged_posfailure_check || !_have_taken_off_since_arming;
 
 	_local_position_sub.update();
 	_global_position_sub.update();
