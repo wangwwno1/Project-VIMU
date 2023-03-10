@@ -69,9 +69,7 @@ namespace fault_detector {
 
         const EMADetector &getEMADetector() const { return _ema_detector; }
 
-        const VectorN &lower_sum() const { return _cusum_detector.lower_sum(); }
-
-        const VectorN &upper_sum() const { return _cusum_detector.upper_sum(); }
+        const VectorN &error_sum() const { return _cusum_detector.error_sum(); }
 
         const VectorN &moving_average() { return _ema_detector.moving_average(); }
 
