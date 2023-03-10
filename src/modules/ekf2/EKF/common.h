@@ -329,6 +329,10 @@ struct parameters {
 	float ev_vel_innov_gate{3.0f};          ///< vision velocity fusion innovation consistency gate size (STD)
 	float ev_pos_innov_gate{5.0f};          ///< vision position fusion innovation consistency gate size (STD)
 
+    // gravity fusion
+    int32_t fuse_gravity{0};                ///< allow to fuse gravity observation
+    float gravity_noise{1.0f};              ///< accelerometer measurement gaussian noise (m/s**2)
+
 	// optical flow fusion
 	float flow_noise{0.15f};                ///< observation noise for optical flow LOS rate measurements (rad/sec)
 	float flow_noise_qual_min{0.5f};        ///< observation noise for optical flow LOS rate measurements when flow sensor quality is at the minimum useable (rad/sec)
@@ -367,6 +371,7 @@ struct parameters {
 	const unsigned no_aid_timeout_max{1000000};     ///< maximum lapsed time from last fusion of a measurement that constrains horizontal velocity drift before the EKF will determine that the sensor is no longer contributing to aiding (uSec)
 
 	int32_t valid_timeout_max{5000000};     ///< amount of time spent inertial dead reckoning before the estimator reports the state estimates as invalid (uSec)
+	int32_t reference_valid_timeout_max{500'000'000};    ///< valid_timeout_max for reference EKF (uSec)
 
 	// static barometer pressure position error coefficient along body axes
 	float static_pressure_coef_xp{0.0f};    // (-)
@@ -444,6 +449,7 @@ union innovation_fault_status_u {
 		bool reject_hagl      : 1; ///< 10 - true if the height above ground observation has been rejected
 		bool reject_optflow_X : 1; ///< 11 - true if the X optical flow observation has been rejected
 		bool reject_optflow_Y : 1; ///< 12 - true if the Y optical flow observation has been rejected
+		bool reject_gravity   : 1; ///< 13 - true if the gravity observation has been rejected
 	} flags;
 	uint16_t value;
 };
@@ -501,7 +507,8 @@ union filter_control_status_u {
 		uint64_t wind_dead_reckoning     : 1; ///< 30 - true if we are navigationg reliant on wind relative measurements
 		uint64_t rng_kin_consistent      : 1; ///< 31 - true when the range finder kinematic consistency check is passing
 		uint64_t fake_pos                : 1; ///< 32 - true when fake position measurements are being fused
-	} flags;
+        uint64_t gravity_vector          : 1; ///< 33 - true when gravity vector measurements are being fused
+    } flags;
 	uint64_t value;
 };
 

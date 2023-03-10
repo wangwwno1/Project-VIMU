@@ -133,6 +133,10 @@ public:
 	void getHaglRateInnovVar(float &hagl_rate_innov_var) const { hagl_rate_innov_var = _rng_consistency_check.getInnovVar(); }
 	void getHaglRateInnovRatio(float &hagl_rate_innov_ratio) const { hagl_rate_innov_ratio = _rng_consistency_check.getSignedTestRatioLpf(); }
 
+    void getGravityInnov(float grav_innov[3]) const { _grav_innov.copyTo(grav_innov); }
+    void getGravityInnovVar(float grav_innov_var[3]) const { _grav_innov_var.copyTo(grav_innov_var); }
+    void getGravityInnovRatio(float grav_innov_ratio[3]) const { _grav_test_ratio.copyTo(grav_innov_ratio); }
+
 	// get the state vector at the delayed time horizon
 	matrix::Vector<float, 24> getStateAtFusionHorizonAsVector() const;
 
@@ -506,6 +510,10 @@ private:
 
 	float _hagl_innov{0.0f};		///< innovation of the last height above terrain measurement (m)
 	float _hagl_innov_var{0.0f};		///< innovation variance for the last height above terrain measurement (m**2)
+
+    Vector3f _grav_innov{};
+    Vector3f _grav_innov_var{};
+    Vector3f _grav_accel_vec_filt{};    ///< acceleration vector after application of a low pass filter (m/sec**2)
 
 	// optical flow processing
 	Vector2f _flow_innov{};		///< flow measurement innovation (rad/sec)
@@ -1005,6 +1013,9 @@ private:
 	void updateBaroHgtBias();
 
 	void updateGroundEffect();
+
+    // gravity fusion: heuristically enable / disable gravity fusion
+    void controlGravityFusion();
 
 	// return an estimation of the sensor altitude variance
 	float getGpsHeightVariance();

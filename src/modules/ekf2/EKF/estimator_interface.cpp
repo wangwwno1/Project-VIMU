@@ -92,6 +92,7 @@ void EstimatorInterface::setIMUData(const imuSample &imu_sample)
 
     if (!_use_reference_imu) {
         setDragData(imu_sample);
+        setGravityData(imu_sample);
     }
 }
 
@@ -105,6 +106,7 @@ void EstimatorInterface::setRealIMUData(const imuSample &imu_sample)
 
     // push hardware imu to the buffer when new data becomes available
     setDragData(imu_sample);
+    setGravityData(imu_sample);
 }
 
 void EstimatorInterface::setMagData(const magSample &mag_sample)
@@ -444,6 +446,54 @@ void EstimatorInterface::setDragData(const imuSample &imu)
 			_drag_sample_time_dt = 0.0f;
 		}
 	}
+}
+
+void EstimatorInterface::setGravityData(const imuSample &imu)
+{
+    // down-sample the drag specific force data by accumulating and calculating the mean when
+    // sufficient samples have been collected
+    if (_params.fuse_gravity) {
+
+        // Allocate the required buffer size if not previously done
+        if (_gravity_buffer == nullptr) {
+            _gravity_buffer = new RingBuffer<imuSample>(_obs_buffer_length);
+
+            if (_gravity_buffer == nullptr || !_gravity_buffer->valid()) {
+                delete _gravity_buffer;
+                _gravity_buffer = nullptr;
+                printBufferAllocationFailed("gravity");
+                return;
+            }
+        }
+
+        _gravity_sample_count ++;
+        // note acceleration is accumulated as a delta velocity
+        // TODO use down-sampler to account gyro attitude change?
+        _gravity_down_sampled.delta_vel += imu.delta_vel;
+        _gravity_down_sampled.delta_vel_dt += imu.delta_vel_dt;
+        _gravity_down_sampled.time_us += imu.time_us;
+
+        // calculate the downsample ratio for drag specific force data
+        uint8_t min_sample_ratio = (uint8_t) ceilf((float)_imu_buffer_length / _obs_buffer_length);
+
+        if (min_sample_ratio < 5) {
+            min_sample_ratio = 5;
+        }
+
+        // calculate and store means from accumulated values
+        if (_gravity_sample_count >= min_sample_ratio) {
+            _gravity_down_sampled.time_us /= _gravity_sample_count;
+
+            // write to buffer
+            _gravity_buffer->push(_gravity_down_sampled);
+
+            // reset accumulators
+            _gravity_sample_count = 0;
+            _gravity_down_sampled.delta_vel.zero();
+            _gravity_down_sampled.delta_vel_dt = 0.f;
+            _gravity_down_sampled.time_us = 0;
+        }
+    }
 }
 
 bool EstimatorInterface::initialise_interface(uint64_t timestamp)

@@ -37,6 +37,7 @@ bool cs_inertial_dead_reckoning # 29 - true if we are no longer fusing measureme
 bool cs_wind_dead_reckoning     # 30 - true if we are navigationg reliant on wind relative measurements
 bool cs_rng_kin_consistent      # 31 - true when the range finder kinematic consistency check is passing
 bool cs_fake_pos                # 32 - true when fake position measurements are being fused
+bool cs_gravity_vector          # 33 - true when gravity vector measurements are being fused
 
 # fault status
 uint32 fault_status_changes   # number of filter fault status (fs) changes
@@ -75,3 +76,4 @@ bool reject_sideslip                      #  9 - true if the synthetic sideslip 
 bool reject_hagl                          # 10 - true if the height above ground observation has been rejected
 bool reject_optflow_x                     # 11 - true if the X optical flow observation has been rejected
 bool reject_optflow_y                     # 12 - true if the Y optical flow observation has been rejected
+bool reject_gravity                       # 13 - true if the gravity observation has been rejected

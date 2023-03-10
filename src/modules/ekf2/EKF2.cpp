@@ -122,6 +122,8 @@ EKF2::EKF2(bool multi_mode, const px4::wq_config_t &config, bool replay_mode):
 	_param_ekf2_rng_k_gate(_params->range_kin_consistency_gate),
 	_param_ekf2_evv_gate(_params->ev_vel_innov_gate),
 	_param_ekf2_evp_gate(_params->ev_pos_innov_gate),
+    _param_ekf2_fuse_grav(_params->fuse_gravity),
+    _param_ekf2_grav_noise(_params->gravity_noise),
 	_param_ekf2_of_n_min(_params->flow_noise),
 	_param_ekf2_of_n_max(_params->flow_noise_qual_min),
 	_param_ekf2_of_qmin(_params->flow_qual_min),
@@ -917,6 +919,7 @@ void EKF2::PublishInnovations(const hrt_abstime &timestamp)
 	_ekf.getBetaInnov(innovations.beta);
 	_ekf.getHaglInnov(innovations.hagl);
 	_ekf.getHaglRateInnov(innovations.hagl_rate);
+    _ekf.getGravityInnov(innovations.gravity);
 	// Not yet supported
 	innovations.aux_vvel = NAN;
 
@@ -959,6 +962,7 @@ void EKF2::PublishInnovationTestRatios(const hrt_abstime &timestamp)
 	_ekf.getBetaInnovRatio(test_ratios.beta);
 	_ekf.getHaglInnovRatio(test_ratios.hagl);
 	_ekf.getHaglRateInnovRatio(test_ratios.hagl_rate);
+    _ekf.getGravityInnovRatio(test_ratios.gravity);
 	// Not yet supported
 	test_ratios.aux_vvel = NAN;
 
@@ -984,6 +988,7 @@ void EKF2::PublishInnovationVariances(const hrt_abstime &timestamp)
 	_ekf.getBetaInnovVar(variances.beta);
 	_ekf.getHaglInnovVar(variances.hagl);
 	_ekf.getHaglRateInnovVar(variances.hagl_rate);
+    _ekf.getGravityInnovVar(variances.gravity);
 	// Not yet supported
 	variances.aux_vvel = NAN;
 
@@ -1403,6 +1408,7 @@ void EKF2::PublishStatusFlags(const hrt_abstime &timestamp)
 		status_flags.cs_wind_dead_reckoning     = _ekf.control_status_flags().wind_dead_reckoning;
 		status_flags.cs_rng_kin_consistent      = _ekf.control_status_flags().rng_kin_consistent;
 		status_flags.cs_fake_pos                = _ekf.control_status_flags().fake_pos;
+        status_flags.cs_gravity_vector          = _ekf.control_status_flags().gravity_vector;
 
 		status_flags.fault_status_changes     = _filter_fault_status_changes;
 		status_flags.fs_bad_mag_x             = _ekf.fault_status_flags().bad_mag_x;
@@ -1438,6 +1444,7 @@ void EKF2::PublishStatusFlags(const hrt_abstime &timestamp)
 		status_flags.reject_hagl                     = _ekf.innov_check_fail_status_flags().reject_hagl;
 		status_flags.reject_optflow_x                = _ekf.innov_check_fail_status_flags().reject_optflow_X;
 		status_flags.reject_optflow_y                = _ekf.innov_check_fail_status_flags().reject_optflow_Y;
+        status_flags.reject_gravity                  = _ekf.innov_check_fail_status_flags().reject_gravity;
 
 		status_flags.timestamp = _replay_mode ? timestamp : hrt_absolute_time();
 		_estimator_status_flags_pub.publish(status_flags);

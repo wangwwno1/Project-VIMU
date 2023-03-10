@@ -183,6 +183,7 @@ void Ekf::controlFusionModes()
 	controlBetaFusion();
 	controlDragFusion();
 	controlHeightFusion();
+    controlGravityFusion();
 
 	// Additional data odoemtery data from an external estimator can be fused.
 	controlExternalVisionFusion();

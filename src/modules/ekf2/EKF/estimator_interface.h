@@ -314,6 +314,7 @@ protected:
 	extVisionSample _ev_sample_delayed{};
 	extVisionSample _ev_sample_delayed_prev{};
 	dragSample _drag_down_sampled{};	// down sampled drag specific force data (filter prediction rate -> observation rate)
+    imuSample  _gravity_down_sampled{}; // down sampled gravity force data (filter prediction rate -> observation rate)
 
 	RangeFinderConsistencyCheck _rng_consistency_check;
 
@@ -359,6 +360,7 @@ protected:
 	float _hagl_test_ratio{};		// height above terrain measurement innovation consistency check ratio
 	float _beta_test_ratio{};		// sideslip innovation consistency check ratio
 	Vector2f _drag_test_ratio{};		// drag innovation consistency check ratio
+    Vector3f _grav_test_ratio{};        // gravity innovation consistency check ratio
 	innovation_fault_status_u _innov_check_fail_status{};
 
 	bool _deadreckon_time_exceeded{true};	// true if the horizontal nav solution has been deadreckoning for too long and is invalid
@@ -385,6 +387,7 @@ protected:
 	RingBuffer<extVisionSample> *_ext_vision_buffer{nullptr};
 	RingBuffer<dragSample> *_drag_buffer{nullptr};
 	RingBuffer<auxVelSample> *_auxvel_buffer{nullptr};
+    RingBuffer<imuSample> *_gravity_buffer{nullptr};
 
 	// timestamps of latest in buffer saved measurement in microseconds
 	uint64_t _time_last_imu{0};
@@ -424,6 +427,7 @@ protected:
 private:
 
 	inline void setDragData(const imuSample &imu);
+    inline void setGravityData(const imuSample &imu);
 
 	void printBufferAllocationFailed(const char *buffer_name);
 
@@ -434,5 +438,8 @@ private:
 	// Used by the multi-rotor specific drag force fusion
 	uint8_t _drag_sample_count{0};	// number of drag specific force samples assumulated at the filter prediction rate
 	float _drag_sample_time_dt{0.0f};	// time integral across all samples used to form _drag_down_sampled (sec)
+
+    // Used by the gravity observation
+    uint8_t _gravity_sample_count{0};	// number of accelerometer samples accumulated at the filter prediction rate
 };
 #endif // !EKF_ESTIMATOR_INTERFACE_H
