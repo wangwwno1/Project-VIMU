@@ -34,7 +34,6 @@
 px4_add_library(drivers_accelerometer
 	PX4Accelerometer.cpp
 	PX4Accelerometer.hpp
-    accel_attack_simulation.cpp
     accel_validation.cpp
 )
 target_compile_options(drivers_accelerometer PRIVATE ${MAX_CUSTOM_OPT_LEVEL})

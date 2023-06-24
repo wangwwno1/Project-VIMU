@@ -17,7 +17,7 @@ void PX4Accelerometer::updateReference(const hrt_abstime &timestamp_sample) {
 
 void PX4Accelerometer::validateAccel(sensor_accel_s &accel) {
     // Update until the reference is catch up accel
-    if (_curr_ref_accel.timestamp_sample == 0 || hrt_elapsed_time(&_curr_ref_accel.timestamp_sample) >= 20_ms) {
+    if (_curr_ref_accel.timestamp_sample == 0 || hrt_elapsed_time(&_curr_ref_accel.timestamp_sample) >= 20000) {
         return;
     }
 
@@ -26,24 +26,15 @@ void PX4Accelerometer::validateAccel(sensor_accel_s &accel) {
     error_residuals(1) = accel.y - _curr_ref_accel.y;
     error_residuals(2) = accel.z - _curr_ref_accel.z;
 
-    const float inv_acc_noise = 1.f / fmaxf(_param_iv_acc_noise.get(), 0.01f);
-    const Vector3f error_ratio = error_residuals * inv_acc_noise;
+    const Vector3f error_ratio = error_residuals * _inv_acc_noise;
     _accel_validator.validate(error_ratio);
 
-    if (attack_enabled(sensor_attack::ATK_MASK_ACCEL, accel.timestamp_sample)
-        && _param_iv_delay_mask.get() & sensor_attack::ATK_MASK_ACCEL
-        && _param_iv_ttd_delay_ms.get() > 0) {
-        // Use delay for precise Time to Detection
-        if (hrt_elapsed_time(&_attack_timestamp) >= (hrt_abstime) (_param_iv_ttd_delay_ms.get() * 1000)) {
-            // Declare accel failure immediately by add error count
-            accel.error_count = math::max(accel.error_count + NORETURN_ERRCOUNT, NORETURN_ERRCOUNT + 1U);
-        }
-    } else if (_accel_validator.test_ratio() >= 1.f) {
+    if (_accel_validator.test_ratio() >= 1.f) {
         // Declare accel failure immediately by add error count
         accel.error_count = math::max(accel.error_count + NORETURN_ERRCOUNT, NORETURN_ERRCOUNT + 1U);
     }
 
-    if (_param_iv_debug_log.get()) {
+    if (_enable_debug_log != 0) {
         // Record error ratio and test ratio for debug and post-mortem analysis
         sensor_accel_errors_s accel_error{};
 
