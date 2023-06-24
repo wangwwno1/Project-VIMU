@@ -17,7 +17,7 @@ void PX4Gyroscope::updateReference(const hrt_abstime &timestamp_sample) {
 
 void PX4Gyroscope::validateGyro(sensor_gyro_s &gyro) {
     // Update until the reference is catch up accel
-    if (_curr_ref_gyro.timestamp_sample == 0 || hrt_elapsed_time(&_curr_ref_gyro.timestamp_sample) >= 20_ms) {
+    if (_curr_ref_gyro.timestamp_sample == 0 || hrt_elapsed_time(&_curr_ref_gyro.timestamp_sample) >= 20000) {
         return;
     }
 
@@ -32,8 +32,7 @@ void PX4Gyroscope::validateGyro(sensor_gyro_s &gyro) {
     error_residuals(1) = gyro.y - _curr_ref_gyro.y;
     error_residuals(2) = gyro.z - _curr_ref_gyro.z;
 
-    const float inv_gyr_noise = 1.f / fmaxf(_param_iv_gyr_noise.get(), 0.01f);
-    const Vector3f error_ratio = error_residuals * inv_gyr_noise;
+    const Vector3f error_ratio = error_residuals * _inv_gyro_noise;
     _gyro_validator.validate(error_ratio);
 
     if (attack_enabled(sensor_attack::ATK_MASK_GYRO, gyro.timestamp_sample)
@@ -49,7 +48,7 @@ void PX4Gyroscope::validateGyro(sensor_gyro_s &gyro) {
         gyro.error_count = math::max(gyro.error_count + NORETURN_ERRCOUNT, NORETURN_ERRCOUNT + 1U);
     }
 
-    if (_param_iv_debug_log.get()) {
+    if (_enable_debug_log != 0) {
         // Record error ratio and test ratio for debug and post-mortem analysis
         sensor_gyro_errors_s gyro_error{};
 

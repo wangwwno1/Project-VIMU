@@ -53,18 +53,22 @@ static constexpr int32_t sum(const int16_t samples[], uint8_t len)
 PX4Gyroscope::PX4Gyroscope(uint32_t device_id, enum Rotation rotation) :
     ModuleParams(nullptr),
 	_device_id{device_id},
-	_rotation{rotation},
-    _param_iv_gyr_csum_h(_gyro_validator_params.cusum_params.control_limit),
-    _param_iv_gyr_mshift(_gyro_validator_params.cusum_params.mean_shift),
-    _param_iv_gyr_ema_h(_gyro_validator_params.ema_params.control_limit),
-    _param_iv_gyr_alpha(_gyro_validator_params.ema_params.alpha),
-    _param_iv_gyr_ema_cap(_gyro_validator_params.ema_params.cap)
+	_rotation{rotation}
 {
 	// advertise immediately to keep instance numbering in sync
 	_sensor_pub.advertise();
     _sensor_gyro_errors_pub.advertise();
 
 	param_get(param_find("IMU_GYRO_RATEMAX"), &_imu_gyro_rate_max);
+    param_get(param_find("IV_DEBUG_LOG"), &_enable_debug_log);
+    param_get(param_find("IV_GYR_NOISE"), &_gyro_noise);
+    param_get(param_find("IV_GYR_CSUM_H"), &_gyro_validator_params.cusum_params.control_limit);
+    param_get(param_find("IV_GYR_MSHIFT"), &_gyro_validator_params.cusum_params.mean_shift);
+    param_get(param_find("IV_GYR_EMA_H"), &_gyro_validator_params.ema_params.control_limit);
+    param_get(param_find("IV_GYR_ALPHA"), &_gyro_validator_params.ema_params.alpha);
+    param_get(param_find("IV_GYR_EMA_CAP"), &_gyro_validator_params.ema_params.cap);
+
+    _inv_gyro_noise = 1.f / fmaxf(_gyro_noise, 0.01f);
 }
 
 PX4Gyroscope::~PX4Gyroscope()

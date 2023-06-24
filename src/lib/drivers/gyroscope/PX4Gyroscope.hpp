@@ -114,6 +114,9 @@ private:
     GyroValidator               _gyro_validator{&_gyro_validator_params};
     sensor_gyro_s               _curr_ref_gyro{};
     sensor_gyro_s               _next_ref_gyro{};
+    float           _gyro_noise{1.f};
+    float           _inv_gyro_noise{1.f};
+    int32_t         _enable_debug_log{0};
 
     int  _attack_flag_prev{0};
     hrt_abstime _attack_timestamp{0};
@@ -129,12 +132,6 @@ private:
             (ParamInt<px4::params::IV_DEBUG_LOG>) _param_iv_debug_log,
             (ParamInt<px4::params::IV_DELAY_MASK>) _param_iv_delay_mask,
             (ParamInt<px4::params::IV_TTD_DELAY_MS>) _param_iv_ttd_delay_ms,
-            (ParamFloat<px4::params::IV_GYR_NOISE>) _param_iv_gyr_noise,
-            (ParamExtFloat <px4::params::IV_GYR_CSUM_H>) _param_iv_gyr_csum_h,
-            (ParamExtFloat <px4::params::IV_GYR_MSHIFT>) _param_iv_gyr_mshift,
-            (ParamExtFloat<px4::params::IV_GYR_EMA_H>) _param_iv_gyr_ema_h,
-            (ParamExtFloat<px4::params::IV_GYR_ALPHA>) _param_iv_gyr_alpha,
-            (ParamExtFloat<px4::params::IV_GYR_EMA_CAP>) _param_iv_gyr_ema_cap,
             (ParamFloat <px4::params::IV_GYR_TWIN_H>) _param_iv_gyr_twin_h,
             (ParamInt <px4::params::IV_GYR_RST_CNT>) _param_iv_gyr_rst_cnt,
             (ParamInt <px4::params::IV_GYR_CD_CNT>) _param_iv_gyr_cd_cnt

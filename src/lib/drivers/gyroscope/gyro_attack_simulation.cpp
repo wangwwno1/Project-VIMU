@@ -52,15 +52,15 @@ float PX4Gyroscope::getMaxDeviation() const {
     // Which stealthy?
     float max_deviation = NAN;
     const uint8_t type_mask = _param_atk_stealth_type.get();
-    if (type_mask & sensor_attack::DET_CUSUM && (_param_iv_gyr_mshift.get() > 0.f)) {
-        max_deviation = _param_iv_gyr_mshift.get();
+    if (type_mask & sensor_attack::DET_CUSUM && (_gyro_validator_params.cusum_params.mean_shift > 0.f)) {
+        max_deviation = _gyro_validator_params.cusum_params.mean_shift;
     }
 
-    if (type_mask & sensor_attack::DET_EWMA && (_param_iv_gyr_ema_h.get() > 0.f)) {
+    if (type_mask & sensor_attack::DET_EWMA && (_gyro_validator_params.ema_params.control_limit > 0.f)) {
         if (PX4_ISFINITE(max_deviation)) {
-            max_deviation = fminf(max_deviation, _param_iv_gyr_ema_h.get());
+            max_deviation = fminf(max_deviation, _gyro_validator_params.ema_params.control_limit);
         } else {
-            max_deviation = _param_iv_gyr_ema_h.get();
+            max_deviation = _gyro_validator_params.ema_params.control_limit;
         }
     }
 
@@ -72,5 +72,5 @@ float PX4Gyroscope::getMaxDeviation() const {
         }
     }
 
-    return 0.99f * max_deviation * _param_iv_gyr_noise.get();
+    return 0.99f * max_deviation * _gyro_noise;
 }
