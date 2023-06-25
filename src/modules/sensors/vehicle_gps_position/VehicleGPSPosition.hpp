@@ -60,6 +60,7 @@ using namespace time_literals;
 using fault_detector::GPSPosValidator;
 using fault_detector::GPSVelValidator;
 using matrix::Quatf;
+using matrix::Vector3f;
 
 namespace sensors
 {
