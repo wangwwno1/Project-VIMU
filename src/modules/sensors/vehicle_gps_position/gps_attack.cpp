@@ -11,29 +11,33 @@ namespace sensors
                 _attack_timestamp != 0 && hrt_absolute_time() >= _attack_timestamp;
     }
 
-    void VehicleGPSPosition::ConductVelocitySpoofing(sensor_gps_s &gps_position)
-    {
+    void VehicleGPSPosition::ConductVelocitySpoofing(sensor_gps_s &gps_position) {
         if (attack_enabled(sensor_attack::ATK_GPS_VEL)) {
-            if (!_vel_deviation) {
+            if (_vel_deviation.load() == nullptr) {
                 PX4_INFO("Initiate GPS Velocity Spoofing Attack");
-                _vel_deviation.reset(sensor_attack::CreateAttackInstance(_param_atk_gps_v_cls.get(), &_vel_atk_params));
+                sensor_attack::Deviation *inst = sensor_attack::CreateAttackInstance(_param_atk_gps_v_cls.get(), &_vel_atk_params);
+                if (inst) {
+                    const float time_to_max_deviation_s = inst->time_to_max_deviation();
+                    if (PX4_ISFINITE(time_to_max_deviation_s)) {
+                        PX4_INFO("Time to Max Deviation is: %.3f sec", (double)time_to_max_deviation_s);
+                    } else {
+                        PX4_WARN("INFINITE time to max deviation, please check attack parameter setting!");
+                    }
 
-                const float time_to_max_deviation_s = (*_vel_deviation).time_to_max_deviation();
-                if (PX4_ISFINITE(time_to_max_deviation_s)) {
-                    PX4_INFO("Time to Max Deviation is: %.3f sec", (double)time_to_max_deviation_s);
+                    _vel_deviation.store(inst);
                 } else {
-                    PX4_WARN("INFINITE time to max deviation, please check attack parameter setting!");
+                    PX4_WARN("Failed to initiate GPS Position Spoofing Attack!");
                 }
-
             }
 
-            if (_vel_deviation) {
-                const Vector3f deviation = (*_vel_deviation).calculate_deviation(gps_position.timestamp);
+            if (_vel_deviation.load() != nullptr) {
+                const Vector3f deviation = _vel_deviation.load()->calculate_deviation(gps_position.timestamp);
                 sensor_attack::gps_velocity_spoofing(gps_position, deviation);
             }
 
-        } else if (_vel_deviation) {
-            _vel_deviation.reset();
+        } else if (_vel_deviation.load()) {
+            delete _vel_deviation.load();
+            _vel_deviation.store(nullptr);
             PX4_INFO("GPS Velocity Spoofing Stopped");
         }
     }
@@ -99,8 +103,8 @@ namespace sensors
             }
         }
 
-        if (attack_applied && _vel_deviation) {
-            _vel_deviation.reset();
+        if (attack_applied && _vel_deviation.load() != nullptr && _vel_deviation.load()->get_start_time() > 0) {
+            _vel_deviation.load()->reset();
             PX4_INFO("GPS Velocity Spoofing - switch to stealthy attack");
         }
 
@@ -109,29 +113,32 @@ namespace sensors
 
     void VehicleGPSPosition::ConductPositionSpoofing(sensor_gps_s &gps_position) {
         if (attack_enabled(sensor_attack::ATK_GPS_POS)) {
-            if (!_pos_deviation) {
+            if (_pos_deviation.load() == nullptr) {
                 PX4_INFO("Initiate GPS Position Spoofing Attack");
-                _pos_deviation.reset(sensor_attack::CreateAttackInstance(_param_atk_gps_p_cls.get(), &_pos_atk_params));
-
-                const float time_to_max_deviation_s = (*_pos_deviation).time_to_max_deviation();
-                if (PX4_ISFINITE(time_to_max_deviation_s)) {
-                    PX4_INFO("Time to Max Deviation is: %.3f sec", (double)time_to_max_deviation_s);
+                sensor_attack::Deviation *inst = sensor_attack::CreateAttackInstance(_param_atk_gps_p_cls.get(), &_pos_atk_params);
+                if (inst) {
+                    const float time_to_max_deviation_s = inst->time_to_max_deviation();
+                    if (PX4_ISFINITE(time_to_max_deviation_s)) {
+                        PX4_INFO("Time to Max Deviation is: %.3f sec", (double)time_to_max_deviation_s);
+                    } else {
+                        PX4_WARN("INFINITE time to max deviation, please check attack parameter setting!");
+                    }
+                    _pos_deviation.store(inst);
                 } else {
-                    PX4_WARN("INFINITE time to max deviation, please check attack parameter setting!");
+                    PX4_WARN("Failed to initiate GPS Position Spoofing Attack!");
                 }
-
             }
 
-            if (_pos_deviation) {
-                const Vector3f deviation = (*_pos_deviation).calculate_deviation(gps_position.timestamp);
+            if (_pos_deviation.load() != nullptr) {
+                const Vector3f deviation = _pos_deviation.load()->calculate_deviation(gps_position.timestamp);
                 sensor_attack::gps_position_spoofing(gps_position, deviation);
             }
 
-        } else if (_pos_deviation) {
-            _pos_deviation.reset();
+        } else if (_pos_deviation.load()) {
+            delete _pos_deviation.load();
+            _pos_deviation.store(nullptr);
             PX4_INFO("GPS Position Spoofing Stopped");
         }
-
     }
 
     bool VehicleGPSPosition::ConductPositionSpoofing(sensor_gps_s &gps_position, const Vector3f &ref_pos_board)
@@ -204,13 +211,12 @@ namespace sensors
             }
         }
 
-        if (attack_applied && _pos_deviation) {
-            _pos_deviation.reset();
+        if (attack_applied && _pos_deviation.load() != nullptr && _pos_deviation.load()->get_start_time() > 0) {
+            _pos_deviation.load()->reset();
             PX4_INFO("GPS Position Spoofing - switch to stealthy attack");
         }
 
         return attack_applied;
-
     }
 
 }  // sensors

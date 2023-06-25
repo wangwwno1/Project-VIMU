@@ -54,7 +54,7 @@ namespace fault_detector {
         }
 
         const Type test_ratio() const {
-            return math::max(_cusum_detector.test_ratio(), _ema_detector.test_ratio());
+            return fmaxf(_cusum_detector.test_ratio(), _ema_detector.test_ratio());
         }
 
         const VectorN test_ratios() const {

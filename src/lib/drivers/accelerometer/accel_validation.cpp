@@ -31,7 +31,7 @@ void PX4Accelerometer::validateAccel(sensor_accel_s &accel) {
 
     if (_accel_validator.test_ratio() >= 1.f) {
         // Declare accel failure immediately by add error count
-        accel.error_count = math::max(accel.error_count + NORETURN_ERRCOUNT, NORETURN_ERRCOUNT + 1U);
+        accel.error_count = fmaxf(accel.error_count + NORETURN_ERRCOUNT, NORETURN_ERRCOUNT + 1U);
     }
 
     if (_enable_debug_log != 0) {

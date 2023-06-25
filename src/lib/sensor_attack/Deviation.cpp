@@ -25,9 +25,9 @@ namespace sensor_attack {
         const float heading = math::radians(_params->heading_deg);
         const float pitch = math::radians(_params->pitch_deg);
         const Vector3f deviation_vector{
-                deviation_length * cos(heading) * cos(pitch),
-                deviation_length * sin(heading) * cos(pitch),
-                deviation_length * sin(pitch)
+                deviation_length * cosf(heading) * cosf(pitch),
+                deviation_length * sinf(heading) * cosf(pitch),
+                deviation_length * sinf(pitch)
         };
 
         return deviation_vector;
@@ -55,12 +55,12 @@ namespace sensor_attack {
         if (PX4_ISFINITE(time_to_max_dev_s)) {
             delta_time = math::min(delta_time, time_to_max_dev_s);
         }
-        return _params->initial_value * pow(_params->rate_of_rise, delta_time);
+        return _params->initial_value * powf(_params->rate_of_rise, delta_time);
     }
 
     float ExponentialDeviation::time_to_max_deviation() {
         if ((_params->rate_of_rise > 1.f) && (_params->max_deviation > 0.f) && (_params->initial_value > 0.f)) {
-            return math::max(log(_params->max_deviation / _params->initial_value) / log(_params->rate_of_rise), 0.f);
+            return math::max(logf(_params->max_deviation / _params->initial_value) / logf(_params->rate_of_rise), 0.f);
         } else {
             return NAN;
         }

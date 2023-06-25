@@ -328,7 +328,7 @@ void VirtualIMU::ParameterUpdate(bool force) {
             _rate_ctrl_interval_us = 1e6f / rate_control_rate_hz;
 
             if (_phys_model_params.motor_time_constant > 0.f) {
-                _actuator_state_lpf.setAlpha(1.f - std::exp(- _rate_ctrl_interval / _phys_model_params.motor_time_constant));
+                _actuator_state_lpf.setAlpha(1.f - expf(- _rate_ctrl_interval / _phys_model_params.motor_time_constant));
             } else {
                 _actuator_state_lpf.setAlpha(1.f);
             }

@@ -41,11 +41,11 @@ void PX4Gyroscope::validateGyro(sensor_gyro_s &gyro) {
         // Use delay for precise Time to Detection
         if (hrt_elapsed_time(&_attack_timestamp) >= (hrt_abstime) (_param_iv_ttd_delay_ms.get() * 1000)) {
             // Declare gyro failure immediately by add error count
-            gyro.error_count = math::max(gyro.error_count + NORETURN_ERRCOUNT, NORETURN_ERRCOUNT + 1U);
+            gyro.error_count = fmaxf(gyro.error_count + NORETURN_ERRCOUNT, NORETURN_ERRCOUNT + 1U);
         }
     } else if (_gyro_validator.test_ratio() >= 1.f) {
         // Declare gyro failure immediately by add error count
-        gyro.error_count = math::max(gyro.error_count + NORETURN_ERRCOUNT, NORETURN_ERRCOUNT + 1U);
+        gyro.error_count = fmaxf(gyro.error_count + NORETURN_ERRCOUNT, NORETURN_ERRCOUNT + 1U);
     }
 
     if (_enable_debug_log != 0) {
