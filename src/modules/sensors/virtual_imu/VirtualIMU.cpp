@@ -251,7 +251,7 @@ void VirtualIMU::UpdateIMUData() {
 
     // Check imu status & bias, fuse healthy gyro state.
     for (uint8_t uorb_idx = 0; uorb_idx < MAX_SENSOR_COUNT; ++uorb_idx) {
-        vehicle_imu_s imu;
+        vehicle_imu_s imu{};
         if (_vehicle_imu_sub[uorb_idx].update(&imu)) {
             // We need to call the subscription once, so it won't take previously unreceived data as an update.
             // Only fuse sample that has passed validation
