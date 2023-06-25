@@ -163,9 +163,9 @@ private:
 	GpsBlending _gps_blending;
 
     sensor_attack::DeviationParams                  _pos_atk_params{};
-    static px4::atomic<sensor_attack::Deviation *>  _pos_deviation {nullptr};
+    px4::atomic<sensor_attack::Deviation *>  _pos_deviation {nullptr};
     sensor_attack::DeviationParams                  _vel_atk_params{};
-    static px4::atomic<sensor_attack::Deviation *>  _vel_deviation {nullptr};
+    px4::atomic<sensor_attack::Deviation *>  _vel_deviation {nullptr};
 
 	DEFINE_PARAMETERS(
 		(ParamInt<px4::params::SENS_GPS_MASK>)          _param_sens_gps_mask,

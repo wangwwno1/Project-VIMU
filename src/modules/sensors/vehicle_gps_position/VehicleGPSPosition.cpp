@@ -96,6 +96,16 @@ void VehicleGPSPosition::Stop()
 	for (auto &sub : _sensor_gps_sub) {
 		sub.unregisterCallback();
 	}
+
+	if (_pos_deviation.load()) {
+		delete _pos_deviation.load();
+		_pos_deviation.store(nullptr);
+	}
+
+	if (_vel_deviation.load()) {
+		delete _vel_deviation.load();
+		_vel_deviation.store(nullptr);
+	}
 }
 
 void VehicleGPSPosition::ParametersUpdate(bool force)
