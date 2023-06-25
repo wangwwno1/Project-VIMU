@@ -56,7 +56,6 @@
 #include <uORB/topics/sensors_status.h>
 #include <uORB/topics/vehicle_air_data.h>
 
-#include <lib/sensor_attack/sensor_attack.hpp>
 #include <lib/fault_detector/fault_detector.hpp>
 #include <modules/ekf2/EKF/RingBuffer.h>
 #include <uORB/topics/estimator_states.h>

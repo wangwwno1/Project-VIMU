@@ -42,7 +42,6 @@ target_link_libraries(vehicle_gps_position
 	PRIVATE
 		geo
 		px4_work_queue
-		sensor_attack
         fault_detector
 )
 
