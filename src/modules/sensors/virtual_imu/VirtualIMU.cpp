@@ -409,10 +409,10 @@ void VirtualIMU::PublishReferenceIMU() {
         (now > _last_integrator_reset)) {
         // Publish when vehicle in air and is ready, fill entries with fake value
         // Add timestamp check to guard against double publish in SITL
-        Vector3f delta_velocity;
-        Vector3f delta_angle;
-        uint16_t delta_angle_dt;
-        uint16_t delta_velocity_dt;
+        Vector3f delta_velocity{};
+        Vector3f delta_angle{};
+        uint16_t delta_angle_dt{};
+        uint16_t delta_velocity_dt{};
 
         // Even without publish, we still reset integrator
         // because we need to synchronize the reset timestamp with the IMU timestamp
@@ -458,9 +458,9 @@ bool VirtualIMU::CheckAndSyncTimestamp(const uint8_t i, const hrt_abstime &imu_t
             PX4_INFO("%" PRIu64 ": %d - Initial sync of vimu sample timestamp %" PRIu64,
                      hrt_absolute_time(), i, imu_timestamp);
         } else {
-            // Do synchronization again
-            PX4_WARN("%" PRIu64 ": %d - slipping detected, re-sync vimu sample timestamp: (%" PRIu64 " -> %" PRIu64 ")" ,
-                     hrt_absolute_time(), i, _last_integrator_reset, imu_timestamp);
+            // // Do synchronization again
+            // PX4_WARN("%" PRIu64 ": %d - slipping detected, re-sync vimu sample timestamp: (%" PRIu64 " -> %" PRIu64 ")" ,
+            //          hrt_absolute_time(), i, _last_integrator_reset, imu_timestamp);
         }
         _gyro_integrator.reset();
         _accel_integrator.reset();
