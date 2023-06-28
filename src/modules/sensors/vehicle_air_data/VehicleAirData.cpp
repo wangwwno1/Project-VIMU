@@ -46,9 +46,7 @@ static constexpr uint32_t SENSOR_TIMEOUT{300_ms};
 
 VehicleAirData::VehicleAirData() :
 	ModuleParams(nullptr),
-	ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::nav_and_controllers),
-    _param_iv_baro_csum_h(_baro_hgt_params.control_limit),
-    _param_iv_baro_mshift(_baro_hgt_params.mean_shift)
+	ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::nav_and_controllers)
 {
 	_vehicle_air_data_pub.advertise();
 
@@ -75,20 +73,6 @@ void VehicleAirData::Stop()
 	for (auto &sub : _sensor_sub) {
 		sub.unregisterCallback();
 	}
-
-    _vehicle_reference_states_sub.unregisterCallback();
-
-    for (auto &buffer : _ref_baro_buffer) {
-        if (buffer) {
-            delete buffer;
-        }
-    }
-
-    for (auto &validator : _baro_validators) {
-        if (validator) {
-            delete validator;
-        }
-    }
 }
 
 void VehicleAirData::AirTemperatureUpdate()
@@ -155,8 +139,7 @@ void VehicleAirData::Run()
 
 	AirTemperatureUpdate();
 
-    bool updated[MAX_SENSOR_COUNT] {};
-    bool any_sensor_updated = false;
+	bool updated[MAX_SENSOR_COUNT] {};
 
 	for (int uorb_index = 0; uorb_index < MAX_SENSOR_COUNT; uorb_index++) {
 
@@ -207,12 +190,6 @@ void VehicleAirData::Run()
 					_calibration[uorb_index].SensorCorrectionsUpdate();
 					const float pressure_corrected = _calibration[uorb_index].Correct(report.pressure);
 
-                    // if test ratio failed, increase error_count
-                    // This would force voter switch to other instance
-                    if (_baro_validators[uorb_index] && (_baro_validators[uorb_index]->test_ratio() >= 1.f)) {
-                        report.error_count += 10001;
-                    }
-
 					float data_array[3] {pressure_corrected, report.temperature, PressureToAltitude(pressure_corrected)};
 					_voter.put(uorb_index, report.timestamp, data_array, report.error_count, _priority[uorb_index]);
 
@@ -224,7 +201,6 @@ void VehicleAirData::Run()
 					_last_data[uorb_index] = pressure_corrected;
 
 					updated[uorb_index] = true;
-                    any_sensor_updated = true;
 				}
 			}
 		}
@@ -249,11 +225,8 @@ void VehicleAirData::Run()
 
 			_selected_sensor_sub_index = best_index;
 			_sensor_sub[_selected_sensor_sub_index].registerCallback();
-            _status_updated = _ref_baro_delayed.time_us != 0;  // Update error status because primary instance has been changed.
 		}
 	}
-
-    UpdateReferenceState();
 
 	// Publish
 	if (_param_sens_baro_rate.get() > 0) {
@@ -268,24 +241,17 @@ void VehicleAirData::Run()
 
 					bool publish = (time_now_us <= timestamp_sample + 1_s);
 
-                    if (publish) {
-                        // Check data if we have recent barometer data
-                        ValidateBaroData(instance, timestamp_sample);
-                        publish = (_selected_sensor_sub_index >= 0) && (instance == _selected_sensor_sub_index);
-                    }
+					if (publish) {
+						publish = (_selected_sensor_sub_index >= 0)
+							  && (instance == _selected_sensor_sub_index)
+							  && (_voter.get_sensor_state(_selected_sensor_sub_index) == DataValidator::ERROR_FLAG_NO_ERROR);
+					}
 
-                    const bool healthy = (!_forced_using_soft_baro &&
-                                          (_voter.get_sensor_state(_selected_sensor_sub_index) == DataValidator::ERROR_FLAG_NO_ERROR) &&
-                                          ((_baro_validators[instance] == nullptr) || (_baro_validators[instance]->test_ratio() < 1.f)));
+					if (publish) {
+						const float pressure_pa = _data_sum[instance] / _data_sum_count[instance];
+						const float temperature = _temperature_sum[instance] / _data_sum_count[instance];
 
-					if (publish && healthy) {
-                        float pressure_pa = _data_sum[instance] / _data_sum_count[instance];
-                        const float temperature = _temperature_sum[instance] / _data_sum_count[instance];
-
-                        float altitude = PressureToAltitude(pressure_pa, temperature);
-
-                        uint32_t device_id = _calibration[instance].device_id();
-                        uint8_t calibration_count = _calibration[instance].calibration_count();
+						float altitude = PressureToAltitude(pressure_pa, temperature);
 
 						// calculate air density
 						float air_density = pressure_pa / (CONSTANTS_AIR_GAS_CONST * (_air_temperature_celsius -
@@ -294,12 +260,12 @@ void VehicleAirData::Run()
 						// populate vehicle_air_data with and publish
 						vehicle_air_data_s out{};
 						out.timestamp_sample = timestamp_sample;
-						out.baro_device_id = device_id;
+						out.baro_device_id = _calibration[instance].device_id();
 						out.baro_alt_meter = altitude;
 						out.baro_temp_celcius = temperature;
 						out.baro_pressure_pa = pressure_pa;
 						out.rho = air_density;
-						out.calibration_count = calibration_count;
+						out.calibration_count = _calibration[instance].calibration_count();
 						out.timestamp = hrt_absolute_time();
 
 						_vehicle_air_data_pub.publish(out);
@@ -317,15 +283,14 @@ void VehicleAirData::Run()
 		}
 	}
 
-    if (!parameter_update) {
-        CheckFailover(time_now_us);
-    }
+	if (!parameter_update) {
+		CheckFailover(time_now_us);
+	}
 
-    if (any_sensor_updated) {
-        // reschedule timeout
-        UpdateStatus();
-        ScheduleDelayed(50_ms);
-    }
+	UpdateStatus();
+
+	// reschedule timeout
+	ScheduleDelayed(50_ms);
 
 	perf_end(_cycle_perf);
 }
@@ -354,22 +319,6 @@ float VehicleAirData::PressureToAltitude(float pressure_pa, float temperature) c
 	float altitude = (((powf((p / p1), (-(a * CONSTANTS_AIR_GAS_CONST) / CONSTANTS_ONE_G))) * T1) - T1) / a;
 
 	return altitude;
-}
-
-float VehicleAirData::AltitudeToPressure(float altitude, float temperature) const
-{
-    // calculate pressure using the invert of hypsometric equation
-    static constexpr float T1 = 15.f - CONSTANTS_ABSOLUTE_NULL_CELSIUS; // temperature at base height in Kelvin
-    static constexpr float a = -6.5f / 1000.f; // temperature gradient in degrees per metre
-
-    // current pressure at MSL in kPa (QNH in hPa)
-    const float p1 = _param_sens_baro_qnh.get() * 0.1f;
-
-    // measured pressure in kPa
-    float p_kpa = p1 * powf((a * altitude + T1) / T1, - CONSTANTS_ONE_G / (a * CONSTANTS_AIR_GAS_CONST));
-
-    // return pressure in Pa
-    return p_kpa * 1.e3f;
 }
 
 void VehicleAirData::CheckFailover(const hrt_abstime &time_now_us)
@@ -448,13 +397,10 @@ void VehicleAirData::UpdateStatus()
 			if (_calibration[sensor_index].device_id() != 0) {
 
 				_sensor_diff[sensor_index] = 0.95f * _sensor_diff[sensor_index] + 0.05f * (_last_data[sensor_index] - mean);
-                const bool healthy = (_voter.get_sensor_state(sensor_index) == DataValidator::ERROR_FLAG_NO_ERROR) &&
-                                     ((_baro_validators[sensor_index] == nullptr) ||
-                                      (_baro_validators[sensor_index]->test_ratio() < 1.f));
 
-                sensors_status.device_ids[sensor_index] = _calibration[sensor_index].device_id();
+				sensors_status.device_ids[sensor_index] = _calibration[sensor_index].device_id();
 				sensors_status.inconsistency[sensor_index] = _sensor_diff[sensor_index];
-				sensors_status.healthy[sensor_index] = healthy;
+				sensors_status.healthy[sensor_index] = (_voter.get_sensor_state(sensor_index) == DataValidator::ERROR_FLAG_NO_ERROR);
 				sensors_status.priority[sensor_index] = _voter.get_sensor_priority(sensor_index);
 				sensors_status.enabled[sensor_index] = _calibration[sensor_index].enabled();
 				sensors_status.external[sensor_index] = _calibration[sensor_index].external();
@@ -466,19 +412,6 @@ void VehicleAirData::UpdateStatus()
 
 		sensors_status.timestamp = hrt_absolute_time();
 		_sensors_status_baro_pub.publish(sensors_status);
-
-        if (_param_iv_debug_log.get() && (_status_updated || hrt_elapsed_time(&_baro_error_status.timestamp) >= 1_s)) {
-            // publish baro error status
-            _baro_error_status.device_id_primary = _calibration[_selected_sensor_sub_index].device_id();
-            for (int sensor_index = 0; sensor_index < MAX_SENSOR_COUNT; sensor_index++) {
-                _baro_error_status.device_ids[sensor_index] = _calibration[sensor_index].device_id();
-            }
-
-            _baro_error_status.timestamp = hrt_absolute_time();
-            _sensor_baro_error_pub.publish(_baro_error_status);
-
-            _status_updated = false;
-        }
 	}
 }
 

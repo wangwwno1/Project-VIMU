@@ -34,11 +34,9 @@
 px4_add_library(vehicle_air_data
 	VehicleAirData.cpp
 	VehicleAirData.hpp
-    air_data_validation.cpp
 )
 target_link_libraries(vehicle_air_data
 	PRIVATE
 		px4_work_queue
 		sensor_calibration
-        fault_detector
 )
