@@ -143,5 +143,64 @@ PARAM_DEFINE_FLOAT(VM_DRAG_FACTOR, 0.05f);
  */
 PARAM_DEFINE_FLOAT(VM_ANG_ACC_NOISE, 0.075f);
 
+/**
+ * X-axis length Scale used for motor position matrix
+ *
+ * @unit m
+ * @decimal 3
+ * @increment 0.001
+ * @group Vehicle Model
+ */
+PARAM_DEFINE_FLOAT(VM_LEN_SCALE_X, 1.0f);
+
+/**
+ * Y-axis length Scale used for motor position matrix
+ *
+ * @unit m
+ * @decimal 3
+ * @increment 0.001
+ * @group Vehicle Model
+ */
+PARAM_DEFINE_FLOAT(VM_LEN_SCALE_Y, 1.0f);
+
+/**
+ * Z-axis length Scale used for motor position matrix
+ *
+ * @unit m
+ * @decimal 3
+ * @increment 0.001
+ * @group Vehicle Model
+ */
+PARAM_DEFINE_FLOAT(VM_LEN_SCALE_Z, 1.0f);
+
+/**
+ * X-axis Center of Gravity Offset to Body Frame
+ *
+ * @unit m
+ * @decimal 3
+ * @increment 0.001
+ * @group Vehicle Model
+ */
+PARAM_DEFINE_FLOAT(VM_COG_OFF_X, 0.0f);
+
+/**
+ * Y-axis Center of Gravity Offset to Body Frame
+ *
+ * @unit m
+ * @decimal 3
+ * @increment 0.001
+ * @group Vehicle Model
+ */
+PARAM_DEFINE_FLOAT(VM_COG_OFF_Y, 0.0f);
+
+/**
+ * Z-axis Center of Gravity Offset to Body Frame
+ *
+ * @unit m
+ * @decimal 3
+ * @increment 0.001
+ * @group Vehicle Model
+ */
+PARAM_DEFINE_FLOAT(VM_COG_OFF_Z, 0.0f);
 
 

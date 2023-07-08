@@ -44,6 +44,7 @@
 #include <matrix/math.hpp>
 #include <lib/mathlib/mathlib.h>
 #include <lib/mathlib/math/filter/AlphaFilter.hpp>
+#include <lib/mathlib/math/WelfordMean.hpp>
 #include <lib/perf/perf_counter.h>
 
 #include <uORB/Publication.hpp>
@@ -83,12 +84,26 @@ using VectorThrust = matrix::Vector<float, noutputs>;
 //static const float flat_mat[3 * 4] = {-1,  1,  1,  -1,
 //                                      1, -1,  1,  -1,
 //                                      1,  1, -1,  -1};
-static const matrix::Matrix<float, 3, noutputs> QuadTorque((float[16]) { -1, +1, +1, -1,
-                                                                         +1, -1, +1, -1,
-                                                                         +1, +1, -1, -1});
-static const matrix::Matrix<float, 3, noutputs> QuadThrust((float[16]) {0, 0, 0, 0,
-                                                                        0, 0, 0, 0,
-                                                                        1, 1, 1, 1});
+// todo replace with ControlAllocator Parameter (CA_ROTOR*)
+//static const matrix::Matrix<float, 3, noutputs> QuadMotorPosition((float[16]) { -1, +1, +1, -1,
+//                                                                                +1, -1, +1, -1,
+//                                                                                 0,  0,  0,  0});
+static const matrix::Matrix<float, 3, noutputs> QuadMotorPosition((float[16]) { +0.5, -0.5, +0.5, -0.5,
+                                                                                +0.5, -0.5, -0.5, +0.5,
+                                                                                 0.0,  0.0,  0.0,  0.0});
+static const matrix::Matrix<float, 3, noutputs> QuadRotationAxis((float[16]) { -0, +0, +0, -0,
+                                                                               +0, -0, +0, -0,
+                                                                               +1, +1, -1, -1});;
+static const matrix::Matrix<float, 3, noutputs> QuadThrustAxis((float[16]) { 0,  0,  0,  0,
+                                                                             0,  0,  0,  0,
+                                                                            -1, -1, -1, -1});
+// The thrust axis of ZD550 is not vertical to the body frame, ~ 85 deg to the vertical
+// With deviated CoG, the yaw estimation could quickly go off
+// const ta_x = 0.06163
+// const ta_z = 0.9962
+//static const matrix::Matrix<float, 3, noutputs> QuadThrustAxis((float[16]) {-ta_x, +ta_x  -ta_x, +ta_x,
+//                                                                            -ta_x, +ta_x, +ta_x, -ta_x,
+//                                                                            -ta_z, -ta_z, -ta_z, -ta_z});
 
 class VirtualIMU : public ModuleParams, public px4::ScheduledWorkItem
 {
@@ -103,6 +118,8 @@ public:
 
     bool multi_init(int instance);
 
+    const Vector3f &getBodyAcceleration() const { return _control_acceleration + _external_accel - _accel_bias;}
+
     static constexpr uint8_t MAX_SENSOR_COUNT = 4;
 
 private:
@@ -112,17 +129,17 @@ private:
     void reset();
 
     void ParameterUpdate(bool force = false);
+    void UpdateIntegratorConfiguration();
 
     void UpdateCopterStatus();
     void UpdateIMUData();
     void UpdateAerodynamicWrench();
     void UpdateSensorBias();
+    void UpdateVirtualIMU(const hrt_abstime &now, bool force = false);
 
     void PublishAngularVelocityAndAcceleration();
     void PublishReferenceIMU();
     void PublishSensorReference();
-
-    bool CheckAndSyncTimestamp(const uint8_t i, const hrt_abstime &imu_timestamp);
 
     static constexpr float sq(float x) { return x * x; };
 
@@ -142,28 +159,34 @@ private:
 
     // Imu Integrators
     bool _interval_configured{false};
-    float _imu_integration_interval;
-    float _rate_ctrl_interval;
-    hrt_abstime _rate_ctrl_interval_us;
-    hrt_abstime _imu_integration_interval_us;
+    bool _update_integrator_config{false};
+    uint32_t _imu_integration_interval_us;
     hrt_abstime _last_integrator_reset{0};
     Integrator _accel_integrator{};
     IntegratorConing _gyro_integrator{};
 
+    hrt_abstime _last_publish{0};
+    hrt_abstime _publish_interval_min_us{0};
+    uint32_t _backup_schedule_timeout_us{20000};
+
+
     // Actuator timestamps and state
     hrt_abstime _last_update_us{0};
-    VectorThrust _current_actuator_setpoint;
+    VectorThrust _current_actuator_setpoint{};
     hrt_abstime _current_act_sp_timestamp{0};
-    VectorThrust _newest_actuator_setpoint;
-    hrt_abstime _newest_act_sp_timestamp{0};
     AlphaFilter<VectorThrust> _actuator_state_lpf{1.f};
+
+    unsigned _actuator_outputs_last_generation{0};
+    float _actuator_outputs_interval_us{NAN};
+    math::WelfordMean<float, 1> _actuator_outputs_interval_mean{};
 
     // External Wrench
     Vector3f _external_accel{0.f, 0.f, 0.f};
     Vector3f _external_angular_accel{0.f, 0.f, 0.f};
 
     // Sensor Bias
-    Vector3f _body_acceleration{0.f, 0.f, 0.f};
+    Vector3f _control_acceleration{0.f, 0.f, 0.f};
+    Vector3f _control_torque{0.f, 0.f, 0.f};
     Vector3f _accel_bias{};
 
     // (Copter) Physical Model Parameters
@@ -172,9 +195,8 @@ private:
         float Ct{4.00f};
         float Cd{0.05f};
         float motor_time_constant{0.005f};  // 5ms for jMAVSim default
-        Vector2f length{0.33f / (2.0f * sqrt(2.0f)), 0.33f / (2.0f * sqrt(2.0f))};  // 0.11667262
-        Vector3f torque_coeff{Ct * length(0), Ct * length(1), Cd};
-        Vector3f thrust_coeff{0.f, 0.f, -Ct / mass};
+        Vector3f length{1.f, 1.f, 1.f};  // 0.233345
+        Vector3f center_of_gravity{0.f, 0.f, 0.f};
     };
 
     CopterPhysModelParams _phys_model_params{};
@@ -214,7 +236,6 @@ private:
             (ParamInt<px4::params::IMU_INTEG_RATE>)         _param_imu_integ_rate,
             (ParamInt<px4::params::IMU_GYRO_RATEMAX>)       _param_imu_gyro_ratemax,
             (ParamExtFloat<px4::params::EKF2_GYR_NOISE>)    _param_ekf2_gyr_noise,
-            (ParamFloat<px4::params::EKF2_ACC_NOISE>)       _param_ekf2_acc_noise,
             (ParamExtFloat<px4::params::VM_MASS>)           _param_vm_mass,
             (ParamExtFloat<px4::params::VM_THR_FACTOR>)     _param_vm_thr_factor,
             (ParamExtFloat<px4::params::VM_MOTOR_TAU>)      _param_vm_motor_tau,
@@ -226,6 +247,12 @@ private:
             (ParamFloat<px4::params::VM_INERTIA_XY>)        _param_vm_inertia_xy,
             (ParamFloat<px4::params::VM_INERTIA_XZ>)        _param_vm_inertia_xz,
             (ParamFloat<px4::params::VM_INERTIA_YZ>)        _param_vm_inertia_yz,
+            (ParamFloat<px4::params::VM_LEN_SCALE_X>)       _param_vm_len_scale_x,
+            (ParamFloat<px4::params::VM_LEN_SCALE_Y>)       _param_vm_len_scale_y,
+            (ParamFloat<px4::params::VM_LEN_SCALE_Z>)       _param_vm_len_scale_z,
+            (ParamFloat<px4::params::VM_COG_OFF_X>)         _param_vm_cog_off_x,
+            (ParamFloat<px4::params::VM_COG_OFF_Y>)         _param_vm_cog_off_y,
+            (ParamFloat<px4::params::VM_COG_OFF_Z>)         _param_vm_cog_off_z,
             (ParamExtInt<px4::params::IV_IMU_DELAY_US>)     _param_iv_imu_delay_us,
             (ParamExtInt<px4::params::VIMU_PREDICT_US>)     _param_vimu_predict_us
     )

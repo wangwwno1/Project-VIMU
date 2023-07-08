@@ -46,6 +46,19 @@ VirtualIMU::VirtualIMU():
     _param_iv_imu_delay_us(_ekf_params->imu_fuse_delay_us),
     _param_vimu_predict_us(_ekf_params->filter_update_interval_us)
 {
+    _imu_integration_interval_us = 1e6f / _param_imu_integ_rate.get();
+    uint8_t integral_samples = 1;
+    if (_param_imu_gyro_ratemax.get() > 0.f) {
+        _actuator_outputs_interval_us = 1e6f / _param_imu_gyro_ratemax.get();
+        integral_samples = math::max(1, (int)roundf(_imu_integration_interval_us / _actuator_outputs_interval_us));
+    }
+
+    _gyro_integrator.set_reset_interval(_imu_integration_interval_us);
+    _gyro_integrator.set_reset_samples(integral_samples);
+
+    _accel_integrator.set_reset_interval(_imu_integration_interval_us);
+    _accel_integrator.set_reset_samples(integral_samples);
+
 }
 
 VirtualIMU::~VirtualIMU()
@@ -97,7 +110,6 @@ void VirtualIMU::Stop() {
 
 void VirtualIMU::reset() {
     _current_actuator_setpoint.zero();
-    _newest_actuator_setpoint.zero();
     _accel_bias.zero();
     _last_update_us = 0;
 
@@ -129,81 +141,95 @@ void VirtualIMU::Run()
         reset();
     }
 
-    PublishReferenceIMU();
+    // backup schedule
+    ScheduleDelayed(_backup_schedule_timeout_us);
 
-    // Run() will be invoked when actuator_output receive update
+    // Note: Always update land status before actuator output & angular velocity
+    UpdateCopterStatus();
+
+    // Measurement Update
+    UpdateIMUData();
+
+    UpdateSensorBias();
+    UpdateAerodynamicWrench();
+
+    // Run() will be invoked when actuator_output receive update.
+    // Update Actuator Outputs
     actuator_outputs_s act{};
-    if (_actuator_outputs_sub.copy(&act)) {
-        if (_last_update_us == 0) {
-            for (int i = 0; i < noutputs; ++i) {
-                _current_actuator_setpoint(i) = (act.output[i] - PWM_DEFAULT_MIN) / (PWM_DEFAULT_MAX - PWM_DEFAULT_MIN);
-                _current_actuator_setpoint(i) = math::constrain(_current_actuator_setpoint(i), 0.f, 1.f);
+    if (_actuator_outputs_sub.update(&act)) {
+        if (_actuator_outputs_sub.get_last_generation() != _actuator_outputs_last_generation + 1) {
+//            _data_gap = true;
+//            perf_count(_accel_generation_gap_perf);
+            _actuator_outputs_interval_mean.reset();
+        } else {
+            if ((_current_act_sp_timestamp != 0) && (act.timestamp > _current_act_sp_timestamp)) {
+                float interval_us = act.timestamp - _current_act_sp_timestamp;
+                _actuator_outputs_interval_mean.update(matrix::Vector<float, 1>{interval_us});
             }
-            _current_act_sp_timestamp = act.timestamp;
+
+            const int interval_count = _actuator_outputs_interval_mean.count();
+
+            // check measured interval periodically
+            if ((_actuator_outputs_interval_mean.valid() && (interval_count % 10 == 0)) && (interval_count > 1000)) {
+
+                const float interval_mean = _actuator_outputs_interval_mean.mean()(0);
+
+                // update sample rate if previously invalid or changed
+                const float interval_delta_us = fabsf(interval_mean - _actuator_outputs_interval_us);
+                const float percent_changed = interval_delta_us / _actuator_outputs_interval_us;
+
+                if (!PX4_ISFINITE(_actuator_outputs_interval_us) || (percent_changed > 0.001f)) {
+                    if (PX4_ISFINITE(interval_mean)) {
+                        // update integrator configuration if interval has changed by more than 10%
+                        if (interval_delta_us > 0.1f * _accel_interval_us) {
+                            _update_integrator_config = true;
+                        }
+
+                        _actuator_outputs_interval_us = interval_mean;
+
+                    } else {
+                        _actuator_outputs_interval_mean.reset();
+                    }
+                }
+            }
+
+        }
+
+        _actuator_outputs_last_generation = _actuator_outputs_sub.get_last_generation();
+
+        // Forward to actuator timestamp before update the actuator setpoint.
+        if (_last_update_us != 0) {
+            UpdateVirtualIMU(act.timestamp);
+        } else {
             _last_update_us = act.timestamp;
-            _actuator_state_lpf.reset(_current_actuator_setpoint);
         }
 
-        if (act.timestamp >= _newest_act_sp_timestamp) {
-            for (int i = 0; i < noutputs; ++i) {
-                _newest_actuator_setpoint(i) = (act.output[i] - PWM_DEFAULT_MIN) / (PWM_DEFAULT_MAX - PWM_DEFAULT_MIN);
-                _newest_actuator_setpoint(i) = math::constrain(_newest_actuator_setpoint(i), 0.f, 1.f);
-            }
-            _newest_act_sp_timestamp = act.timestamp;
+        for (int i = 0; i < noutputs; ++i) {
+            // fixme pwm min max may changes by the ESC component, should check and sync
+            _current_actuator_setpoint(i) = (act.output[i] - PWM_DEFAULT_MIN) / (PWM_DEFAULT_MAX - PWM_DEFAULT_MIN);
+            _current_actuator_setpoint(i) = math::constrain(_current_actuator_setpoint(i), 0.f, 1.f);
         }
-
-        const hrt_abstime target_time_us = math::max(hrt_absolute_time(), act.timestamp);
-        while (_last_update_us <= target_time_us) {
-            // Note: Always update land status before actuator output & angular velocity
-            UpdateCopterStatus();
-
-            // Measurement Update
-            UpdateIMUData();
-
-            // State Estimation
-            // Update actuator state
-            if (_current_act_sp_timestamp < _newest_act_sp_timestamp && _last_update_us >= _current_act_sp_timestamp) {
-                _current_actuator_setpoint = _newest_actuator_setpoint;
-                _current_act_sp_timestamp = _newest_act_sp_timestamp;
-            }
-
-            // From now on we are forward into future
-            _last_update_us += _rate_ctrl_interval_us;
-
-            // Use AlphaFilter to approximate the motor's spin-up effect
-            _actuator_state_lpf.update(_current_actuator_setpoint);
-
-            UpdateSensorBias();
-            UpdateAerodynamicWrench();
-
-            // Update angular velocity, angular acceleration, and body acceleration into future horizon
-            Vector3f torque{0.f, 0.f, 0.f};
-            const VectorThrust act_state = _actuator_state_lpf.getState();
-            if (_copter_status.in_air) {
-                // Use prediction from VIMU instead of the static torque
-                torque = static_cast<Vector3f>(QuadTorque * act_state).emult(_phys_model_params.torque_coeff);
-            }
-
-            _ekf.integrateTorque(torque, _external_angular_accel, _rate_ctrl_interval, _last_update_us);
-
-            _body_acceleration = static_cast<Vector3f> (QuadThrust * act_state).emult(_phys_model_params.thrust_coeff);
-            _body_acceleration += _external_accel;
-
-            // Update virtual imu instances, use estimated future state for integration
-            _accel_integrator.put(_body_acceleration - _accel_bias, _rate_ctrl_interval);
-            _gyro_integrator.put(_ekf.getAngularRate(), _rate_ctrl_interval);
-
-        }
-
-        if (_copter_status.publish) {
-            // Publish Angular Rate & Acceleration
-            // The Rate Control frequency are faster than IMU integral, so we publish it every time actuator output generated
-            PublishAngularVelocityAndAcceleration();
-            PublishSensorReference();
-        }
+        _current_act_sp_timestamp = act.timestamp;
     }
 
-//    ScheduleDelayed(_rate_ctrl_interval_us);
+    // reconfigure integrators if calculated control interval have changed
+    if (_update_integrator_config || !_interval_configured) {
+        UpdateIntegratorConfiguration();
+    }
+
+    // Update till the newest timestamp or next actuator timestamp
+    const hrt_abstime now = hrt_absolute_time();
+    if (now > _last_update_us + _backup_schedule_timeout_us) {
+        UpdateVirtualIMU(now);
+    }
+
+    PublishReferenceIMU();
+    if (_copter_status.publish && (now > _last_publish + _publish_interval_min_us)) {
+        // Publish Angular Rate & Acceleration
+        // The Rate Control frequency are faster than IMU integral, so we publish it every time actuator output generated
+        PublishAngularVelocityAndAcceleration();
+        PublishSensorReference();
+    }
 
 }
 
@@ -264,7 +290,6 @@ void VirtualIMU::UpdateIMUData() {
                 imu_sample.delta_vel_dt = imu.delta_velocity_dt * 1.e-6f;
                 imu_sample.delta_vel = Vector3f{imu.delta_velocity};
 
-                CheckAndSyncTimestamp(uorb_idx, imu_sample.time_us);
                 _ekf.setGyroData(imu_sample, uorb_idx);
             } else {
                 // Discard imu update, also clear up its buffer.
@@ -301,6 +326,44 @@ void VirtualIMU::UpdateAerodynamicWrench() {
     }
 }
 
+void VirtualIMU::UpdateVirtualIMU(const hrt_abstime &now, bool force = false) {
+    const float dt = (now - _last_update_us) * 1.e-6f;
+    if (dt > 1e-6f) {
+        // Greater than 1 microsecond
+        // Use AlphaFilter to approximate the motor's spin-up effect
+        // fixme replace exponential with LUT for dynamic time & saving computation
+        if (_phys_model_params.motor_time_constant > 0.f) {
+            _actuator_state_lpf.setAlpha(1.f - expf(- dt / _phys_model_params.motor_time_constant));
+        } else {
+            _actuator_state_lpf.setAlpha(1.f);
+        }
+
+        _actuator_state_lpf.update(_current_actuator_setpoint);
+        const VectorThrust act_state = _actuator_state_lpf.getState();
+        if (_copter_status.in_air) {
+            // todo replace with ControlAllocator Style Cd (CW < 0, CCW > 0)
+            const float thrust_fac = _phys_model_params.Ct / _phys_model_params.Mass;
+            _control_acceleration = static_cast<Vector3f> (QuadThrustAxis * act_state).emult(thrust_fac);
+            _control_torque.zero();
+            for (int i = 0; i < noutputs; i++) {
+                const Vector3f rel_pos_to_cog = static_cast<Vector3f> (QuadMotorPosition.col(i)).emult(_phys_model_params.length) - _phys_model_params.center_of_gravity;
+                const Vector3f axis = static_cast<Vector3f> (QuadThrustAxis.col(i));
+                _control_torque += _phys_model_params.Ct * rel_pos_to_cog.cross(axis);
+            }
+            _control_torque += static_cast<Vector3f>(QuadRotationAxis * act_state) * _phys_model_params.Cd;
+        }
+
+    }
+
+    // State Estimation
+    _ekf.integrateTorque(_control_torque, _external_angular_accel, dt, now);
+
+    // Update virtual imu instances, use estimated future state for integration
+    _accel_integrator.put(getBodyAcceleration(), dt);
+    _gyro_integrator.put(_ekf.getAngularRate(), dt);
+    _last_update_us = now;
+}
+
 void VirtualIMU::ParameterUpdate(bool force) {
     if (_parameter_update_sub.updated() || force) {
         // clear update
@@ -312,36 +375,33 @@ void VirtualIMU::ParameterUpdate(bool force) {
 
         updateParams(); // update module parameters (in DEFINE_PARAMETERS)
 
-        // constrain IMU integration time 1-10 milliseconds (100-1000 Hz)
-        int32_t rate_control_rate_hz = (_param_imu_gyro_ratemax.get() == 0) ? 1000 : _param_imu_gyro_ratemax.get();
-        int32_t imu_integration_rate_hz = math::constrain(_param_imu_integ_rate.get(),
-                                                          (int32_t)50, math::min(rate_control_rate_hz, (int32_t) 1000));
-
-        if (!_interval_configured
-            || (_param_imu_gyro_ratemax.get() != rate_control_rate_prev)
-            || (_param_imu_integ_rate.get() != imu_integ_rate_prev)) {
-
-            // Configure virtual imu integrators.
-            _imu_integration_interval = 1.f / imu_integration_rate_hz;
+        // Configure virtual imu integrators.
+        if (!_interval_configured ||
+            (_param_imu_integ_rate.get() != imu_integ_rate_prev) ||
+            (_param_imu_gyro_ratemax.get() != rate_control_rate_prev)) {
+            // constrain IMU integration time 1-10 milliseconds (100-1000 Hz)
+            int32_t imu_integration_rate_hz = math::constrain(_param_imu_integ_rate.get(),
+                                                              (int32_t)50, math::min(rate_control_rate_hz, (int32_t) 1000));
             _imu_integration_interval_us = 1e6f / imu_integration_rate_hz;
-            _rate_ctrl_interval = 1.f / rate_control_rate_hz;
-            _rate_ctrl_interval_us = 1e6f / rate_control_rate_hz;
 
-            if (_phys_model_params.motor_time_constant > 0.f) {
-                _actuator_state_lpf.setAlpha(1.f - expf(- _rate_ctrl_interval / _phys_model_params.motor_time_constant));
-            } else {
-                _actuator_state_lpf.setAlpha(1.f);
+            if (_param_imu_integ_rate.get() != imu_integ_rate_prev) {
+                // force update
+                _update_integrator_config = true;
             }
 
-            // This integration_interval is a threshold for IMU delay.
-            const uint8_t integral_samples = math::max(1, (int)roundf(_imu_integration_interval / _rate_ctrl_interval));
-            const float relaxed_interval = (integral_samples - 0.5f) * _rate_ctrl_interval;
-            _gyro_integrator.set_reset_interval(relaxed_interval);
-            _gyro_integrator.set_reset_samples(integral_samples);
+            if (_param_imu_gyro_ratemax.get() > 0.f) {
+                // determine number of sensor samples that will get closest to the desired rate
+                const float configured_interval_us = 1e6f / _param_imu_gyro_ratemax.get();
+                // publish interval (constrained 100 Hz - 8 kHz)
+                _publish_interval_min_us = math::constrain(
+                        (int)roundf(configured_interval_us - (_actuator_outputs_interval_us * 0.5f)),
+                        125, 10000
+                );
 
-            _accel_integrator.set_reset_interval(relaxed_interval);
-            _accel_integrator.set_reset_samples(integral_samples);
-            _interval_configured = true;
+            } else {
+                _publish_interval_min_us = 0;
+            }
+
         }
 
         // inertia matrix
@@ -352,13 +412,33 @@ void VirtualIMU::ParameterUpdate(bool force) {
         };
         _ekf.setInertiaMatrix(SquareMatrix3f(inertia));
 
-        _ekf_params->gyro_noise = _param_ekf2_gyr_noise.get();
+        // Update length scale & center of gravity offset
+        _phys_model_params.length(0) = _param_vm_len_scale_x.get();
+        _phys_model_params.length(1) = _param_vm_len_scale_y.get();
+        _phys_model_params.length(2) = _param_vm_len_scale_z.get();
+        _phys_model_params.center_of_gravity(0) = _param_vm_cog_off_x.get();
+        _phys_model_params.center_of_gravity(1) = _param_vm_cog_off_y.get();
+        _phys_model_params.center_of_gravity(2) = _param_vm_cog_off_z.get();
+    }
+}
 
-        // Update actuator related param
-        _phys_model_params.torque_coeff(0) = _phys_model_params.Ct * _phys_model_params.length(0);
-        _phys_model_params.torque_coeff(1) = _phys_model_params.Ct * _phys_model_params.length(1);
-        _phys_model_params.torque_coeff(2) = _phys_model_params.Cd;
-        _phys_model_params.thrust_coeff(2) = - _phys_model_params.Ct / _phys_model_params.mass;
+void VirtualIMU::UpdateIntegratorConfiguration() {
+    if (PX4_ISFINITE(_actuator_outputs_interval_us)) {
+        // This integration_interval is a threshold for IMU delay.
+        const uint8_t integral_samples = math::max(1, (int)roundf(_imu_integration_interval_us / _actuator_outputs_interval_us));
+        const float relaxed_interval = roundf((integral_samples - 0.5f) * _actuator_outputs_interval_us);
+        _gyro_integrator.set_reset_interval(relaxed_interval);
+        _gyro_integrator.set_reset_samples(integral_samples);
+
+        _accel_integrator.set_reset_interval(relaxed_interval);
+        _accel_integrator.set_reset_samples(integral_samples);
+
+        // Control Interval is constrained between 100 Hz and 8 kHz (max gyro rate)
+        // fixme what if there is no minimum control interval (i.e., IMU_GYRO_RATEMAX = 0) ?
+        _backup_schedule_timeout_us = math::constrain((int) _actuator_outputs_interval_us, 125, 10000);
+
+        _interval_configured = true;
+        _update_integrator_config = false;
     }
 }
 
@@ -380,7 +460,7 @@ void VirtualIMU::PublishAngularVelocityAndAcceleration() {
 
 void VirtualIMU::PublishSensorReference() {
     // Publish Reference Accelerometer & Gyroscope for IMU Detection
-    const Vector3f accels = _body_acceleration - _accel_bias;
+    const Vector3f accels = getBodyAcceleration();
     sensor_accel_s ref_accel{};
     ref_accel.timestamp_sample = _last_update_us;
     ref_accel.x = accels(0);
@@ -415,7 +495,7 @@ void VirtualIMU::PublishReferenceIMU() {
         uint16_t delta_velocity_dt{};
 
         // Even without publish, we still reset integrator
-        // because we need to synchronize the reset timestamp with the IMU timestamp
+        // because we need to synchronize the reset timestamp with the actuator timestamp
         _gyro_integrator.reset(delta_angle, delta_angle_dt);
         _accel_integrator.reset(delta_velocity, delta_velocity_dt);
         _last_integrator_reset = _last_update_us;
@@ -447,27 +527,10 @@ void VirtualIMU::PublishReferenceIMU() {
             ref_sensors.accelerometer_integral_dt = delta_velocity_dt;
             ref_sensors.timestamp = _last_update_us;
             _reference_combined_pub.publish(ref_sensors);
-        }
-    }
-}
 
-bool VirtualIMU::CheckAndSyncTimestamp(const uint8_t i, const hrt_abstime &imu_timestamp) {
-    if (_last_integrator_reset + 1_ms < imu_timestamp) {
-        if (_last_integrator_reset == 0) {
-            // Synchronize timestamp.
-            PX4_INFO("%" PRIu64 ": %d - Initial sync of vimu sample timestamp %" PRIu64,
-                     hrt_absolute_time(), i, imu_timestamp);
-        } else {
-            // // Do synchronization again
-            // PX4_WARN("%" PRIu64 ": %d - slipping detected, re-sync vimu sample timestamp: (%" PRIu64 " -> %" PRIu64 ")" ,
-            //          hrt_absolute_time(), i, _last_integrator_reset, imu_timestamp);
+            _last_publish = imu.timestamp;
         }
-        _gyro_integrator.reset();
-        _accel_integrator.reset();
-        _last_integrator_reset = imu_timestamp;
-        return true;
     }
-    return false;
 }
 
 void VirtualIMU::PrintStatus() {
