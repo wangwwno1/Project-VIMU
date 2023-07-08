@@ -163,8 +163,9 @@ void VirtualIMU::Run()
             _actuator_outputs_interval_mean.reset();
         } else {
             if ((_current_act_sp_timestamp != 0) && (act.timestamp > _current_act_sp_timestamp)) {
-                float interval_us = act.timestamp - _current_act_sp_timestamp;
-                _actuator_outputs_interval_mean.update(matrix::Vector<float, 1>{interval_us});
+                matrix::Vector<float, 1> interval_us{};
+                interval_us(0) = (float) (act.timestamp - _current_act_sp_timestamp);
+                _actuator_outputs_interval_mean.update(interval_us);
             }
 
             const int interval_count = _actuator_outputs_interval_mean.count();
@@ -181,7 +182,7 @@ void VirtualIMU::Run()
                 if (!PX4_ISFINITE(_actuator_outputs_interval_us) || (percent_changed > 0.001f)) {
                     if (PX4_ISFINITE(interval_mean)) {
                         // update integrator configuration if interval has changed by more than 10%
-                        if (interval_delta_us > 0.1f * _accel_interval_us) {
+                        if (interval_delta_us > 0.1f * _actuator_outputs_interval_us) {
                             _update_integrator_config = true;
                         }
 
@@ -326,7 +327,7 @@ void VirtualIMU::UpdateAerodynamicWrench() {
     }
 }
 
-void VirtualIMU::UpdateVirtualIMU(const hrt_abstime &now, bool force = false) {
+void VirtualIMU::UpdateVirtualIMU(const hrt_abstime &now) {
     const float dt = (now - _last_update_us) * 1.e-6f;
     if (dt > 1e-6f) {
         // Greater than 1 microsecond
@@ -342,8 +343,7 @@ void VirtualIMU::UpdateVirtualIMU(const hrt_abstime &now, bool force = false) {
         const VectorThrust act_state = _actuator_state_lpf.getState();
         if (_copter_status.in_air) {
             // todo replace with ControlAllocator Style Cd (CW < 0, CCW > 0)
-            const float thrust_fac = _phys_model_params.Ct / _phys_model_params.Mass;
-            _control_acceleration = static_cast<Vector3f> (QuadThrustAxis * act_state).emult(thrust_fac);
+            _control_acceleration = static_cast<Vector3f> (QuadThrustAxis * act_state) * _phys_model_params.Ct / _phys_model_params.mass;
             _control_torque.zero();
             for (int i = 0; i < noutputs; i++) {
                 const Vector3f rel_pos_to_cog = static_cast<Vector3f> (QuadMotorPosition.col(i)).emult(_phys_model_params.length) - _phys_model_params.center_of_gravity;
@@ -380,8 +380,7 @@ void VirtualIMU::ParameterUpdate(bool force) {
             (_param_imu_integ_rate.get() != imu_integ_rate_prev) ||
             (_param_imu_gyro_ratemax.get() != rate_control_rate_prev)) {
             // constrain IMU integration time 1-10 milliseconds (100-1000 Hz)
-            int32_t imu_integration_rate_hz = math::constrain(_param_imu_integ_rate.get(),
-                                                              (int32_t)50, math::min(rate_control_rate_hz, (int32_t) 1000));
+            int32_t imu_integration_rate_hz = math::constrain(_param_imu_integ_rate.get(), (int32_t)50, (int32_t) 1000);
             _imu_integration_interval_us = 1e6f / imu_integration_rate_hz;
 
             if (_param_imu_integ_rate.get() != imu_integ_rate_prev) {

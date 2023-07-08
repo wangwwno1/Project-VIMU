@@ -135,7 +135,7 @@ private:
     void UpdateIMUData();
     void UpdateAerodynamicWrench();
     void UpdateSensorBias();
-    void UpdateVirtualIMU(const hrt_abstime &now, bool force = false);
+    void UpdateVirtualIMU(const hrt_abstime &now);
 
     void PublishAngularVelocityAndAcceleration();
     void PublishReferenceIMU();
