@@ -118,7 +118,7 @@ public:
 
     bool multi_init(int instance);
 
-    const Vector3f &getBodyAcceleration() const { return _control_acceleration + _external_accel - _accel_bias;}
+    const Vector3f getBodyAcceleration() const { return _control_acceleration + _external_accel - _accel_bias;}
 
     static constexpr uint8_t MAX_SENSOR_COUNT = 4;
 
