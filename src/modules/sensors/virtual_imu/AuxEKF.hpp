@@ -51,6 +51,7 @@ public:
     AuxEKFParam *getParamHandle() { return &_param; }
     Vector3f getGyroBias() { return _gyro_bias; }
     void setGyroBias(const Vector3f &bias) { _gyro_bias = bias; }
+    void setExtAngularAcceleration(const Vector3f &ext_ang_accel) { _external_angular_acceleration = ext_ang_accel; }
 
     void setInertiaMatrix(const SquareMatrix3f &mat) {
         _inertia_matrix = mat;
@@ -97,9 +98,8 @@ public:
             }
         }
 
-        const Vector3f rate = _output_state.angular_rate - _gyro_bias;
-        const Vector3f main_inertia = _inertia_matrix.diag();
-        _angular_acceleration = (torque - rate.cross(_inertia_matrix * rate)).edivide(main_inertia) + ext_angular_accel;
+        setExtAngularAcceleration(ext_angular_accel);
+        _angular_acceleration = CalculateAngularAcceleration(torque, getAngularRate());
 
         _output_state.time_us = now;
         _output_state.angular_rate += _angular_acceleration * dt;
@@ -134,11 +134,17 @@ public:
         }
     }
 
+    Vector3f CalculateAngularAcceleration(const Vector3f &torque, const Vector3f &angular_velocity) const {
+        const Vector3f inv_main_inertia = _inertia_matrix_inv.diag();
+        return (torque - angular_velocity.cross(_inertia_matrix * angular_velocity)).emult(inv_main_inertia) + _external_angular_acceleration;
+    }
+
     void reset_state() {
         // Reset estimator states
         _state.zero();
         _gyro_bias.zero();
         _angular_acceleration.zero();
+        _external_angular_acceleration.zero();
         _output_state.time_us = 0;
         _output_state.angular_rate.zero();
 
@@ -177,6 +183,7 @@ private:
 
     Vector3f _gyro_bias{0.f, 0.f, 0.f};
     Vector3f _angular_acceleration{0.f, 0.f, 0.f};
+    Vector3f _external_angular_acceleration{0.f, 0.f, 0.f};
     SquareMatrix3f P;
     SquareMatrix3f _inertia_matrix;
     SquareMatrix3f _inertia_matrix_inv;
