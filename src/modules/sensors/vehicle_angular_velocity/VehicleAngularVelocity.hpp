@@ -78,6 +78,7 @@ private:
 
 	bool CalibrateAndPublish(const hrt_abstime &timestamp_sample, const matrix::Vector3f &angular_velocity_uncalibrated,
 				 const matrix::Vector3f &angular_acceleration_uncalibrated);
+    bool PublishReference();
 
 	inline float FilterAngularVelocity(int axis, float data[], int N = 1);
 	inline float FilterAngularAcceleration(int axis, float inverse_dt_s, float data[], int N = 1);
@@ -99,13 +100,18 @@ private:
 
 	static constexpr int MAX_SENSOR_COUNT = 4;
 
+    // This device id is corresponding to
+    // 11111111       00000001  00001  000
+    // which decodes to
+    // DEVTYPE_UNUSED dev 1     bus 1  DeviceBusType_UNKNOWN
+    static const constexpr unsigned VIMU_DEVICE_ID = 16711944;
+
 	uORB::Publication<vehicle_angular_acceleration_s> _vehicle_angular_acceleration_pub{ORB_ID(vehicle_angular_acceleration)};
 	uORB::Publication<vehicle_angular_velocity_s>     _vehicle_angular_velocity_pub{ORB_ID(vehicle_angular_velocity)};
 
 	uORB::Subscription _estimator_selector_status_sub{ORB_ID(estimator_selector_status)};
 	uORB::Subscription _estimator_sensor_bias_sub{ORB_ID(estimator_sensor_bias)};
     uORB::Subscription _reference_angular_acceleration_sub{ORB_ID(reference_angular_acceleration)};
-    uORB::Subscription _reference_angular_velocity_sub{ORB_ID(reference_angular_velocity)};
 #if !defined(CONSTRAINED_FLASH)
 	uORB::Subscription _esc_status_sub {ORB_ID(esc_status)};
 	uORB::Subscription _sensor_gyro_fft_sub {ORB_ID(sensor_gyro_fft)};
@@ -116,6 +122,7 @@ private:
 	uORB::SubscriptionCallbackWorkItem _sensor_selection_sub{this, ORB_ID(sensor_selection)};
 	uORB::SubscriptionCallbackWorkItem _sensor_sub{this, ORB_ID(sensor_gyro)};
 	uORB::SubscriptionCallbackWorkItem _sensor_fifo_sub{this, ORB_ID(sensor_gyro_fifo)};
+    uORB::SubscriptionCallbackWorkItem _reference_angular_velocity_sub{this, ORB_ID(reference_angular_velocity)};
 
 	calibration::Gyroscope _calibration{};
 

@@ -1226,7 +1226,7 @@ void EKF2::PublishSensorBias(const hrt_abstime &timestamp)
 		bias.timestamp_sample = _ekf.get_imu_sample_delayed().time_us;
 
 		// take device ids from sensor_selection_s if not using specific vehicle_imu_s
-		if ((_device_id_gyro != 0) || use_reference()) {
+		if (_device_id_gyro != 0) {
 			bias.gyro_device_id = _device_id_gyro;
 			gyro_bias.copyTo(bias.gyro_bias);
 			bias.gyro_bias_limit = math::radians(20.f); // 20 degrees/s see Ekf::constrainStates()
