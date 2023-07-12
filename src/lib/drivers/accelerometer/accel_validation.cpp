@@ -21,10 +21,22 @@ void PX4Accelerometer::validateAccel(sensor_accel_s &accel) {
         return;
     }
 
-    Vector3f error_residuals{0.f, 0.f, 0.f};
-    error_residuals(0) = accel.x - _curr_ref_accel.x;
-    error_residuals(1) = accel.y - _curr_ref_accel.y;
-    error_residuals(2) = accel.z - _curr_ref_accel.z;
+    // residuals = measurement - reference
+    Vector3f error_residuals{-_curr_ref_accel.x, -_curr_ref_accel.y, -_curr_ref_accel.z};
+    if ((accel.timestamp_sample != _curr_ref_accel.timestamp_sample) &&
+        (_next_ref_accel.timestamp_sample > _curr_ref_accel.timestamp_sample)) {
+        // linear interpolate the reference
+        const float interval = 1.e-6f * (_next_ref_accel.timestamp_sample - _curr_ref_accel.timestamp_sample);
+        const float dt = 1.e-6f * (accel.timestamp_sample - _curr_ref_accel.timestamp_sample);
+        const float weight = dt / interval;
+        const Vector3f next_ref{-_next_ref_accel.x, -_next_ref_accel.y, -_next_ref_accel.z};
+        // error_residuals = (1.f - weight) * error_residuals + weight * next_ref;
+        error_residuals += weight * (next_ref - error_residuals);
+    }
+
+    error_residuals(0) += accel.x;
+    error_residuals(1) += accel.y;
+    error_residuals(2) += accel.z;
 
     const Vector3f error_ratio = error_residuals * _inv_acc_noise;
     _accel_validator.validate(error_ratio);

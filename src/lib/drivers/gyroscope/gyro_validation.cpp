@@ -21,10 +21,22 @@ void PX4Gyroscope::validateGyro(sensor_gyro_s &gyro) {
         return;
     }
 
-    Vector3f error_residuals{0.f, 0.f, 0.f};
-    error_residuals(0) = gyro.x - _curr_ref_gyro.x;
-    error_residuals(1) = gyro.y - _curr_ref_gyro.y;
-    error_residuals(2) = gyro.z - _curr_ref_gyro.z;
+    // residuals = measurement - reference
+    Vector3f error_residuals{-_curr_ref_gyro.x, -_curr_ref_gyro.y, -_curr_ref_gyro.z};
+    if ((gyro.timestamp_sample != _curr_ref_gyro.timestamp_sample) &&
+        (_next_ref_gyro.timestamp_sample > _curr_ref_gyro.timestamp_sample)) {
+        // linear interpolate the reference
+        const float interval = 1.e-6f * (_next_ref_gyro.timestamp_sample - _curr_ref_gyro.timestamp_sample);
+        const float dt = 1.e-6f * (gyro.timestamp_sample - _curr_ref_gyro.timestamp_sample);
+        const float weight = dt / interval;
+        const Vector3f next_ref{-_next_ref_gyro.x, -_next_ref_gyro.y, -_next_ref_gyro.z};
+        // error_residuals = (1.f - weight) * error_residuals + weight * next_ref;
+        error_residuals += weight * (next_ref - error_residuals);
+    }
+
+    error_residuals(0) += gyro.x;
+    error_residuals(1) += gyro.y;
+    error_residuals(2) += gyro.z;
 
     const Vector3f error_ratio = error_residuals * _inv_gyro_noise;
     _gyro_validator.validate(error_ratio);
