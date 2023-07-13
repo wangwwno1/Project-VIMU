@@ -340,10 +340,10 @@ void LoggedTopics::add_mavlink_tunnel()
 
 void LoggedTopics::add_detection_residual_topics()
 {
-    add_topic("sensor_accel_errors");
-    add_topic("sensor_baro_error");
+    add_topic_multi("sensor_accel_errors", 0, 4);
+    add_topic_multi("sensor_baro_error", 0, 4);
+    add_topic_multi("sensor_gyro_errors", 0, 4);
     add_topic("sensor_gps_error");
-    add_topic("sensor_gyro_errors");
     add_topic("sensors_status_gps");
 }
 
