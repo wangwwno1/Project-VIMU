@@ -132,7 +132,7 @@ void VirtualIMU::Run()
 //	perf_count(_loop_interval_perf);
 
     // Check if parameters have changed
-    ParameterUpdate(!_callback_registered);
+    ParameterUpdate(!_callback_registered || !_ekf_inertia_initialized);
 
     if (!_callback_registered) {
         _callback_registered = _actuator_outputs_sub.registerCallback();
@@ -148,6 +148,12 @@ void VirtualIMU::Run()
         }
 
         reset();
+    }
+
+    if (!_ekf_inertia_initialized) {
+        PX4_WARN("VirtualIMU - failed to initialize inertia matrix, retrying");
+        ScheduleDelayed(10_ms);
+        return;
     }
 
     // backup schedule
@@ -383,18 +389,48 @@ void VirtualIMU::ParameterUpdate(bool force) {
 
         }
 
-        // inertia matrix
-        const float inertia[3][3] = {
-                {_param_vm_inertia_xx.get(), _param_vm_inertia_xy.get(), _param_vm_inertia_xz.get()},
-                {_param_vm_inertia_xy.get(), _param_vm_inertia_yy.get(), _param_vm_inertia_yz.get()},
-                {_param_vm_inertia_xz.get(), _param_vm_inertia_yz.get(), _param_vm_inertia_zz.get()}
-        };
-        _ekf.setInertiaMatrix(SquareMatrix3f(inertia));
+        // update inertia matrix
+        bool update_inertia = false;
+        SquareMatrix3f inertia = _ekf.InertiaMatrix();
+        if ((_param_vm_inertia_xx.get() > 0.f) && (fabsf(_param_vm_inertia_xx.get() - inertia(0, 0)) > FLT_EPSILON)) {
+            update_inertia = true;
+            inertia(0, 0) = _param_vm_inertia_xx.get();
+        }
+
+        if ((_param_vm_inertia_yy.get() > 0.f) && (fabsf(_param_vm_inertia_yy.get() - inertia(1, 1)) > FLT_EPSILON)) {
+            update_inertia = true;
+            inertia(1, 1) = _param_vm_inertia_yy.get();
+        }
+
+        if ((_param_vm_inertia_zz.get() > 0.f) && (fabsf(_param_vm_inertia_zz.get() - inertia(2, 2)) > FLT_EPSILON)) {
+            update_inertia = true;
+            inertia(2, 2) = _param_vm_inertia_zz.get();
+        }
+
+        if (fabsf(_param_vm_inertia_xy.get() - inertia(0, 1)) > FLT_EPSILON) {
+            update_inertia = true;
+            inertia(0, 1) = inertia(1, 0) = _param_vm_inertia_xy.get();
+        }
+
+        if (fabsf(_param_vm_inertia_xz.get() - inertia(0, 2)) > FLT_EPSILON) {
+            update_inertia = true;
+            inertia(0, 2) = inertia(2, 0) = _param_vm_inertia_xz.get();
+        }
+
+        if (fabsf(_param_vm_inertia_yz.get() - inertia(1, 2)) > FLT_EPSILON) {
+            update_inertia = true;
+            inertia(1, 2) = inertia(2, 1) = _param_vm_inertia_yz.get();
+        }
+
+        if (update_inertia) {
+            _ekf.setInertiaMatrix(inertia);
+            _ekf_inertia_initialized = true;
+        }
 
         // Update length scale & center of gravity offset
-        _phys_model_params.length(0) = _param_vm_len_scale_x.get();
-        _phys_model_params.length(1) = _param_vm_len_scale_y.get();
-        _phys_model_params.length(2) = _param_vm_len_scale_z.get();
+        _phys_model_params.length(0) = math::max(_param_vm_len_scale_x.get(), 1e-3f);
+        _phys_model_params.length(1) = math::max(_param_vm_len_scale_y.get(), 1e-3f);
+        _phys_model_params.length(2) = math::max(_param_vm_len_scale_z.get(), 1e-3f);
         _phys_model_params.center_of_gravity(0) = _param_vm_cog_off_x.get();
         _phys_model_params.center_of_gravity(1) = _param_vm_cog_off_y.get();
         _phys_model_params.center_of_gravity(2) = _param_vm_cog_off_z.get();

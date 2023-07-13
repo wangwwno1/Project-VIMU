@@ -53,7 +53,8 @@ public:
     void setGyroBias(const Vector3f &bias) { _gyro_bias = bias; }
     void setExtAngularAcceleration(const Vector3f &ext_ang_accel) { _external_angular_acceleration = ext_ang_accel; }
 
-    void setInertiaMatrix(const SquareMatrix3f &mat) {
+    SquareMatrix3f &InertiaMatrix() { return _inertia_matrix; }
+    void setInertiaMatrix(SquareMatrix3f &mat) {
         _inertia_matrix = mat;
         if (!mat.I(_inertia_matrix_inv)) {
             // Fallback to main inertia inverse

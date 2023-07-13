@@ -268,6 +268,7 @@ private:
     // Auxiliary EKF for angular velocity estimate
     AuxEKF _ekf{};
     AuxEKFParam *_ekf_params;
+    bool _ekf_inertia_initialized{false};
 
     int _instance{0};
 
