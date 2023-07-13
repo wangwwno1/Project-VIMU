@@ -46,6 +46,7 @@ PARAM_DEFINE_FLOAT(VM_MASS, 1.f);
  *
  * @unit kg m^2
  * @decimal 5
+ * @min 0.00001
  * @increment 0.00001
  * @group Vehicle Model
  */
@@ -56,6 +57,7 @@ PARAM_DEFINE_FLOAT(VM_INERTIA_XX, 0.01f);
  *
  * @unit kg m^2
  * @decimal 5
+ * @min 0.00001
  * @increment 0.00001
  * @group Vehicle Model
  */
@@ -66,6 +68,7 @@ PARAM_DEFINE_FLOAT(VM_INERTIA_YY, 0.01f);
  *
  * @unit kg m^2
  * @decimal 5
+ * @min 0.00001
  * @increment 0.00001
  * @group Vehicle Model
  */
@@ -138,6 +141,7 @@ PARAM_DEFINE_FLOAT(VM_DRAG_FACTOR, 0.05f);
  *
  * @unit rad/s^2
  * @decimal 5
+ * @min 0.00001
  * @increment 0.00001
  * @group Vehicle Model
  */
@@ -148,6 +152,7 @@ PARAM_DEFINE_FLOAT(VM_ANG_ACC_NOISE, 0.075f);
  *
  * @unit m
  * @decimal 3
+ * @min 0.001
  * @increment 0.001
  * @group Vehicle Model
  */
@@ -158,6 +163,7 @@ PARAM_DEFINE_FLOAT(VM_LEN_SCALE_X, 1.0f);
  *
  * @unit m
  * @decimal 3
+ * @min 0.001
  * @increment 0.001
  * @group Vehicle Model
  */
@@ -168,6 +174,7 @@ PARAM_DEFINE_FLOAT(VM_LEN_SCALE_Y, 1.0f);
  *
  * @unit m
  * @decimal 3
+ * @min 0.001
  * @increment 0.001
  * @group Vehicle Model
  */
