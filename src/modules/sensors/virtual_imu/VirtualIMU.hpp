@@ -150,11 +150,11 @@ private:
     void ForecastAndPublishDetectionReference();
 
     bool CalculateActuatorState(const float dt, VectorThrust &actuator_state, const VectorThrust &setpoint) {
-        if (_phys_model_params.motor_time_constant > 0.f) {
+        if (_phys_model_params.motor_time_constant > 1e-5f) {
             if (dt > 1.e-6f) {
                 // fixme replace exponential with LUT for dynamic time & saving computation
-                const float weight = expf(- dt / _phys_model_params.motor_time_constant);
-                actuator_state = weight * actuator_state + (1 - weight) * setpoint;
+                const float weight = 1.f - expf(- dt / _phys_model_params.motor_time_constant);
+                actuator_state += (setpoint - actuator_state) * weight;
                 return true;
             }
         } else {
