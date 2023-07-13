@@ -151,6 +151,8 @@ private:
     RingBuffer<RefGpsSample> *_ref_gps_buffer{nullptr};
     RefGpsSample        _ref_gps_delayed{};
 
+    int32_t _enable_debug_log{0};
+
 	perf_counter_t _cycle_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": cycle")};
 
 	GpsBlending _gps_blending;
@@ -178,7 +180,6 @@ private:
         (ParamFloat<px4::params::EKF2_GPS_V_GATE>) _param_ekf2_gps_v_gate,
         ///< GPS velocity innovation consistency gate size (STD)
 
-        (ParamInt<px4::params::IV_DEBUG_LOG>)           _param_iv_debug_log,
         (ParamExtFloat<px4::params::IV_GPS_P_CSUM_H>)   _param_iv_gps_p_csum_h,
         (ParamExtFloat<px4::params::IV_GPS_P_MSHIFT>)   _param_iv_gps_p_mshift,
         (ParamExtFloat<px4::params::IV_GPS_P_EMA_H>)       _param_iv_gps_p_ema_h,

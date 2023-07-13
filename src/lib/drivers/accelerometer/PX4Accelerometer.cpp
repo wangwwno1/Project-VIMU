@@ -75,13 +75,16 @@ PX4Accelerometer::PX4Accelerometer(uint32_t device_id, enum Rotation rotation) :
     _sensor_accel_errors_pub.advertise();
 
 	param_get(param_find("IMU_GYRO_RATEMAX"), &_imu_gyro_rate_max);
-    param_get(param_find("IV_DEBUG_LOG"), &_enable_debug_log);
     param_get(param_find("IV_ACC_NOISE"), &_acc_noise);
     param_get(param_find("IV_ACC_CSUM_H"), &_accel_validator_params.cusum_params.control_limit);
     param_get(param_find("IV_ACC_MSHIFT"), &_accel_validator_params.cusum_params.mean_shift);
     param_get(param_find("IV_ACC_EMA_H"), &_accel_validator_params.ema_params.control_limit);
     param_get(param_find("IV_ACC_ALPHA"), &_accel_validator_params.ema_params.alpha);
     param_get(param_find("IV_ACC_EMA_CAP"), &_accel_validator_params.ema_params.cap);
+
+    int32_t profile{};
+    param_get(param_find("SDLOG_PROFILE"), &profile);
+    _enable_debug_log = profile & (1 << 11);
 
     _inv_acc_noise = 1.f / fmaxf(_acc_noise, 0.01f);
 }

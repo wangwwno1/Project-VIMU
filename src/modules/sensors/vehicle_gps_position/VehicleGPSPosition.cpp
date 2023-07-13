@@ -54,6 +54,10 @@ VehicleGPSPosition::VehicleGPSPosition() :
     _param_iv_gps_v_mshift(_vel_validator_params.mean_shift)
 {
 	_vehicle_gps_position_pub.advertise();
+
+    int32_t profile{};
+    param_get(param_find("SDLOG_PROFILE"), &profile);
+    _enable_debug_log = profile & (1 << 11);
 }
 
 VehicleGPSPosition::~VehicleGPSPosition()

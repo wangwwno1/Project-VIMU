@@ -3,14 +3,6 @@
 //
 
 /**
- * Set true to record status log at high frequency, for debug only.
- *
- * @group Innovation Validator
- * @boolean
- */
-PARAM_DEFINE_INT32(IV_DEBUG_LOG, 0);
-
-/**
  * Control limit for CuScore validation of the gps position innovation, expressed in standard deviations. Set zero to inhibit validation.
  *
  * @group Innovation Validator

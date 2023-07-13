@@ -160,7 +160,7 @@ namespace sensors
                 _gps_healthy = (_pos_validator.test_ratio() < 1.f) && (_vel_validator.test_ratio() < 1.f);
 
                 PublishSensorStatus();
-                if (_param_iv_debug_log.get()) {
+                if (_enable_debug_log != 0) {
                     // Also publish error status for debug & detector identification
                     PublishErrorStatus();
                 }
@@ -185,7 +185,7 @@ namespace sensors
     }
 
     void VehicleGPSPosition::PublishSensorStatus() {
-        if (_param_iv_debug_log.get() || (_gps_healthy != _gps_healthy_prev) || (hrt_elapsed_time(&_last_health_status_publish) > 1_s)) {
+        if ((_enable_debug_log != 0) || (_gps_healthy != _gps_healthy_prev) || (hrt_elapsed_time(&_last_health_status_publish) > 1_s)) {
             sensors_status_gps_s status{};
             status.pos_test_ratio = _pos_validator.test_ratio();
             status.vel_test_ratio = _vel_validator.test_ratio();

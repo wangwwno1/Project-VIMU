@@ -338,6 +338,15 @@ void LoggedTopics::add_mavlink_tunnel()
 	add_topic("mavlink_tunnel");
 }
 
+void LoggedTopics::add_detection_residual_topics()
+{
+    add_topic("sensor_accel_errors");
+    add_topic("sensor_baro_error");
+    add_topic("sensor_gps_error");
+    add_topic("sensor_gyro_errors");
+    add_topic("sensors_status_gps");
+}
+
 int LoggedTopics::add_topics_from_file(const char *fname)
 {
 	int ntopics = 0;
@@ -548,4 +557,8 @@ void LoggedTopics::initialize_configured_topics(SDLogProfileMask profile)
 	if (profile & SDLogProfileMask::MAVLINK_TUNNEL) {
 		add_mavlink_tunnel();
 	}
+
+    if (profile & SDLogProfileMask::RESIDUAL_ERROR) {
+        add_detection_residual_topics();
+    }
 }
