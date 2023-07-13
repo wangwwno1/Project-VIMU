@@ -105,7 +105,9 @@ PARAM_DEFINE_FLOAT(VM_INERTIA_XZ, 0.f);
 PARAM_DEFINE_FLOAT(VM_INERTIA_YZ, 0.f);
 
 /**
+ * Thrust Coefficient of motors
  *
+ * Defined as thrust = VM_THR_FACTOR * rel_signal
  *
  * @group Vehicle Model
  * @min 0.01
