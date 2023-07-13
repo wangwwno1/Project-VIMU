@@ -104,7 +104,7 @@ private:
     // 11111111       00000001  00001  000
     // which decodes to
     // DEVTYPE_UNUSED dev 1     bus 1  DeviceBusType_UNKNOWN
-    static const constexpr unsigned VIMU_DEVICE_ID = 16711944;
+    static const constexpr uint32_t VIMU_DEVICE_ID = 16711944;
 
 	uORB::Publication<vehicle_angular_acceleration_s> _vehicle_angular_acceleration_pub{ORB_ID(vehicle_angular_acceleration)};
 	uORB::Publication<vehicle_angular_velocity_s>     _vehicle_angular_velocity_pub{ORB_ID(vehicle_angular_velocity)};
