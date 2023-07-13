@@ -563,11 +563,10 @@ void VirtualIMU::ForecastAndPublishDetectionReference() {
 }
 
 void VirtualIMU::PublishReferenceIMU() {
-    const hrt_abstime now = hrt_absolute_time();
     if (_interval_configured &&
         _accel_integrator.integral_ready() &&
         _gyro_integrator.integral_ready() &&
-        (now > _last_integrator_reset)) {
+        (hrt_elapsed_time(&_last_integrator_reset) >  0.5f * _imu_integration_interval_us)) {
         // Publish when vehicle in air and is ready, fill entries with fake value
         // Add timestamp check to guard against double publish in SITL
         Vector3f delta_velocity{};
