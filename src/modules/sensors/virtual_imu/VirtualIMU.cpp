@@ -35,7 +35,7 @@
 
 VirtualIMU::VirtualIMU():
 	ModuleParams(nullptr),
-	ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::nav_and_controllers),
+	ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::rate_ctrl),
     _ekf_params(_ekf.getParamHandle()),
     _param_ekf2_gyr_noise(_ekf_params->gyro_noise),
     _param_vm_mass(_phys_model_params.mass),
