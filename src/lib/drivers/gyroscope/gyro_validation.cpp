@@ -23,7 +23,7 @@ void PX4Gyroscope::validateGyro(sensor_gyro_s &gyro) {
 
     // residuals = measurement - reference
     Vector3f error_residuals{-_curr_ref_gyro.x, -_curr_ref_gyro.y, -_curr_ref_gyro.z};
-    if ((gyro.timestamp_sample != _curr_ref_gyro.timestamp_sample) &&
+    if ((gyro.timestamp_sample > _curr_ref_gyro.timestamp_sample) &&
         (_next_ref_gyro.timestamp_sample > _curr_ref_gyro.timestamp_sample)) {
         // linear interpolate the reference
         const float interval = 1.e-6f * (_next_ref_gyro.timestamp_sample - _curr_ref_gyro.timestamp_sample);

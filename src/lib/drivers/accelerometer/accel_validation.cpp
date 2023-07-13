@@ -23,7 +23,7 @@ void PX4Accelerometer::validateAccel(sensor_accel_s &accel) {
 
     // residuals = measurement - reference
     Vector3f error_residuals{-_curr_ref_accel.x, -_curr_ref_accel.y, -_curr_ref_accel.z};
-    if ((accel.timestamp_sample != _curr_ref_accel.timestamp_sample) &&
+    if ((accel.timestamp_sample > _curr_ref_accel.timestamp_sample) &&
         (_next_ref_accel.timestamp_sample > _curr_ref_accel.timestamp_sample)) {
         // linear interpolate the reference
         const float interval = 1.e-6f * (_next_ref_accel.timestamp_sample - _curr_ref_accel.timestamp_sample);
