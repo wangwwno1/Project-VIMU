@@ -51,6 +51,7 @@ static constexpr int32_t sum(const int16_t samples[], uint8_t len)
 }
 
 PX4Gyroscope::PX4Gyroscope(uint32_t device_id, enum Rotation rotation) :
+    ModuleParams(nullptr),
 	_device_id{device_id},
 	_rotation{rotation}
 {
@@ -118,7 +119,10 @@ void PX4Gyroscope::update(const hrt_abstime &timestamp_sample, float x, float y,
 	report.z = z * _scale;
 	report.samples = 1;
 
+    // Apply simulated attack, check gyro data, replace error_count to alarm value if an attack is detected.
+    ParametersUpdate();
     updateReference(timestamp_sample);
+    applyGyroAttack(report);
     validateGyro(report);
 
     report.timestamp = hrt_absolute_time();
@@ -151,7 +155,10 @@ void PX4Gyroscope::updateFIFO(sensor_gyro_fifo_s &sample)
 	_last_sample[1] = sample.y[N - 1];
 	_last_sample[2] = sample.z[N - 1];
 
+    // Try to update reference
+    ParametersUpdate();
     updateReference(sample.timestamp_sample);
+    applyGyroAttack(report, sample);
     validateGyro(report);
 
     report.samples = N;
@@ -163,4 +170,40 @@ void PX4Gyroscope::updateFIFO(sensor_gyro_fifo_s &sample)
     sample.scale = _scale;
     sample.timestamp = hrt_absolute_time();
     _sensor_fifo_pub.publish(sample);
+}
+
+bool PX4Gyroscope::ParametersUpdate()
+{
+    bool updated = false;
+
+    // Check if parameters have changed
+    if (_parameter_update_sub.updated()) {
+        // clear update
+        parameter_update_s param_update;
+        _parameter_update_sub.copy(&param_update);
+
+        updateParams();
+
+        if (_param_atk_apply_type.get() != _attack_flag_prev) {
+            const int next_attack_flag = _param_atk_apply_type.get();
+            if (next_attack_flag & sensor_attack::ATK_MASK_GYRO
+                && _param_atk_multi_imu.get() & (1 << get_instance())) {
+                // Enable attack, calculate new timestamp
+                _attack_timestamp = param_update.timestamp + (hrt_abstime) (_param_atk_countdown_ms.get() * 1000);
+                PX4_INFO("Debug - Enable GYRO attack for instance %d, expect start timestamp: %" PRIu64,
+                         get_instance(), _attack_timestamp);
+
+            } else if (_attack_timestamp != 0) {
+                // Disable attack, reset timestamp
+                _attack_timestamp = 0;
+                PX4_INFO("Debug - Attack is disabled for GYRO%d, reset attack timestamp.", get_instance());
+            }
+
+            _attack_flag_prev = next_attack_flag;
+        }
+
+        updated = true;
+    }
+
+    return updated;
 }

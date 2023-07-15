@@ -34,18 +34,23 @@
 
 #pragma once
 
+#include <px4_platform_common/module_params.h>
 #include <drivers/drv_hrt.h>
 #include <lib/conversion/rotation.h>
 #include <lib/fault_detector/fault_detector.hpp>
+#include <lib/sensor_attack/sensor_attack.hpp>
 #include <uORB/Subscription.hpp>
+#include <uORB/SubscriptionInterval.hpp>
 #include <uORB/PublicationMulti.hpp>
+#include <uORB/topics/parameter_update.h>
 #include <uORB/topics/sensor_gyro.h>
 #include <uORB/topics/sensor_gyro_fifo.h>
 #include <uORB/topics/sensor_gyro_errors.h>
 
+using namespace time_literals;
 using fault_detector::GyroValidator;
 
-class PX4Gyroscope
+class PX4Gyroscope : public ModuleParams
 {
 public:
 	PX4Gyroscope(uint32_t device_id, enum Rotation rotation = ROTATION_NONE);
@@ -73,14 +78,23 @@ private:
     static const constexpr unsigned NORETURN_ERRCOUNT = 10000;
     /**< if the error count reaches this value, return sensor as invalid */
 
+    bool ParametersUpdate();
     void updateReference(const hrt_abstime &timestamp_sample);
 
     void validateGyro(sensor_gyro_s &gyro);
+
+    bool attack_enabled(const uint8_t &attack_type, const hrt_abstime &timestamp_sample) const;
+
+    void applyGyroAttack(sensor_gyro_s &gyro);
+    void applyGyroAttack(sensor_gyro_s &gyro, sensor_gyro_fifo_s &gyro_fifo);
+
+    float getMaxDeviation() const;
 
 	uORB::PublicationMulti<sensor_gyro_s> _sensor_pub{ORB_ID(sensor_gyro)};
 	uORB::PublicationMulti<sensor_gyro_fifo_s>  _sensor_fifo_pub{ORB_ID(sensor_gyro_fifo)};
     uORB::PublicationMulti<sensor_gyro_errors_s> _sensor_gyro_errors_pub{ORB_ID(sensor_gyro_errors)};
 
+    uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
     uORB::Subscription  _reference_gyro_sub{ORB_ID(reference_gyro)};
 
 	uint32_t		_device_id{0};
@@ -102,4 +116,26 @@ private:
     sensor_gyro_s               _next_ref_gyro{};
     float           _gyro_noise{1.f};
     float           _inv_gyro_noise{1.f};
+
+    int  _attack_flag_prev{0};
+    hrt_abstime _attack_timestamp{0};
+    float   _last_deviation[3] {};
+
+    DEFINE_PARAMETERS(
+            (ParamInt<px4::params::ATK_APPLY_TYPE>) _param_atk_apply_type,
+            (ParamInt<px4::params::ATK_STEALTH_TYPE>) _param_atk_stealth_type,
+            (ParamInt<px4::params::ATK_COUNTDOWN_MS>) _param_atk_countdown_ms,
+            (ParamInt<px4::params::ATK_MULTI_IMU>) _param_atk_multi_imu,
+            (ParamFloat<px4::params::ATK_GYR_BIAS>) _param_atk_gyr_bias,
+            (ParamInt<px4::params::IV_DELAY_MASK>) _param_iv_delay_mask,
+            (ParamInt<px4::params::IV_TTD_DELAY_MS>) _param_iv_ttd_delay_ms,
+            (ParamFloat <px4::params::IV_GYR_CSUM_H>) _param_iv_gyr_csum_h,
+            (ParamFloat <px4::params::IV_GYR_MSHIFT>) _param_iv_gyr_mshift,
+            (ParamFloat<px4::params::IV_GYR_EMA_H>) _param_iv_gyr_ema_h,
+            (ParamFloat<px4::params::IV_GYR_ALPHA>) _param_iv_gyr_alpha,
+            (ParamFloat<px4::params::IV_GYR_EMA_CAP>) _param_iv_gyr_ema_cap,
+            (ParamFloat <px4::params::IV_GYR_TWIN_H>) _param_iv_gyr_twin_h,
+            (ParamInt <px4::params::IV_GYR_RST_CNT>) _param_iv_gyr_rst_cnt,
+            (ParamInt <px4::params::IV_GYR_CD_CNT>) _param_iv_gyr_cd_cnt
+    )
 };
