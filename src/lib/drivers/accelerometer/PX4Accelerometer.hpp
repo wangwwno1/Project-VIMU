@@ -106,5 +106,4 @@ private:
     sensor_accel_s               _next_ref_accel{};
     float           _acc_noise{1.f};
     float           _inv_acc_noise{1.f};
-    int32_t			_enable_debug_log{0}; // enable debug logging
 };

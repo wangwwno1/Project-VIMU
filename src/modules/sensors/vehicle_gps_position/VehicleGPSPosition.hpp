@@ -95,7 +95,6 @@ private:
 	void ParametersUpdate(bool force = false);
 	void Publish(const sensor_gps_s &gps, uint8_t selected);
     void PublishErrorStatus();
-    void PublishSensorStatus();
 
     void UpdateReferenceState();
 
@@ -150,8 +149,6 @@ private:
 
     RingBuffer<RefGpsSample> *_ref_gps_buffer{nullptr};
     RefGpsSample        _ref_gps_delayed{};
-
-    int32_t _enable_debug_log{0};
 
 	perf_counter_t _cycle_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": cycle")};
 

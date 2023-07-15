@@ -102,5 +102,4 @@ private:
     sensor_gyro_s               _next_ref_gyro{};
     float           _gyro_noise{1.f};
     float           _inv_gyro_noise{1.f};
-    int32_t         _enable_debug_log{0};
 };

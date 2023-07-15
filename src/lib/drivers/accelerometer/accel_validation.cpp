@@ -46,18 +46,16 @@ void PX4Accelerometer::validateAccel(sensor_accel_s &accel) {
         accel.error_count = fmaxf(accel.error_count + NORETURN_ERRCOUNT, NORETURN_ERRCOUNT + 1U);
     }
 
-    if (_enable_debug_log != 0) {
-        // Record error ratio and test ratio for debug and post-mortem analysis
-        sensor_accel_errors_s accel_error{};
+    // Record error ratio and test ratio for debug and post-mortem analysis
+    sensor_accel_errors_s accel_error{};
 
-        accel_error.device_id = accel.device_id;
-        accel_error.samples = accel.samples;
-        accel_error.x = error_residuals(0);
-        accel_error.y = error_residuals(1);
-        accel_error.z = error_residuals(2);
-        accel_error.test_ratio = _accel_validator.test_ratio();
-        accel_error.timestamp_reference = _curr_ref_accel.timestamp_sample;
-        accel_error.timestamp = hrt_absolute_time();
-        _sensor_accel_errors_pub.publish(accel_error);
-    }
+    accel_error.device_id = accel.device_id;
+    accel_error.samples = accel.samples;
+    accel_error.x = error_residuals(0);
+    accel_error.y = error_residuals(1);
+    accel_error.z = error_residuals(2);
+    accel_error.test_ratio = _accel_validator.test_ratio();
+    accel_error.timestamp_reference = _curr_ref_accel.timestamp_sample;
+    accel_error.timestamp = hrt_absolute_time();
+    _sensor_accel_errors_pub.publish(accel_error);
 }

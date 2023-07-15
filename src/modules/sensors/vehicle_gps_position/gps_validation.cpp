@@ -159,11 +159,21 @@ namespace sensors
                 // Determine health status by validator status
                 _gps_healthy = (_pos_validator.test_ratio() < 1.f) && (_vel_validator.test_ratio() < 1.f);
 
-                PublishSensorStatus();
-                if (_enable_debug_log != 0) {
-                    // Also publish error status for debug & detector identification
-                    PublishErrorStatus();
+                if ((_gps_healthy != _gps_healthy_prev) ||
+                    (hrt_elapsed_time(&_last_health_status_publish) > 1_s)) {
+                    sensors_status_gps_s status{};
+                    status.pos_test_ratio = _pos_validator.test_ratio();
+                    status.vel_test_ratio = _vel_validator.test_ratio();
+                    status.test_ratio = fmaxf(_pos_validator.test_ratio(), _vel_validator.test_ratio());
+                    status.healthy = _gps_healthy;
+                    status.ref_gps_enabled = !_gps_healthy;
+                    status.timestamp = hrt_absolute_time();
+                    _sensors_status_gps_pub.publish(status);
+
+                    _last_health_status_publish = status.timestamp;
                 }
+                // Also publish error status for debug & detector identification
+                PublishErrorStatus();
 
                 if (_gps_healthy != _gps_healthy_prev) {
                     _gps_healthy_prev = _gps_healthy;
@@ -180,22 +190,6 @@ namespace sensors
                 }
             }
 
-        }
-
-    }
-
-    void VehicleGPSPosition::PublishSensorStatus() {
-        if ((_enable_debug_log != 0) || (_gps_healthy != _gps_healthy_prev) || (hrt_elapsed_time(&_last_health_status_publish) > 1_s)) {
-            sensors_status_gps_s status{};
-            status.pos_test_ratio = _pos_validator.test_ratio();
-            status.vel_test_ratio = _vel_validator.test_ratio();
-            status.test_ratio = fmaxf(_pos_validator.test_ratio(), _vel_validator.test_ratio());
-            status.healthy = _gps_healthy;
-            status.ref_gps_enabled = !_gps_healthy;
-            status.timestamp = hrt_absolute_time();
-            _sensors_status_gps_pub.publish(status);
-
-            _last_health_status_publish = status.timestamp;
         }
 
     }

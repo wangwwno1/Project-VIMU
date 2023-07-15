@@ -66,10 +66,6 @@ PX4Gyroscope::PX4Gyroscope(uint32_t device_id, enum Rotation rotation) :
     param_get(param_find("IV_GYR_ALPHA"), &_gyro_validator_params.ema_params.alpha);
     param_get(param_find("IV_GYR_EMA_CAP"), &_gyro_validator_params.ema_params.cap);
 
-    int32_t profile{};
-    param_get(param_find("SDLOG_PROFILE"), &profile);
-    _enable_debug_log = profile & (1 << 11);
-
     _inv_gyro_noise = 1.f / fmaxf(_gyro_noise, 0.01f);
 }
 

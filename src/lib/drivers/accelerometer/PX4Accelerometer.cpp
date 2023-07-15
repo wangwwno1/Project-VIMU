@@ -82,10 +82,6 @@ PX4Accelerometer::PX4Accelerometer(uint32_t device_id, enum Rotation rotation) :
     param_get(param_find("IV_ACC_ALPHA"), &_accel_validator_params.ema_params.alpha);
     param_get(param_find("IV_ACC_EMA_CAP"), &_accel_validator_params.ema_params.cap);
 
-    int32_t profile{};
-    param_get(param_find("SDLOG_PROFILE"), &profile);
-    _enable_debug_log = profile & (1 << 11);
-
     _inv_acc_noise = 1.f / fmaxf(_acc_noise, 0.01f);
 }
 
