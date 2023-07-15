@@ -281,7 +281,7 @@ void VirtualIMU::UpdateIMUData() {
         if (_vehicle_imu_sub[uorb_idx].update(&imu)) {
             // We need to call the subscription once, so it won't take previously unreceived data as an update.
             // Only fuse sample that has passed validation
-            if (_copter_status.at_rest || _copter_status.landed || _imu_health_status[uorb_idx]) {
+            if ((_copter_status.at_rest || _copter_status.landed || (_param_vimu_fuse_gyro.get() && _imu_health_status[uorb_idx]))) {
                 // IMU OK, or we are on the ground, continue calculation
                 imuSample imu_sample{};
                 imu_sample.time_us = imu.timestamp_sample;

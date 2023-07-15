@@ -316,6 +316,7 @@ private:
             (ParamFloat<px4::params::VM_COG_OFF_Y>)         _param_vm_cog_off_y,
             (ParamFloat<px4::params::VM_COG_OFF_Z>)         _param_vm_cog_off_z,
             (ParamExtInt<px4::params::IV_IMU_DELAY_US>)     _param_iv_imu_delay_us,
-            (ParamExtInt<px4::params::VIMU_PREDICT_US>)     _param_vimu_predict_us
+            (ParamExtInt<px4::params::VIMU_PREDICT_US>)     _param_vimu_predict_us,
+            (ParamInt<px4::params::VIMU_FUSE_GYRO>)         _param_vimu_fuse_gyro
     )
 };
