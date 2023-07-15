@@ -3,6 +3,30 @@
 //
 
 /**
+ * Set the delay that force the detector raise alarm after the attack is initiated, for debug only.
+ *
+ * Will override the default sensor detection mechanism if greater than zero.
+ *
+ * @group Innovation Validator
+ */
+PARAM_DEFINE_INT32(IV_TTD_DELAY_MS, 0);
+
+/**
+ * Sensor Injection Attack Control Mask.
+ *
+ * Set bits in the following positions to set which detector is applied with fixed TTD. Set to zero to disable.
+ *
+ * @group Innovation Validator
+ * @min 0
+ * @max 15
+ * @bit 0 Gyroscope
+ * @bit 1 Accelerometer
+ * @bit 2 Gps position
+ * @bit 3 Gps velocity
+ */
+PARAM_DEFINE_INT32(IV_DELAY_MASK, 0);
+
+/**
  * Control limit for CuScore validation of the gps position innovation, expressed in standard deviations. Set zero to inhibit validation.
  *
  * @group Innovation Validator
@@ -278,3 +302,33 @@ PARAM_DEFINE_FLOAT(IV_GYR_ALPHA, 1.f);
  * @decimal 2
  */
 PARAM_DEFINE_FLOAT(IV_GYR_EMA_CAP, 0.f);
+
+/**
+ * Control limit for Time Window (TWIN) validation of the gyro rate innovation, expressed in standard deviations.
+ *
+ * Set zero to inhibit validation.
+ *
+ * @group Innovation Validator
+ * @min 0.0
+ * @reboot_required true
+ * @decimal 4
+ */
+PARAM_DEFINE_FLOAT(IV_GYR_TWIN_H, 0.f);
+
+/**
+ * Minimum samples required before reset gyro TWIN detector.
+ *
+ * @group Innovation Validator
+ * @min 1
+ * @reboot_required true
+ */
+PARAM_DEFINE_INT32(IV_GYR_RST_CNT, 1);
+
+/**
+ * Minimum consecutive normal samples before declare the sensor is normal.
+ *
+ * @group Innovation Validator
+ * @min 1
+ * @reboot_required true
+ */
+PARAM_DEFINE_INT32(IV_GYR_CD_CNT, 1);
