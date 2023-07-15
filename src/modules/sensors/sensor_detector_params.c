@@ -30,6 +30,7 @@ PARAM_DEFINE_FLOAT(IV_GPS_P_MSHIFT, 1.f);
  *
  * @group Innovation Validator
  * @min 0.0
+ * @reboot_required true
  * @decimal 4
  */
 PARAM_DEFINE_FLOAT(IV_GPS_P_EMA_H, 0.f);
@@ -40,6 +41,7 @@ PARAM_DEFINE_FLOAT(IV_GPS_P_EMA_H, 0.f);
  * @group Innovation Validator
  * @min 0.0001
  * @max 1.0
+ * @reboot_required true
  * @decimal 4
  */
 PARAM_DEFINE_FLOAT(IV_GPS_P_ALPHA, 1.f);
@@ -52,6 +54,7 @@ PARAM_DEFINE_FLOAT(IV_GPS_P_ALPHA, 1.f);
  *
  * @group Innovation Validator
  * @min 0.0
+ * @reboot_required true
  * @decimal 2
  */
 PARAM_DEFINE_FLOAT(IV_GPS_P_EMA_CAP, 0.f);
@@ -134,6 +137,7 @@ PARAM_DEFINE_FLOAT(IV_MAG_MSHIFT, 1.f);
  * @min 0.01
  * @max 1.0
  * @unit m/s^2
+ * @reboot_required true
  * @decimal 2
  */
 PARAM_DEFINE_FLOAT(IV_ACC_NOISE, 3.5e-1f);
@@ -147,6 +151,7 @@ PARAM_DEFINE_FLOAT(IV_ACC_NOISE, 3.5e-1f);
  *
  * @group Innovation Validator
  * @min 0.0
+ * @reboot_required true
  * @decimal 4
  */
 PARAM_DEFINE_FLOAT(IV_ACC_CSUM_H, 0.f);
@@ -159,6 +164,7 @@ PARAM_DEFINE_FLOAT(IV_ACC_CSUM_H, 0.f);
  *
  * @group Innovation Validator
  * @min 0.0001
+ * @reboot_required true
  * @decimal 4
  */
 PARAM_DEFINE_FLOAT(IV_ACC_MSHIFT, 1.f);
@@ -172,6 +178,7 @@ PARAM_DEFINE_FLOAT(IV_ACC_MSHIFT, 1.f);
  *
  * @group Innovation Validator
  * @min 0.0
+ * @reboot_required true
  * @decimal 4
  */
 PARAM_DEFINE_FLOAT(IV_ACC_EMA_H, 0.f);
@@ -182,6 +189,7 @@ PARAM_DEFINE_FLOAT(IV_ACC_EMA_H, 0.f);
  * @group Innovation Validator
  * @min 0.0001
  * @max 1.0
+ * @reboot_required true
  * @decimal 4
  */
 PARAM_DEFINE_FLOAT(IV_ACC_ALPHA, 1.f);
@@ -194,6 +202,7 @@ PARAM_DEFINE_FLOAT(IV_ACC_ALPHA, 1.f);
  *
  * @group Innovation Validator
  * @min 0.0
+ * @reboot_required true
  * @decimal 2
  */
 PARAM_DEFINE_FLOAT(IV_ACC_EMA_CAP, 0.f);
@@ -205,6 +214,7 @@ PARAM_DEFINE_FLOAT(IV_ACC_EMA_CAP, 0.f);
  * @min 0.0001
  * @max 0.2
  * @unit rad/s
+ * @reboot_required true
  * @decimal 4
  */
 PARAM_DEFINE_FLOAT(IV_GYR_NOISE, 0.1f);
@@ -240,6 +250,7 @@ PARAM_DEFINE_FLOAT(IV_GYR_MSHIFT, 1.f);
  *
  * @group Innovation Validator
  * @min 0.0
+ * @reboot_required true
  * @decimal 4
  */
 PARAM_DEFINE_FLOAT(IV_GYR_EMA_H, 0.f);
@@ -250,6 +261,7 @@ PARAM_DEFINE_FLOAT(IV_GYR_EMA_H, 0.f);
  * @group Innovation Validator
  * @min 0.0001
  * @max 1.0
+ * @reboot_required true
  * @decimal 4
  */
 PARAM_DEFINE_FLOAT(IV_GYR_ALPHA, 1.f);
@@ -262,6 +274,7 @@ PARAM_DEFINE_FLOAT(IV_GYR_ALPHA, 1.f);
  *
  * @group Innovation Validator
  * @min 0.0
+ * @reboot_required true
  * @decimal 2
  */
 PARAM_DEFINE_FLOAT(IV_GYR_EMA_CAP, 0.f);
