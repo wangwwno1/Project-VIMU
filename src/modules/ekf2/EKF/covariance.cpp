@@ -143,6 +143,7 @@ void Ekf::predictCovariance()
 					     || _accel_magnitude_filt > _params.acc_bias_learn_acc_lim;
 
 	const bool do_inhibit_all_axes = (_params.fusion_mode & MASK_INHIBIT_ACC_BIAS)
+                     || _use_reference_imu
 					 || is_manoeuvre_level_high
 					 || _fault_status.flags.bad_acc_vertical;
 
