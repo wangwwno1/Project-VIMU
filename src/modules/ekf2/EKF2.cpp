@@ -2237,7 +2237,6 @@ int EKF2::task_spawn(int argc, char *argv[])
                                       ref);
 
                             _ekf2_selector.load()->RequestReference(0);
-                            _ekf2_selector.load()->ScheduleNow();
                             reference_created = true;
 
                         } else {
