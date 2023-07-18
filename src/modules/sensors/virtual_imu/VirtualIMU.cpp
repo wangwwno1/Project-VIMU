@@ -330,10 +330,11 @@ void VirtualIMU::UpdateVirtualIMU(const hrt_abstime &now) {
     const float dt = (now - _last_state_update_us) * 1.e-6f;
     if (dt > 1.e-6f) {
         // Greater than 1 microsecond
+        CalculateActuatorState(dt, _current_actuator_state, _current_actuator_setpoint);
+
         _control_torque.zero();
         _control_acceleration.zero();
         if (_copter_status.in_air) {
-            CalculateActuatorState(dt, _current_actuator_state, _current_actuator_setpoint);
             Vector3f control_thrust{};
             CalculateThrustAndTorque(_current_actuator_state, control_thrust, _control_torque);
             _control_acceleration = control_thrust / math::max(_phys_model_params.mass, 1.e-5f);
