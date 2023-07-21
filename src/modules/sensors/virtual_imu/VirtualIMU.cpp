@@ -67,6 +67,9 @@ VirtualIMU::VirtualIMU():
     _accel_integrator.set_reset_interval(_imu_integration_interval_us);
     _accel_integrator.set_reset_samples(integral_samples);
 
+    param_get(param_find("PWM_MAIN_MIN"), &_pwm_main_min);
+    param_get(param_find("PWM_MAIN_MAX"), &_pwm_main_max);
+
 }
 
 VirtualIMU::~VirtualIMU()
@@ -179,8 +182,7 @@ void VirtualIMU::Run()
             }
 
             for (int i = 0; i < noutputs; ++i) {
-                // fixme pwm min max may changes by the ESC component, should check and sync
-                _current_actuator_setpoint(i) = (act.output[i] - PWM_DEFAULT_MIN) / (PWM_DEFAULT_MAX - PWM_DEFAULT_MIN);
+                _current_actuator_setpoint(i) = (act.output[i] - _pwm_main_min) / (_pwm_main_max - _pwm_main_min);
                 _current_actuator_setpoint(i) = math::constrain(_current_actuator_setpoint(i), 0.f, 1.f);
             }
 

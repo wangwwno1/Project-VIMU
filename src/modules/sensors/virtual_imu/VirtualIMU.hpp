@@ -236,6 +236,8 @@ private:
     VectorThrust    _current_actuator_state{};
     VectorThrust    _current_actuator_setpoint{};
 
+    int32_t _pwm_main_min{PWM_DEFAULT_MIN};
+    int32_t _pwm_main_max{PWM_DEFAULT_MAX};
     unsigned _actuator_outputs_last_generation{0};
     float _actuator_outputs_interval_us{NAN};
     math::WelfordMean<float, 1> _actuator_outputs_interval_mean{};
