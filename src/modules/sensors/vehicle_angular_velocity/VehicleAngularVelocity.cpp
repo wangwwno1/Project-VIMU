@@ -355,9 +355,9 @@ bool VehicleAngularVelocity::SensorSelectionUpdate(const hrt_abstime &time_now_u
 
             if (device_id == VIMU_DEVICE_ID) {
                 if (_reference_angular_velocity_sub.registerCallback()) {
-//                    // make sure gyro sub is unregistered
-//                    _sensor_fifo_sub.unregisterCallback();
-//                    _sensor_sub.unregisterCallback();
+                    // make sure gyro sub is unregistered
+                    _sensor_fifo_sub.unregisterCallback();
+                    _sensor_sub.unregisterCallback();
 
                     // Do not reset calibration device id because reference requires no calibration
                     // _calibration.set_device_id(sensor_gyro_sub.get().device_id);
