@@ -129,6 +129,38 @@ PARAM_DEFINE_FLOAT(VM_THR_FACTOR, 4.0f);
 PARAM_DEFINE_FLOAT(VM_MOTOR_TAU, 0.005f);
 
 /**
+ * Motor minimum PWM offset
+ *
+ * The PWM signal at zero thrust (i.e. the blade is barely spinning).
+ * rel_signal = (PWM_OUTPUT - VM_MOTOR_MIN_PWM) / 1000
+ *
+ * @min 800
+ * @max 1200
+ * @unit us
+ * @group Vehicle Model
+ * @reboot_required true
+ */
+PARAM_DEFINE_INT32(VM_MOTOR_MIN_PWM, 1000);
+
+/**
+ * Thrust to motor control signal model parameter
+ *
+ * Parameter used to model the nonlinear relationship between
+ * motor control signal (e.g. PWM) and static thrust.
+ *
+ * The model is: rel_thrust = factor * rel_signal^2 + (1-factor) * rel_signal,
+ * where rel_thrust is the normalized thrust between 0 and 1.
+ *
+ * @min 0.0
+ * @max 1.0
+ * @decimal 2
+ * @increment 0.01
+ * @group Vehicle Model
+ * @reboot_required true
+ */
+PARAM_DEFINE_FLOAT(VM_MOTOR_MDL_FAC, 0.0);
+
+/**
  *
  *
  * @group Vehicle Model
@@ -211,5 +243,35 @@ PARAM_DEFINE_FLOAT(VM_COG_OFF_Y, 0.0f);
  * @group Vehicle Model
  */
 PARAM_DEFINE_FLOAT(VM_COG_OFF_Z, 0.0f);
+
+/**
+ * X-axis Center of Thrust Offset to Body Frame
+ *
+ * @unit m
+ * @decimal 3
+ * @increment 0.001
+ * @group Vehicle Model
+ */
+PARAM_DEFINE_FLOAT(VM_COT_OFF_X, 0.0f);
+
+/**
+ * Y-axis Center of Thrust Offset to Body Frame
+ *
+ * @unit m
+ * @decimal 3
+ * @increment 0.001
+ * @group Vehicle Model
+ */
+PARAM_DEFINE_FLOAT(VM_COT_OFF_Y, 0.0f);
+
+/**
+ * Z-axis Center of Thrust Offset to Body Frame
+ *
+ * @unit m
+ * @decimal 3
+ * @increment 0.001
+ * @group Vehicle Model
+ */
+PARAM_DEFINE_FLOAT(VM_COT_OFF_Z, 0.0f);
 
 

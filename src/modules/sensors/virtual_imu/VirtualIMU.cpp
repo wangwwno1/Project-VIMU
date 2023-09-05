@@ -67,9 +67,6 @@ VirtualIMU::VirtualIMU():
     _accel_integrator.set_reset_interval(_imu_integration_interval_us);
     _accel_integrator.set_reset_samples(integral_samples);
 
-    param_get(param_find("PWM_MAIN_MIN"), &_pwm_main_min);
-    param_get(param_find("PWM_MAIN_MAX"), &_pwm_main_max);
-
 }
 
 VirtualIMU::~VirtualIMU()
@@ -182,8 +179,8 @@ void VirtualIMU::Run()
             }
 
             for (int i = 0; i < noutputs; ++i) {
-                _current_actuator_setpoint(i) = (act.output[i] - _pwm_main_min) / (_pwm_main_max - _pwm_main_min);
-                _current_actuator_setpoint(i) = math::constrain(_current_actuator_setpoint(i), 0.f, 1.f);
+                _current_actuator_setpoint(i) = (act.output[i] - _param_vm_motor_min_pwm.get()) / 1000.f;
+                _current_actuator_setpoint(i) = math::constrain(_current_actuator_setpoint(i), 0.f, 2.5f);
             }
 
             if (_last_state_update_us == 0) {
@@ -333,7 +330,9 @@ void VirtualIMU::UpdateVirtualIMU(const hrt_abstime &now) {
         _control_acceleration.zero();
         if (_copter_status.in_air) {
             Vector3f control_thrust{};
-            CalculateThrustAndTorque(_current_actuator_state, control_thrust, _control_torque);
+            const float thr_mdl_fac = _param_vm_motor_mdl_fac.get();
+            const VectorThrust scaled_actuator_state = (1 - thr_mdl_fac) * _current_actuator_state + thr_mdl_fac * _current_actuator_state.emult(_current_actuator_state);
+            CalculateThrustAndTorque(scaled_actuator_state, control_thrust, _control_torque);
             _control_acceleration = control_thrust / math::max(_phys_model_params.mass, 1.e-5f);
         }
 
@@ -431,6 +430,9 @@ void VirtualIMU::ParameterUpdate(bool force) {
         _phys_model_params.center_of_gravity(0) = _param_vm_cog_off_x.get();
         _phys_model_params.center_of_gravity(1) = _param_vm_cog_off_y.get();
         _phys_model_params.center_of_gravity(2) = _param_vm_cog_off_z.get();
+        _phys_model_params.center_of_thrust(0) = _param_vm_cot_off_x.get();
+        _phys_model_params.center_of_thrust(1) = _param_vm_cot_off_y.get();
+        _phys_model_params.center_of_thrust(2) = _param_vm_cot_off_z.get();
     }
 }
 
@@ -529,7 +531,9 @@ void VirtualIMU::ForecastAndPublishDetectionReference() {
 
     Vector3f forecast_thrust{};
     Vector3f forecast_torque{};
-    CalculateThrustAndTorque(forecast_actuator_state, forecast_thrust, forecast_torque);
+    const float thr_mdl_fac = _param_vm_motor_mdl_fac.get();
+    const VectorThrust scaled_actuator_state = (1 - thr_mdl_fac) * forecast_actuator_state + thr_mdl_fac * forecast_actuator_state.emult(forecast_actuator_state);
+    CalculateThrustAndTorque(scaled_actuator_state, forecast_thrust, forecast_torque);
 
     // Publish Reference Accelerometer & Gyroscope for IMU Detection
     const Vector3f accels = forecast_thrust / math::max(_phys_model_params.mass, 1.e-5f) + _external_accel - _accel_bias;
