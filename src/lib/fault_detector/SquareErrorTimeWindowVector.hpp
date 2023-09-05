@@ -83,11 +83,11 @@ namespace fault_detector {
         void reset_error_offset() { _error_offset.setAll(+Type(0.)); }
 
         const Type detect_threshold() const {
-            return sqrt(_param->control_limit / static_cast<Type>(math::max(_param->reset_samples, 1)));
+            return sqrt(_param->control_limit / static_cast<Type>(fmaxf(_param->reset_samples, 1)));
         }
 
         const Type test_ratio() const {
-            return _is_normal ? test_ratio_raw() : math::max(test_ratio_raw(), Type(+1.0001));
+            return _is_normal ? test_ratio_raw() : fmaxf(test_ratio_raw(), Type(+1.0001));
         }
 
         const Type test_ratio_raw() const {
@@ -95,7 +95,7 @@ namespace fault_detector {
         }
 
         const VectorN test_ratios() const {
-            return _error_sum / static_cast<Type>(math::max(_sample_counter, 1));
+            return _error_sum / static_cast<Type>(fmaxf(_sample_counter, 1));
         }
 
     protected:
