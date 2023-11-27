@@ -164,8 +164,11 @@ EKF2::EKF2(bool multi_mode, const px4::wq_config_t &config, bool replay_mode):
 	_param_ekf2_mag_check(_params->check_mag_strength),
 	_param_ekf2_synthetic_mag_z(_params->synthesize_mag_z),
 	_param_ekf2_gsf_tas_default(_params->EKFGSF_tas_default),
-    _param_iv_mag_csum_h(_params->mag_validator_params.control_limit),
-    _param_iv_mag_mshift(_params->mag_validator_params.mean_shift)
+    _param_iv_mag_csum_h(_params->mag_validator_params.cusum_params.control_limit),
+    _param_iv_mag_mshift(_params->mag_validator_params.cusum_params.mean_shift),
+    _param_iv_mag_ema_h(_params->mag_validator_params.ema_params.control_limit),
+    _param_iv_mag_alpha(_params->mag_validator_params.ema_params.alpha),
+    _param_iv_mag_ema_cap(_params->mag_validator_params.ema_params.cap)
 {
 	// advertise expected minimal topic set immediately to ensure logging
 	_attitude_pub.advertise();

@@ -175,7 +175,10 @@ private:
         (ParamInt<px4::params::ATK_MULTI_BARO>)         _param_atk_multi_baro,
         (ParamInt<px4::params::IV_DEBUG_LOG>)           _param_iv_debug_log,
         (ParamExtFloat<px4::params::IV_BARO_CSUM_H>)    _param_iv_baro_csum_h,
-        (ParamExtFloat<px4::params::IV_BARO_MSHIFT>)    _param_iv_baro_mshift
+        (ParamExtFloat<px4::params::IV_BARO_MSHIFT>)    _param_iv_baro_mshift,
+        (ParamExtFloat<px4::params::IV_BARO_EMA_H>)     _param_iv_baro_ema_h,
+        (ParamExtFloat<px4::params::IV_BARO_ALPHA>)     _param_iv_baro_alpha,
+        (ParamExtFloat<px4::params::IV_BARO_EMA_CAP>)   _param_iv_baro_ema_cap
 	)
 };
 }; // namespace sensors

@@ -47,8 +47,11 @@ static constexpr uint32_t SENSOR_TIMEOUT{300_ms};
 VehicleAirData::VehicleAirData() :
 	ModuleParams(nullptr),
 	ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::nav_and_controllers),
-    _param_iv_baro_csum_h(_baro_hgt_params.control_limit),
-    _param_iv_baro_mshift(_baro_hgt_params.mean_shift)
+    _param_iv_baro_csum_h(_baro_hgt_params.cusum_params.control_limit),
+    _param_iv_baro_mshift(_baro_hgt_params.cusum_params.mean_shift),
+    _param_iv_baro_ema_h(_baro_hgt_params.ema_params.control_limit),
+    _param_iv_baro_alpha(_baro_hgt_params.ema_params.alpha),
+    _param_iv_baro_ema_cap(_baro_hgt_params.ema_params.cap)
 {
 	_vehicle_air_data_pub.advertise();
 
