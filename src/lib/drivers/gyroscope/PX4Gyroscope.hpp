@@ -139,9 +139,6 @@ private:
             (ParamExtFloat <px4::params::IV_GYR_MSHIFT>) _param_iv_gyr_mshift,
             (ParamExtFloat<px4::params::IV_GYR_EMA_H>) _param_iv_gyr_ema_h,
             (ParamExtFloat<px4::params::IV_GYR_ALPHA>) _param_iv_gyr_alpha,
-            (ParamExtFloat<px4::params::IV_GYR_EMA_CAP>) _param_iv_gyr_ema_cap,
-            (ParamFloat <px4::params::IV_GYR_TWIN_H>) _param_iv_gyr_twin_h,
-            (ParamInt <px4::params::IV_GYR_RST_CNT>) _param_iv_gyr_rst_cnt,
-            (ParamInt <px4::params::IV_GYR_CD_CNT>) _param_iv_gyr_cd_cnt
+            (ParamExtFloat<px4::params::IV_GYR_EMA_CAP>) _param_iv_gyr_ema_cap
     )
 };

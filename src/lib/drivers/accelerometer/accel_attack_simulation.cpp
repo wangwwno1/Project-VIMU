@@ -50,27 +50,10 @@ void PX4Accelerometer::applyAccelAttack(sensor_accel_s &accel, sensor_accel_fifo
 
 float PX4Accelerometer::getMaxDeviation() const {
     // Which stealthy?
-    float max_deviation = NAN;
-    const uint8_t type_mask = _param_atk_stealth_type.get();
-    if (type_mask & sensor_attack::DET_CUSUM && (_param_iv_acc_mshift.get() > 0.f)) {
-        max_deviation = _param_iv_acc_mshift.get();
+    // Which stealthy?
+    if (_param_atk_stealth_type.get() == sensor_attack::NO_STEALTHY) {
+        return NAN;
+    } else {
+        return _param_atk_acc_bias.get();
     }
-
-    if (type_mask & sensor_attack::DET_EWMA && (_param_iv_acc_ema_h.get() > 0.f)) {
-        if (PX4_ISFINITE(max_deviation)) {
-            max_deviation = fminf(max_deviation, _param_iv_acc_ema_h.get());
-        } else {
-            max_deviation = _param_iv_acc_ema_h.get();
-        }
-    }
-
-    if (type_mask & sensor_attack::DET_TIME_WINDOW &&
-        (_param_iv_acc_twin_h.get() > 0.f) && (_param_iv_acc_rst_cnt.get() >= 1)) {
-        const float twin_deviation = _param_iv_acc_twin_h.get() / _param_iv_acc_rst_cnt.get();
-        if (!PX4_ISFINITE(max_deviation) || twin_deviation <= max_deviation) {
-            max_deviation = twin_deviation;
-        }
-    }
-
-    return 0.99f * max_deviation * _param_iv_acc_noise.get();
 }

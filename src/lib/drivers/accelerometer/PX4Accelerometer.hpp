@@ -138,9 +138,6 @@ private:
         (ParamExtFloat <px4::params::IV_ACC_MSHIFT>) _param_iv_acc_mshift,
         (ParamExtFloat<px4::params::IV_ACC_EMA_H>) _param_iv_acc_ema_h,
         (ParamExtFloat<px4::params::IV_ACC_ALPHA>) _param_iv_acc_alpha,
-        (ParamExtFloat<px4::params::IV_ACC_EMA_CAP>) _param_iv_acc_ema_cap,
-        (ParamFloat <px4::params::IV_ACC_TWIN_H>) _param_iv_acc_twin_h,
-        (ParamInt <px4::params::IV_ACC_RST_CNT>) _param_iv_acc_rst_cnt,
-        (ParamInt <px4::params::IV_ACC_CD_CNT>) _param_iv_acc_cd_cnt
+        (ParamExtFloat<px4::params::IV_ACC_EMA_CAP>) _param_iv_acc_ema_cap
     )
 };

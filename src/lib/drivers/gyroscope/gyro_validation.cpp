@@ -32,12 +32,6 @@ void PX4Gyroscope::validateGyro(sensor_gyro_s &gyro) {
         return;
     }
 
-    // fixme remove
-    if (gyro.timestamp_sample != _curr_ref_gyro.timestamp_sample) {
-        PX4_WARN("%" PRIu64 ": %d - reference async: GYRO %" PRIu64 " vs. REF %" PRIu64 ")" ,
-                 hrt_absolute_time(), get_instance(), gyro.timestamp_sample, _curr_ref_gyro.timestamp_sample);
-    }
-
     Vector3f error_residuals{0.f, 0.f, 0.f};
     error_residuals(0) = gyro.x - _curr_ref_gyro.x;
     error_residuals(1) = gyro.y - _curr_ref_gyro.y;
@@ -49,7 +43,7 @@ void PX4Gyroscope::validateGyro(sensor_gyro_s &gyro) {
     // Simulate Stealthy Attack for CUSUM
     const float max_deviation = getMaxDeviation();
     Vector3f cusum_error_ratios{0.f, 0.f, 0.f};
-    if (PX4_ISFINITE(max_deviation) && _curr_ref_gyro.timestamp_sample >= _attack_timestamp) {
+    if (PX4_ISFINITE(max_deviation) && attack_enabled(sensor_attack::ATK_MASK_GYRO, gyro.timestamp_sample)) {
        cusum_error_ratios.setAll(max_deviation * inv_gyr_noise);
     } else if (gyro.timestamp_sample - _last_angular_rates.timestamp_sample <= 20_ms) {
         const Vector3f ref_ang_vel{_last_angular_rates.xyz};
