@@ -84,7 +84,7 @@ namespace fault_detector {
         void reset_error_offset() { _error_offset.setAll(+Type(0.)); }
 
         const Type detect_threshold() const {
-            return _param->control_limit;
+            return _param->control_limit * static_cast<Type>(fmaxf(_param->reset_samples, 1));
         }
 
         const Type test_ratio() const {
