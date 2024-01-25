@@ -129,7 +129,9 @@ private:
             (ParamInt<px4::params::ATK_STEALTH_TYPE>) _param_atk_stealth_type,
             (ParamInt<px4::params::ATK_COUNTDOWN_MS>) _param_atk_countdown_ms,
             (ParamInt<px4::params::ATK_MULTI_IMU>) _param_atk_multi_imu,
-            (ParamFloat<px4::params::ATK_GYR_BIAS>) _param_atk_gyr_bias,
+            (ParamFloat<px4::params::ATK_GYR_AMP>) _param_atk_gyr_amp,
+            (ParamFloat<px4::params::ATK_GYR_FREQ>) _param_atk_gyr_freq,
+            (ParamFloat<px4::params::ATK_GYR_PHASE>) _param_atk_gyr_phase,
 
             (ParamInt<px4::params::IV_DEBUG_LOG>) _param_iv_debug_log,
             (ParamInt<px4::params::IV_DELAY_MASK>) _param_iv_delay_mask,

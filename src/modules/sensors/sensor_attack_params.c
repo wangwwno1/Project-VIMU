@@ -251,16 +251,46 @@ PARAM_DEFINE_FLOAT(ATK_GPS_V_HDG, 0.0f);
 PARAM_DEFINE_FLOAT(ATK_GPS_V_PITCH, 0.0f);
 
 /**
- * Gyroscope Spoofing Deviation - Roll Bias
+ * Gyroscope Acoustic Attack - Induced Amplitude
  *
- * Set the bias of deviation at Roll Axis.
+ * Set the induced amplitude of acoustic attack.
  *
+ * The attack signal is modelled as: ATK_GYR_AMP * cosf(2 * M_PI *  ATK_GYR_FREQ * timestamp + ATK_GYR_PHASE)
  *
  * @group Sensors
  * @unit rad/s
  * @decimal 3
  */
-PARAM_DEFINE_FLOAT(ATK_GYR_BIAS, 0.00f);
+PARAM_DEFINE_FLOAT(ATK_GYR_AMP, 0.00f);
+
+/**
+ * Gyroscope Acoustic Attack - Induced Frequency
+ *
+ * Set the induced frequency of acoustic attack.
+ *
+ * The attack signal is modelled as: ATK_GYR_AMP * cosf(2 * M_PI *  ATK_GYR_FREQ * timestamp + ATK_GYR_PHASE)
+ * ATK_GYR_FREQ corresponds to the difference between the acoustic signal frequency and the driving frequency.
+ *
+ * @group Sensors
+ * @unit Hz
+ * @min 0
+ * @decimal 1
+ */
+PARAM_DEFINE_FLOAT(ATK_GYR_FREQ, 0.0f);
+
+/**
+ * Gyroscope Acoustic Attack - Initial Phase
+ *
+ * Set the initial phase of acoustic attack.
+ *
+ * The attack signal is modelled as: ATK_GYR_AMP * cosf(2 * M_PI *  ATK_GYR_FREQ * timestamp + ATK_GYR_PHASE)
+ *
+ * @group Sensors
+ * @unit deg
+ * @min -180
+ * @max 180
+ */
+PARAM_DEFINE_FLOAT(ATK_GYR_PHASE, 0.0f);
 
 /**
  * Accelerometer Spoofing Deviation - North Bias

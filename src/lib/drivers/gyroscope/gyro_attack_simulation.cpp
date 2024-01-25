@@ -16,8 +16,17 @@ void PX4Gyroscope::applyGyroAttack(sensor_gyro_s &gyro) {
             _last_deviation[0] = _curr_ref_gyro.x + max_deviation - gyro.x;
             _last_deviation[1] = math::constrain(gyro.y, _curr_ref_gyro.y - max_deviation, _curr_ref_gyro.y + max_deviation) - gyro.y;
             _last_deviation[2] = math::constrain(gyro.z, _curr_ref_gyro.z - max_deviation, _curr_ref_gyro.z + max_deviation) - gyro.z;
+        } else if (_param_atk_gyr_freq.get() > 1.e-4f) {
+            static double attack_time_sec = 0.0;
+            static float amp_offset = 0.f;
+
+            attack_time_sec = static_cast<double>((gyro.timestamp_sample - _attack_timestamp) / 1.e6);
+            amp_offset = _param_atk_gyr_amp.get() * cosf(static_cast<float>(2.0 * attack_time_sec) * M_PI_F * _param_atk_gyr_freq.get() + _param_atk_gyr_phase.get() * M_DEG_TO_RAD_F);
+            _last_deviation[0] = amp_offset;
+            _last_deviation[1] = amp_offset;
+            _last_deviation[2] = amp_offset;
         } else {
-            _last_deviation[0] = _param_atk_gyr_bias.get();
+            _last_deviation[0] = _param_atk_gyr_amp.get();
             _last_deviation[1] = 0.f;
             _last_deviation[2] = 0.f;
         }
@@ -53,6 +62,6 @@ float PX4Gyroscope::getMaxDeviation() const {
     if (_param_atk_stealth_type.get() == sensor_attack::NO_STEALTHY) {
         return NAN;
     } else {
-        return _param_atk_gyr_bias.get();
+        return _param_atk_gyr_amp.get();
     }
 }
