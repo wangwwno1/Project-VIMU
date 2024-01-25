@@ -46,6 +46,8 @@
 #include <uORB/topics/sensor_gyro.h>
 #include <uORB/topics/sensor_gyro_fifo.h>
 #include <uORB/topics/sensor_gyro_errors.h>
+#include <uORB/topics/vehicle_angular_velocity.h>
+#include <uORB/topics/vehicle_angular_acceleration.h>
 
 using namespace time_literals;
 using fault_detector::GyroValidator;
@@ -95,7 +97,9 @@ private:
     uORB::PublicationMulti<sensor_gyro_errors_s> _sensor_gyro_errors_pub{ORB_ID(sensor_gyro_errors)};
 
     uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
-    uORB::Subscription  _reference_gyro_sub{ORB_ID(reference_gyro)};
+    uORB::Subscription         _reference_gyro_sub{ORB_ID(reference_gyro)};
+	uORB::Subscription         _vehicle_angular_velocity_sub{ORB_ID(vehicle_angular_velocity)};
+	uORB::Subscription         _reference_angular_acceleration_sub{ORB_ID(reference_angular_acceleration)};
 
 	uint32_t		_device_id{0};
 	const enum Rotation	_rotation;
@@ -114,6 +118,7 @@ private:
     GyroValidator               _gyro_validator{&_gyro_validator_params};
     sensor_gyro_s               _curr_ref_gyro{};
     sensor_gyro_s               _next_ref_gyro{};
+    vehicle_angular_velocity_s  _last_angular_rates{};
 
     int  _attack_flag_prev{0};
     hrt_abstime _attack_timestamp{0};

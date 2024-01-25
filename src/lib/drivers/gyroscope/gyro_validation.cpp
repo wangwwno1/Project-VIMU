@@ -13,6 +13,17 @@ void PX4Gyroscope::updateReference(const hrt_abstime &timestamp_sample) {
             break;
         }
     }
+
+    if ((_last_angular_rates.timestamp != 0) && (timestamp_sample - _last_angular_rates.timestamp_sample <= 20_ms)) {
+        const float dt = 1.e-6f * (timestamp_sample - _last_angular_rates.timestamp_sample);
+        vehicle_angular_acceleration_s ref_ang_accel{};
+        _reference_angular_acceleration_sub.copy(&ref_ang_accel);
+
+        _last_angular_rates.xyz[0] += ref_ang_accel.xyz[0] * dt;
+        _last_angular_rates.xyz[1] += ref_ang_accel.xyz[1] * dt;
+        _last_angular_rates.xyz[2] += ref_ang_accel.xyz[2] * dt;
+        _last_angular_rates.timestamp_sample = timestamp_sample;
+    }
 }
 
 void PX4Gyroscope::validateGyro(sensor_gyro_s &gyro) {
@@ -34,7 +45,19 @@ void PX4Gyroscope::validateGyro(sensor_gyro_s &gyro) {
 
     const float inv_gyr_noise = 1.f / fmaxf(_param_iv_gyr_noise.get(), 0.01f);
     const Vector3f error_ratio = error_residuals * inv_gyr_noise;
-    _gyro_validator.validate(error_ratio);
+
+    // Simulate Stealthy Attack for CUSUM
+    const float max_deviation = getMaxDeviation();
+    Vector3f cusum_error_ratios{0.f, 0.f, 0.f};
+    if (PX4_ISFINITE(max_deviation) && _curr_ref_gyro.timestamp_sample >= _attack_timestamp) {
+       cusum_error_ratios.setAll(max_deviation * inv_gyr_noise);
+    } else if (gyro.timestamp_sample - _last_angular_rates.timestamp_sample <= 20_ms) {
+        const Vector3f ref_ang_vel{_last_angular_rates.xyz};
+        const Vector3f gyro_meas{gyro.x, gyro.y, gyro.z};
+        cusum_error_ratios = (gyro_meas - ref_ang_vel) * inv_gyr_noise;
+    }
+    _vehicle_angular_velocity_sub.update(&_last_angular_rates);  // Update reference angular rate after validate
+    _gyro_validator.validate(cusum_error_ratios, error_ratio);
 
     if (attack_enabled(sensor_attack::ATK_MASK_GYRO, gyro.timestamp_sample)
         && _param_iv_delay_mask.get() & sensor_attack::ATK_MASK_GYRO

@@ -46,8 +46,12 @@ namespace fault_detector {
         using DetectorVector<Type, N>::validate;
 
         bool validate(const VectorN &innov_ratios) {
-            bool result = _cusum_detector.validate(innov_ratios);
-            result = _ema_detector.validate(innov_ratios) && result;
+            return validate(innov_ratios, innov_ratios);
+        }
+
+        bool validate(const VectorN &cusum_innov_ratios, const VectorN &ema_innov_ratios) {
+            bool result = _cusum_detector.validate(cusum_innov_ratios);
+            result = _ema_detector.validate(ema_innov_ratios) && result;
             this->_error_mask = _cusum_detector.state() | _ema_detector.state();
 
             return result;
