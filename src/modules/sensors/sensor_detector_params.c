@@ -230,7 +230,7 @@ PARAM_DEFINE_FLOAT(IV_BARO_CSUM_H, 0.f);
 PARAM_DEFINE_FLOAT(IV_BARO_MSHIFT, 1.f);
 
 /**
- * Control limit for Exponential Moving Average (EMA) validation of the acceleration error, expressed in standard deviation.
+ * Control limit for Exponential Moving Average (EMA) validation of the barometer height innovation, expressed in standard deviation.
  *
  * The formula is EMA(T) = min(max(val, -CAP), +CAP) * Alpha + (1-Alpha) * EMA(T-1)
  * Set zero to inhibit validation.
@@ -242,7 +242,7 @@ PARAM_DEFINE_FLOAT(IV_BARO_MSHIFT, 1.f);
 PARAM_DEFINE_FLOAT(IV_BARO_EMA_H, 0.f);
 
 /**
- * Alpha for Exponential Moving Average (EMA) validation of the acceleration error, expressed in standard deviation.
+ * Alpha for Exponential Moving Average (EMA) validation of the barometer height innovation.
  *
  * @group Innovation Validator
  * @min 0.0001
@@ -252,9 +252,9 @@ PARAM_DEFINE_FLOAT(IV_BARO_EMA_H, 0.f);
 PARAM_DEFINE_FLOAT(IV_BARO_ALPHA, 1.f);
 
 /**
- * Clip value for Exponential Moving Average (EMA) validation of the acceleration error, expressed in standard deviation.
+ * Clip value for Exponential Moving Average (EMA) validation of the mag field strength, expressed in standard deviation.
  *
- * This constrain the maximum value that will input into EMA detector
+ * This constrain the maximum value that will input into EMA detector.
  * Set zero to inhibit clip, for inhibit validation please refer to the control limit description.
  *
  * @group Innovation Validator
@@ -320,7 +320,7 @@ PARAM_DEFINE_FLOAT(IV_MAG_CSUM_H, 0.f);
 PARAM_DEFINE_FLOAT(IV_MAG_MSHIFT, 1.f);
 
 /**
- * Control limit for Exponential Moving Average (EMA) validation of the acceleration error, expressed in standard deviation.
+ * Control limit for Exponential Moving Average (EMA) validation of the mag field strength, expressed in standard deviation.
  *
  * The formula is EMA(T) = min(max(val, -CAP), +CAP) * Alpha + (1-Alpha) * EMA(T-1)
  * Set zero to inhibit validation.
@@ -332,7 +332,7 @@ PARAM_DEFINE_FLOAT(IV_MAG_MSHIFT, 1.f);
 PARAM_DEFINE_FLOAT(IV_MAG_EMA_H, 0.f);
 
 /**
- * Alpha for Exponential Moving Average (EMA) validation of the acceleration error, expressed in standard deviation.
+ * Alpha for Exponential Moving Average (EMA) validation of the mag field strength.
  *
  * @group Innovation Validator
  * @min 0.0001
@@ -342,7 +342,7 @@ PARAM_DEFINE_FLOAT(IV_MAG_EMA_H, 0.f);
 PARAM_DEFINE_FLOAT(IV_MAG_ALPHA, 1.f);
 
 /**
- * Clip value for Exponential Moving Average (EMA) validation of the acceleration error, expressed in standard deviation.
+ * Clip value for Exponential Moving Average (EMA) validation of the mag field strength, expressed in standard deviation.
  *
  * This constrain the maximum value that will input into EMA detector
  * Set zero to inhibit clip, for inhibit validation please refer to the control limit description.
