@@ -88,7 +88,7 @@ namespace fault_detector {
         }
 
         const Type test_ratio() const {
-            return _is_normal ? test_ratio_raw() : math::max(test_ratio_raw(), Type(+1.0001));
+            return _is_normal ? test_ratio_raw() : fmaxf(test_ratio_raw(), Type(+1.0001));
         }
 
         const Type test_ratio_raw() const {

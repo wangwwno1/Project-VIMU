@@ -36,11 +36,11 @@ void PX4Accelerometer::validateAccel(sensor_accel_s &accel) {
         // Use delay for precise Time to Detection
         if (hrt_elapsed_time(&_attack_timestamp) >= (hrt_abstime) (_param_iv_ttd_delay_ms.get() * 1000)) {
             // Declare accel failure immediately by add error count
-            accel.error_count = math::max(accel.error_count + NORETURN_ERRCOUNT, NORETURN_ERRCOUNT + 1U);
+            accel.error_count = fmaxf(accel.error_count + NORETURN_ERRCOUNT, NORETURN_ERRCOUNT + 1U);
         }
     } else if (_accel_validator.test_ratio() >= 1.f) {
         // Declare accel failure immediately by add error count
-        accel.error_count = math::max(accel.error_count + NORETURN_ERRCOUNT, NORETURN_ERRCOUNT + 1U);
+        accel.error_count = fmaxf(accel.error_count + NORETURN_ERRCOUNT, NORETURN_ERRCOUNT + 1U);
     }
 
     if (_param_iv_debug_log.get()) {

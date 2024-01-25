@@ -14,7 +14,7 @@ namespace sensor_attack {
     public:
         Deviation() = delete;
         Deviation(DeviationParams *params);
-        ~Deviation() = default;
+        virtual ~Deviation() = default;
 
         void reset();
         Vector3f calculate_deviation(const hrt_abstime &now);
@@ -30,7 +30,7 @@ namespace sensor_attack {
     public:
         BiasDeviation() = delete;
         BiasDeviation(DeviationParams *params) : Deviation(params) {}
-        ~BiasDeviation() = default;
+        ~BiasDeviation() override = default;
         float time_to_max_deviation() override { return 0.f; }
 
     protected:
@@ -41,7 +41,7 @@ namespace sensor_attack {
     public:
         LinearDeviation() = delete;
         LinearDeviation(DeviationParams *params) : Deviation(params) {}
-        ~LinearDeviation() = default;
+        ~LinearDeviation() override = default;
         float time_to_max_deviation() override;
     protected:
         float get_deviation_length(float delta_time) override;
@@ -51,7 +51,7 @@ namespace sensor_attack {
     public:
         ExponentialDeviation() = delete;
         ExponentialDeviation(DeviationParams *params) : Deviation(params) {}
-        ~ExponentialDeviation() = default;
+        ~ExponentialDeviation() override = default;
         float time_to_max_deviation() override;
     protected:
         float get_deviation_length(float delta_time) override;

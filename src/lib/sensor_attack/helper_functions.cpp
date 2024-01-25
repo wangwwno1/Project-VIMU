@@ -12,7 +12,7 @@ namespace sensor_attack {
         // Actual Deviation is opposite to signal deviation.
         float north_m = -actual_deviation(0), east_m = -actual_deviation(1), down_m = -actual_deviation(2);
 
-        if (fabs(north_m) > 0.f || fabs(east_m) > 0.f) {
+        if (fabsf(north_m) > 0.f || fabsf(east_m) > 0.f) {
             double gps_lat = gps_output.lat / 1.0e7;
             double gps_lon = gps_output.lon / 1.0e7;
             const MapProjection fake_ref{gps_lat, gps_lon};
@@ -22,7 +22,7 @@ namespace sensor_attack {
             gps_output.lon = (int32_t) (gps_lon * 1.0e7);
         }
 
-        if (fabs(down_m) > 0.f) {
+        if (fabsf(down_m) > 0.f) {
             gps_output.alt = gps_output.alt + (int32_t) (double(down_m) * 1.0e3);
         }
     }
