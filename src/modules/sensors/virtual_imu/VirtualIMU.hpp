@@ -190,7 +190,7 @@ private:
 
     // Publications
     uORB::PublicationMulti<vehicle_angular_acceleration_s>   _reference_angular_acceleration_pub{ORB_ID(reference_angular_acceleration)};
-    uORB::PublicationMulti<vehicle_angular_velocity_s>       _reference_angular_velocity{ORB_ID(reference_angular_velocity)};
+    uORB::PublicationMulti<vehicle_angular_velocity_s>       _reference_angular_velocity_pub{ORB_ID(reference_angular_velocity)};
     uORB::PublicationMulti<sensor_accel_s>                   _reference_accel_pub{ORB_ID(reference_accel)};
     uORB::PublicationMulti<sensor_gyro_s>                    _reference_gyro_pub{ORB_ID(reference_gyro)};
     uORB::PublicationMulti<sensor_combined_s>                _reference_combined_pub{ORB_ID(reference_combined)};

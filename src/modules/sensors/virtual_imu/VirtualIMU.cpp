@@ -58,7 +58,7 @@ VirtualIMU::~VirtualIMU()
 bool VirtualIMU::multi_init(int instance) {
     // advertise all topics to ensure consistent uORB instance numbering
     _reference_angular_acceleration_pub.advertise();
-    _reference_angular_velocity.advertise();
+    _reference_angular_velocity_pub.advertise();
     _reference_accel_pub.advertise();
     _reference_gyro_pub.advertise();
     _reference_imu_pub.advertise();
@@ -68,7 +68,7 @@ bool VirtualIMU::multi_init(int instance) {
     const bool changed_instance = _estimator_sensor_bias_sub.ChangeInstance(status_instance) && _estimator_aero_wrench_sub.ChangeInstance(status_instance);
 
     if ((status_instance >= 0) && changed_instance
-        && (_reference_angular_velocity.get_instance() == status_instance)
+        && (_reference_angular_velocity_pub.get_instance() == status_instance)
         && (_reference_accel_pub.get_instance() == status_instance)
         && (_reference_gyro_pub.get_instance() == status_instance)) {
 
@@ -79,7 +79,7 @@ bool VirtualIMU::multi_init(int instance) {
     }
 
     PX4_ERR("publication instance problem: %d ref-rate: %d ref-accel: %d ref-gyro: %d", status_instance,
-            _reference_angular_velocity.get_instance(), _reference_accel_pub.get_instance(), _reference_gyro_pub.get_instance());
+            _reference_angular_velocity_pub.get_instance(), _reference_accel_pub.get_instance(), _reference_gyro_pub.get_instance());
 
     return false;
 }
@@ -375,7 +375,7 @@ void VirtualIMU::PublishAngularVelocityAndAcceleration() {
     v_angular_velocity.timestamp_sample = _last_update_us;
     _ekf.getAngularRate().copyTo(v_angular_velocity.xyz);
     v_angular_velocity.timestamp = hrt_absolute_time();
-    _reference_angular_velocity.publish(v_angular_velocity);
+    _reference_angular_velocity_pub.publish(v_angular_velocity);
 }
 
 void VirtualIMU::PublishSensorReference() {
