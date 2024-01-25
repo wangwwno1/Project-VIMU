@@ -21,13 +21,14 @@ PARAM_DEFINE_INT32(ATK_COUNTDOWN_MS, 5000);
  *
  * @group Sensor Attack
  * @min 0
- * @max 63
+ * @max 128
  * @bit 0 Gyroscope spoofing (Apply to both Vehicle IMU and rate control)
  * @bit 1 Accelerometer spoofing
  * @bit 2 Gps position spoofing
  * @bit 3 Gps velocity spoofing
  * @bit 4 Barometer height jamming
  * @bit 5 Magnetometer jamming
+ * @bit 6 GPS attack with both velocity and position
  */
 PARAM_DEFINE_INT32(ATK_APPLY_TYPE, 0);
 

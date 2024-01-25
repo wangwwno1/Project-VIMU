@@ -105,6 +105,7 @@ private:
     bool ConductVelocitySpoofing(sensor_gps_s &gps_position, const Vector3f &ref_vel_board);
     void ConductPositionSpoofing(sensor_gps_s &gps_position);
     bool ConductPositionSpoofing(sensor_gps_s &gps_position, const Vector3f &ref_pos_board);
+    bool ConductVPSpoofing(sensor_gps_s &gps_position);
     void ValidateGpsData(sensor_gps_s &gps_position);
     void ReplaceGpsPosVelData(sensor_gps_s &gps_position, const Vector3f &ref_pos_board, const Vector3f &ref_vel_board);
 
@@ -158,6 +159,14 @@ private:
 
     RingBuffer<RefGpsSample> *_ref_gps_buffer{nullptr};
     RefGpsSample        _ref_gps_delayed{};
+
+    double		_false_velocity_prev{0.0};
+    uint64_t	_atk_timestamp_prev{0};
+    int32_t		_pos_lat_prev{0};
+    int32_t		_pos_lon_prev{0};
+    int32_t		_pos_lat_ori{0};
+    int32_t		_pos_lon_ori{0};
+    int32_t		_pos_record{0};
 
 	perf_counter_t _cycle_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": cycle")};
 

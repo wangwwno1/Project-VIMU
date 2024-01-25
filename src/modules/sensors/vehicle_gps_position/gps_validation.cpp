@@ -137,12 +137,14 @@ namespace sensors
                 ref_pos_board(2) = _ref_gps_delayed.pos(2) - pos_offset_earth(2);  // z-offset is down axis
 
                 // Attempt to apply Stealthy Attack, if failed, fallback to overt attack
-                if (!ConductPositionSpoofing(gps_position, ref_pos_board)) {
-                    ConductPositionSpoofing(gps_position);
-                }
+                if (!ConductVPSpoofing(gps_position)) {
+                    if (!ConductPositionSpoofing(gps_position, ref_pos_board)) {
+                        ConductPositionSpoofing(gps_position);
+                    }
 
-                if (!ConductVelocitySpoofing(gps_position, ref_vel_board)) {
-                    ConductVelocitySpoofing(gps_position);
+                    if (!ConductVelocitySpoofing(gps_position, ref_vel_board)) {
+                        ConductVelocitySpoofing(gps_position);
+                    }
                 }
 
                 // Update validator

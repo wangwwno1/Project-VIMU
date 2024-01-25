@@ -18,6 +18,7 @@ namespace sensor_attack {
 
         void reset();
         Vector3f calculate_deviation(const hrt_abstime &now);
+        hrt_abstime   get_start_time() {return start_time;}
         virtual float time_to_max_deviation() = 0;
 
     protected:

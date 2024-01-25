@@ -218,6 +218,74 @@ namespace sensors
         }
 
         return attack_applied;
+    }
+
+    bool VehicleGPSPosition::ConductVPSpoofing(sensor_gps_s &gps_position) {
+        bool attack_applied = false;
+        if (attack_enabled(sensor_attack::ATK_GPS_V_P)) {
+            attack_applied = true;
+            if (_pos_record == 1) {
+                // fixme this spoofing can only start once, change the pipeline
+                _pos_lat_ori = gps_position.lat;
+                _pos_lon_ori = gps_position.lon;
+                _pos_record = 0;
+                PX4_INFO("Initiate Joint Position & Velocity GPS Spoofing.");
+            }
+
+            double false_velocity = 0.0;
+            double abs_atk_time = static_cast<double>(gps_position.timestamp - _attack_timestamp) / 1000000.0;
+            if (abs_atk_time < 60) {
+                if (abs_atk_time < 3) {
+                    false_velocity = 0.05 * abs_atk_time - 0.15;
+                } else if (abs_atk_time < 3.65) {
+                    false_velocity = 0.153846 * abs_atk_time - 0.46154;
+                } else if (abs_atk_time < 3.85) {
+                    false_velocity = 0.5 * abs_atk_time - 1.725;
+                } else if (abs_atk_time < 11.5) {
+                    false_velocity = -0.01307 * abs_atk_time + 0.250327;
+                } else if (abs_atk_time < 13.5) {
+                    false_velocity = -0.05 * abs_atk_time + 0.675;
+                } else if (abs_atk_time < 15.05) {
+                    false_velocity = -0.06452 * abs_atk_time + 0.870968;
+                } else if (abs_atk_time < 21) {
+                    false_velocity = 0.016807 * abs_atk_time - 0.35294;
+                } else if (abs_atk_time < 22) {
+                    false_velocity = 0.1 * abs_atk_time - 2.1;
+                } else {
+                    false_velocity = 0.0;
+                }
+                double delta_x = (false_velocity + _false_velocity_prev) / 2 * static_cast<double>(gps_position.timestamp - _atk_timestamp_prev) / 1000000.0;
+
+                double gps_lat = _pos_lat_prev / 1.0e7;
+                double gps_lon = _pos_lon_prev / 1.0e7;
+                const MapProjection fake_ref{gps_lat, gps_lon};
+                fake_ref.reproject(0.0, delta_x, gps_lat, gps_lon);
+
+                gps_position.lat = (int32_t) (gps_lat * 1.0e7);
+                gps_position.lon = (int32_t) (gps_lon * 1.0e7);
+
+                gps_position.vel_e_m_s = false_velocity;
+                gps_position.vel_m_s = sqrtf(gps_position.vel_n_m_s * gps_position.vel_n_m_s +
+                                            gps_position.vel_e_m_s * gps_position.vel_e_m_s +
+                                            gps_position.vel_d_m_s * gps_position.vel_d_m_s);
+
+            } else {
+                gps_position.lat = _pos_lat_ori;
+                gps_position.lon = _pos_lon_ori;
+                gps_position.vel_e_m_s = 0.0;
+                gps_position.vel_m_s = sqrtf(gps_position.vel_n_m_s * gps_position.vel_n_m_s +
+                                            gps_position.vel_e_m_s * gps_position.vel_e_m_s +
+                                            gps_position.vel_d_m_s * gps_position.vel_d_m_s);
+            }
+
+        }
+
+        _false_velocity_prev = gps_position.vel_m_s;
+        _atk_timestamp_prev = gps_position.timestamp;
+        _pos_lat_prev = gps_position.lat;
+        _pos_lon_prev = gps_position.lon;
+
+        return attack_applied;
 
     }
 
