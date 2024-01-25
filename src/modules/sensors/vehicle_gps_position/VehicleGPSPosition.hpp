@@ -33,7 +33,6 @@
 
 #pragma once
 
-#include <memory>
 #include <lib/fault_detector/fault_detector.hpp>
 #include <lib/mathlib/math/Limits.hpp>
 #include <lib/matrix/matrix/math.hpp>
@@ -62,6 +61,7 @@ using namespace time_literals;
 using fault_detector::GPSPosValidator;
 using fault_detector::GPSVelValidator;
 using matrix::Quatf;
+using matrix::Vector3f;
 
 namespace sensors
 {
@@ -163,10 +163,10 @@ private:
 
 	GpsBlending _gps_blending;
 
-    sensor_attack::DeviationParams              _pos_atk_params{};
-	std::unique_ptr<sensor_attack::Deviation>   _pos_deviation = nullptr;
-    sensor_attack::DeviationParams              _vel_atk_params{};
-    std::unique_ptr<sensor_attack::Deviation>   _vel_deviation = nullptr;
+    sensor_attack::DeviationParams                  _pos_atk_params{};
+    px4::atomic<sensor_attack::Deviation *>  _pos_deviation {nullptr};
+    sensor_attack::DeviationParams                  _vel_atk_params{};
+    px4::atomic<sensor_attack::Deviation *>  _vel_deviation {nullptr};
 
 	DEFINE_PARAMETERS(
 		(ParamInt<px4::params::SENS_GPS_MASK>)          _param_sens_gps_mask,

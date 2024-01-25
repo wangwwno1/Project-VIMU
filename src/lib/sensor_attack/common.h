@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include <iostream>
 #include <px4_platform_common/defines.h>
 #include <lib/geo/geo.h>
 #include <lib/mathlib/mathlib.h>
