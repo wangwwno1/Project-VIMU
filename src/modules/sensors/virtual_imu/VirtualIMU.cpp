@@ -66,6 +66,8 @@ VirtualIMU::VirtualIMU():
 
     _accel_integrator.set_reset_interval(_imu_integration_interval_us);
     _accel_integrator.set_reset_samples(integral_samples);
+
+    _voltage_scaler.reset(1.0f);
 }
 
 VirtualIMU::~VirtualIMU()
@@ -165,6 +167,20 @@ void VirtualIMU::Run()
     // Measurement Update
     UpdateIMUData();
 
+    if (_param_vm_bat_intr_cell.get() > -1.0f){
+        battery_status_s  battery_status{};
+        if (_battery_status_sub.update(&battery_status)
+            && (battery_status.voltage_v > -1.f)
+            && (battery_status.current_a > -1.f)
+            && (battery_status.cell_count > 0)) {
+            const int cell_count = battery_status.cell_count;
+            const float internal_resistance = _param_vm_bat_intr_cell.get() * cell_count;
+            const float voltage_reference = _param_vm_bat_ref_volt.get() * cell_count;
+            const float voltage_unload = battery_status.voltage_v + battery_status.current_a * internal_resistance;
+            _voltage_scaler.update(voltage_unload / voltage_reference);
+        }
+    }
+
     // Run() will be invoked when actuator_output receive update.
     // Update Actuator Outputs
     bool actuator_updated = false;
@@ -179,7 +195,7 @@ void VirtualIMU::Run()
 
             for (int i = 0; i < noutputs; ++i) {
                 // fixme determine the setpoint formula
-                _current_actuator_setpoint(i) = (act.output[i] - _param_vm_motor_min_pwm.get()) / 1000.f;
+                _current_actuator_setpoint(i) = _voltage_scaler.getState() * (act.output[i] - _param_vm_motor_min_pwm.get()) / 1000.f;
                 _current_actuator_setpoint(i) = math::constrain(_current_actuator_setpoint(i), 0.f, 2.5f);
             }
 

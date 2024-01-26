@@ -274,4 +274,24 @@ PARAM_DEFINE_FLOAT(VM_COT_OFF_Y, 0.0f);
  */
 PARAM_DEFINE_FLOAT(VM_COT_OFF_Z, 0.0f);
 
+/**
+ * Battery Internal Resistance that compensates voltage drop
+ *
+ * @decimal 3
+ * @increment 0.001
+ * @group Vehicle Model
+ */
+PARAM_DEFINE_FLOAT(VM_BAT_INTR_CELL, -1.0f);
+
+/**
+ * Battery reference voltage
+ *
+ * @decimal 3
+ * @min 3.00
+ * @max 5.00
+ * @increment 0.001
+ * @group Vehicle Model
+ */
+PARAM_DEFINE_FLOAT(VM_BAT_REF_VOLT, 4.05f);
+
 

@@ -53,6 +53,7 @@
 #include <uORB/SubscriptionCallback.hpp>
 #include <uORB/SubscriptionMultiArray.hpp>
 #include <uORB/topics/actuator_outputs.h>
+#include <uORB/topics/battery_status.h>
 #include <uORB/topics/estimator_aero_wrench.h>
 #include <uORB/topics/estimator_sensor_bias.h>
 #include <uORB/topics/parameter_update.h>
@@ -245,6 +246,9 @@ private:
         Vector3f center_of_thrust{0.f, 0.f, 0.f};
     };
 
+    // Battery Scale
+    AlphaFilter<float>  _voltage_scaler{0.03f};  // CUTOFF_FREQ = 0.5 Hz @ 100Hz Sampling Rate  // todo acquire sampling rate
+
     CopterPhysModelParams _phys_model_params{};
 
     // IMU health status that control AuxEKF angular velocity fusion
@@ -270,6 +274,7 @@ private:
     uORB::SubscriptionCallbackWorkItem                  _actuator_outputs_sub{this, ORB_ID(actuator_outputs)};      // subscription that schedules VirtualIMU when updated
     uORB::SubscriptionMultiArray<vehicle_imu_s>         _vehicle_imu_sub{ORB_ID::vehicle_imu};
 	uORB::SubscriptionInterval                          _parameter_update_sub{ORB_ID(parameter_update), 1_s};       // subscription limited to 1 Hz updates
+    uORB::Subscription                                  _battery_status_sub{ORB_ID(battery_status), 0};             // todo which battery?
     uORB::Subscription                                  _estimator_sensor_bias_sub{ORB_ID(estimator_sensor_bias)};
 	uORB::Subscription                                  _estimator_aero_wrench_sub{ORB_ID(estimator_aero_wrench)};
     uORB::Subscription                                  _vehicle_land_detected_sub{ORB_ID(vehicle_land_detected)};
@@ -287,8 +292,8 @@ private:
             (ParamExtFloat<px4::params::VM_MASS>)           _param_vm_mass,
             (ParamExtFloat<px4::params::VM_THR_FACTOR>)     _param_vm_thr_factor,
             (ParamExtFloat<px4::params::VM_MOTOR_TAU>)      _param_vm_motor_tau,
-            (ParamExtFloat<px4::params::VM_MOTOR_MIN_PWM>)  _param_vm_motor_min_pwm,
-            (ParamExtFloat<px4::params::VM_MOTOR_MDL_FAC>)  _param_vm_motor_mdl_fac,
+            (ParamInt<px4::params::VM_MOTOR_MIN_PWM>)       _param_vm_motor_min_pwm,
+            (ParamFloat<px4::params::VM_MOTOR_MDL_FAC>)     _param_vm_motor_mdl_fac,
             (ParamExtFloat<px4::params::VM_DRAG_FACTOR>)    _param_vm_drag_factor,
             (ParamExtFloat<px4::params::VM_ANG_ACC_NOISE>)  _param_vm_ang_acc_noise,
             (ParamFloat<px4::params::VM_INERTIA_XX>)        _param_vm_inertia_xx,
@@ -306,6 +311,8 @@ private:
             (ParamFloat<px4::params::VM_COT_OFF_X>)         _param_vm_cot_off_x,
             (ParamFloat<px4::params::VM_COT_OFF_Y>)         _param_vm_cot_off_y,
             (ParamFloat<px4::params::VM_COT_OFF_Z>)         _param_vm_cot_off_z,
+            (ParamFloat<px4::params::VM_BAT_INTR_CELL>)     _param_vm_bat_intr_cell,
+            (ParamFloat<px4::params::VM_BAT_REF_VOLT>)      _param_vm_bat_ref_volt,
             (ParamExtInt<px4::params::IV_IMU_DELAY_US>)     _param_iv_imu_delay_us,
             (ParamExtInt<px4::params::VIMU_PREDICT_US>)     _param_vimu_predict_us,
             (ParamInt<px4::params::VIMU_FUSE_GYRO>)         _param_vimu_fuse_gyro
