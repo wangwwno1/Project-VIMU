@@ -46,6 +46,7 @@ PARAM_DEFINE_FLOAT(VM_MASS, 1.f);
  *
  * @unit kg m^2
  * @decimal 5
+ * @min 0.00001
  * @increment 0.00001
  * @group Vehicle Model
  */
@@ -56,6 +57,7 @@ PARAM_DEFINE_FLOAT(VM_INERTIA_XX, 0.01f);
  *
  * @unit kg m^2
  * @decimal 5
+ * @min 0.00001
  * @increment 0.00001
  * @group Vehicle Model
  */
@@ -66,6 +68,7 @@ PARAM_DEFINE_FLOAT(VM_INERTIA_YY, 0.01f);
  *
  * @unit kg m^2
  * @decimal 5
+ * @min 0.00001
  * @increment 0.00001
  * @group Vehicle Model
  */
@@ -102,7 +105,9 @@ PARAM_DEFINE_FLOAT(VM_INERTIA_XZ, 0.f);
 PARAM_DEFINE_FLOAT(VM_INERTIA_YZ, 0.f);
 
 /**
+ * Thrust Coefficient of motors
  *
+ * Defined as thrust = VM_THR_FACTOR * rel_signal
  *
  * @group Vehicle Model
  * @min 0.01
@@ -124,6 +129,38 @@ PARAM_DEFINE_FLOAT(VM_THR_FACTOR, 4.0f);
 PARAM_DEFINE_FLOAT(VM_MOTOR_TAU, 0.005f);
 
 /**
+ * Motor minimum PWM offset
+ *
+ * The PWM signal at zero thrust (i.e. the blade is barely spinning).
+ * rel_signal = (PWM_OUTPUT - VM_MOTOR_MIN_PWM) / 1000
+ *
+ * @min 800
+ * @max 1200
+ * @unit us
+ * @group Vehicle Model
+ * @reboot_required true
+ */
+PARAM_DEFINE_INT32(VM_MOTOR_MIN_PWM, 1000);
+
+/**
+ * Thrust to motor control signal model parameter
+ *
+ * Parameter used to model the nonlinear relationship between
+ * motor control signal (e.g. PWM) and static thrust.
+ *
+ * The model is: rel_thrust = factor * rel_signal^2 + (1-factor) * rel_signal,
+ * where rel_thrust = (PWM_OUTPUT - VM_MOTOR_MIN_PWM) / 1000
+ *
+ * @min 0.0
+ * @max 1.0
+ * @decimal 2
+ * @increment 0.01
+ * @group Vehicle Model
+ * @reboot_required true
+ */
+PARAM_DEFINE_FLOAT(VM_MOTOR_MDL_FAC, 0.0);
+
+/**
  *
  *
  * @group Vehicle Model
@@ -138,10 +175,103 @@ PARAM_DEFINE_FLOAT(VM_DRAG_FACTOR, 0.05f);
  *
  * @unit rad/s^2
  * @decimal 5
+ * @min 0.00001
  * @increment 0.00001
  * @group Vehicle Model
  */
 PARAM_DEFINE_FLOAT(VM_ANG_ACC_NOISE, 0.075f);
 
+/**
+ * X-axis length Scale used for motor position matrix
+ *
+ * @unit m
+ * @decimal 3
+ * @min 0.001
+ * @increment 0.001
+ * @group Vehicle Model
+ */
+PARAM_DEFINE_FLOAT(VM_LEN_SCALE_X, 1.0f);
+
+/**
+ * Y-axis length Scale used for motor position matrix
+ *
+ * @unit m
+ * @decimal 3
+ * @min 0.001
+ * @increment 0.001
+ * @group Vehicle Model
+ */
+PARAM_DEFINE_FLOAT(VM_LEN_SCALE_Y, 1.0f);
+
+/**
+ * Z-axis length Scale used for motor position matrix
+ *
+ * @unit m
+ * @decimal 3
+ * @min 0.001
+ * @increment 0.001
+ * @group Vehicle Model
+ */
+PARAM_DEFINE_FLOAT(VM_LEN_SCALE_Z, 1.0f);
+
+/**
+ * X-axis Center of Gravity Offset to Body Frame
+ *
+ * @unit m
+ * @decimal 3
+ * @increment 0.001
+ * @group Vehicle Model
+ */
+PARAM_DEFINE_FLOAT(VM_COG_OFF_X, 0.0f);
+
+/**
+ * Y-axis Center of Gravity Offset to Body Frame
+ *
+ * @unit m
+ * @decimal 3
+ * @increment 0.001
+ * @group Vehicle Model
+ */
+PARAM_DEFINE_FLOAT(VM_COG_OFF_Y, 0.0f);
+
+/**
+ * Z-axis Center of Gravity Offset to Body Frame
+ *
+ * @unit m
+ * @decimal 3
+ * @increment 0.001
+ * @group Vehicle Model
+ */
+PARAM_DEFINE_FLOAT(VM_COG_OFF_Z, 0.0f);
+
+/**
+ * X-axis Center of Thrust Offset to Body Frame
+ *
+ * @unit m
+ * @decimal 3
+ * @increment 0.001
+ * @group Vehicle Model
+ */
+PARAM_DEFINE_FLOAT(VM_COT_OFF_X, 0.0f);
+
+/**
+ * Y-axis Center of Thrust Offset to Body Frame
+ *
+ * @unit m
+ * @decimal 3
+ * @increment 0.001
+ * @group Vehicle Model
+ */
+PARAM_DEFINE_FLOAT(VM_COT_OFF_Y, 0.0f);
+
+/**
+ * Z-axis Center of Thrust Offset to Body Frame
+ *
+ * @unit m
+ * @decimal 3
+ * @increment 0.001
+ * @group Vehicle Model
+ */
+PARAM_DEFINE_FLOAT(VM_COT_OFF_Z, 0.0f);
 
 
