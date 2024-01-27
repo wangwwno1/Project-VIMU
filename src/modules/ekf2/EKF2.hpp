@@ -568,6 +568,11 @@ private:
 		(ParamExtFloat<px4::params::EKF2_GSF_TAS>)
 		_param_ekf2_gsf_tas_default,	///< default value of true airspeed assumed during fixed wing operation
 
+        (ParamExtFloat<px4::params::VM_LCOEF_ROLL>)  _param_lcoef_roll,
+        (ParamExtFloat<px4::params::VM_QCOEF_ROLL>)  _param_qcoef_roll,
+        (ParamExtFloat<px4::params::VM_LCOEF_PITCH>) _param_lcoef_pitch,
+        (ParamExtFloat<px4::params::VM_QCOEF_PITCH>) _param_qcoef_pitch,
+
         (ParamExtFloat<px4::params::IV_MAG_CSUM_H>)  _param_iv_mag_csum_h,
         (ParamExtFloat<px4::params::IV_MAG_MSHIFT>)  _param_iv_mag_mshift,
         (ParamExtFloat<px4::params::IV_MAG_EMA_H>)   _param_iv_mag_ema_h,

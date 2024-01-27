@@ -369,6 +369,10 @@ struct parameters {
 	float bcoef_x{100.0f};			///< bluff body drag ballistic coefficient for the X-axis (kg/m**2)
 	float bcoef_y{100.0f};			///< bluff body drag ballistic coefficient for the Y-axis (kg/m**2)
 	float mcoef{0.1f};			///< rotor momentum drag coefficient for the X and Y axes (1/s)
+    float lcoef_roll{0.0f};			///< linear drag torque coefficient for the Roll-axis
+    float lcoef_pitch{0.0f};		///< linear drag torque ballistic coefficient for the Pitch-axis
+    float qcoef_roll{0.0f};			///< quadratic drag torque coefficient for the Roll-axis
+    float qcoef_pitch{0.0f};		///< rotor momentum drag coefficient for the Pitch-axis
 
 	// control of accel error detection and mitigation (IMU clipping)
 	const float vert_innov_test_lim{3.0f};	///< Number of standard deviations of vertical vel/pos innovations allowed before triggering a vertical acceleration failure

@@ -294,4 +294,43 @@ PARAM_DEFINE_FLOAT(VM_BAT_INTR_CELL, -1.0f);
  */
 PARAM_DEFINE_FLOAT(VM_BAT_REF_VOLT, 4.05f);
 
+/**
+ * Roll-axis linear coefficient used for drag torque estimation.
+ *
+ * @group Vehicle Model
+ * @min -10.0
+ * @max 10.0
+ * @decimal 3
+ */
+PARAM_DEFINE_FLOAT(VM_LCOEF_ROLL, 0.0f);
+
+/**
+ * Pitch-axis linear coefficient used for drag torque estimation.
+ *
+ * @group Vehicle Model
+ * @min -10.0
+ * @max 10.0
+ * @decimal 3
+ */
+PARAM_DEFINE_FLOAT(VM_LCOEF_PITCH, 0.0f);
+
+/**
+ * Roll-axis quadratic coefficient used for drag torque estimation.
+ *
+ * @group Vehicle Model
+ * @min -10.0
+ * @max 10.0
+ * @decimal 3
+ */
+PARAM_DEFINE_FLOAT(VM_QCOEF_ROLL, 0.0f);
+
+/**
+ * Pitch-axis quadratic coefficient used for drag torque estimation.
+ *
+ * @group Vehicle Model
+ * @min -10.0
+ * @max 10.0
+ * @decimal 3
+ */
+PARAM_DEFINE_FLOAT(VM_QCOEF_PITCH, 0.0f);
 

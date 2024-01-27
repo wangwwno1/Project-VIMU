@@ -164,6 +164,10 @@ EKF2::EKF2(bool multi_mode, const px4::wq_config_t &config, bool replay_mode):
 	_param_ekf2_mag_check(_params->check_mag_strength),
 	_param_ekf2_synthetic_mag_z(_params->synthesize_mag_z),
 	_param_ekf2_gsf_tas_default(_params->EKFGSF_tas_default),
+    _param_lcoef_roll(_params->lcoef_roll),
+    _param_qcoef_roll(_params->qcoef_roll),
+    _param_lcoef_pitch(_params->lcoef_pitch),
+    _param_qcoef_pitch(_params->qcoef_pitch),
     _param_iv_mag_csum_h(_params->mag_validator_params.cusum_params.control_limit),
     _param_iv_mag_mshift(_params->mag_validator_params.cusum_params.mean_shift),
     _param_iv_mag_ema_h(_params->mag_validator_params.ema_params.control_limit),
@@ -712,7 +716,7 @@ void EKF2::PublishAerodynamicWrench(const hrt_abstime &timestamp) {
     estimator_aero_wrench_s aero_wrench{};
 
     aero_wrench.timestamp_sample = timestamp;
-    _ekf.getAerodynamicWrench(aero_wrench.acceleration, aero_wrench.angular_acceleration);
+    _ekf.getAerodynamicWrench(aero_wrench.rel_wind_body, aero_wrench.acceleration, aero_wrench.angular_acceleration);
     aero_wrench.timestamp = _replay_mode ? timestamp : hrt_absolute_time();
 
     _estimator_aero_wrench_pub.publish(aero_wrench);

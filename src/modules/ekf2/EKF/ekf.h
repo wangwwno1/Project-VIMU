@@ -337,7 +337,8 @@ public:
 
 	const BaroBiasEstimator::status &getBaroBiasEstimatorStatus() const { return _baro_b_est.getStatus(); }
 
-    void getAerodynamicWrench(float drag_accel[3], float drag_ang_accel[3]) const {
+    void getAerodynamicWrench(float rel_wind_body[3], float drag_accel[3], float drag_ang_accel[3]) const {
+        _rel_wind_body.copyTo(rel_wind_body);
         _drag_acceleration.copyTo(drag_accel);
         _drag_angular_acceleration.copyTo(drag_ang_accel);
     }
@@ -368,10 +369,12 @@ private:
 
     // update aerodynamic wrench estimation based on the ground velocity
     void updateAerodynamicWrench();
+    void updateDragForce(const float rel_wind_speed);
+    void updateDragTorque(const float rel_wind_speed);
     // Aerodynamic wrench estimation
     Vector3f _drag_acceleration;
     Vector3f _drag_angular_acceleration;
-    Vector3f _wind_estimate;
+    Vector3f _rel_wind_body;
 
 	// check if the EKF is dead reckoning horizontal velocity using inertial data only
 	void update_deadreckoning_status();
