@@ -161,6 +161,36 @@ PARAM_DEFINE_INT32(VM_MOTOR_MIN_PWM, 1000);
 PARAM_DEFINE_FLOAT(VM_MOTOR_MDL_FAC, 0.0);
 
 /**
+ * Thrust coefficient for horizontal induced velocity
+ *
+ * The model is: ind_thrust_xy = factor * (V_{i,x} ** 2 + V_{i,y} ** 2),
+ * where V_{i,*} is the induced velocity of ith motor.
+ * Set -1.0 to inhibit this term
+ *
+ * @min -1.0
+ * @decimal 3
+ * @increment 0.001
+ * @group Vehicle Model
+ * @reboot_required true
+ */
+PARAM_DEFINE_FLOAT(VM_TCOEF_VI_XY, -1.0f);
+
+/**
+ * Thrust coefficient for vertical induced velocity
+ *
+ * The model is: ind_thrust_z = factor * V_{i,z},
+ * where V_{i,*} is the induced velocity of ith motor.
+ * Set -1.0 to inhibit this term
+ *
+ * @min -1.0
+ * @decimal 3
+ * @increment 0.001
+ * @group Vehicle Model
+ * @reboot_required true
+ */
+PARAM_DEFINE_FLOAT(VM_TCOEF_VI_Z, -1.0f);
+
+/**
  *
  *
  * @group Vehicle Model

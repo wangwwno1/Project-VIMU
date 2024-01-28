@@ -1,0 +1,146 @@
+__max_num_vm_mc_motors: &max_num_vm_mc_motors 4
+
+module_name: VirtualIMU
+
+parameters:
+    - group: Vehicle Model
+      definitions:
+        # Motor parameters
+        # (MC) Rotors - Omit Position and Axis for now
+#        VM_ROTOR${i}_PX:
+#            description:
+#                short: Position of rotor ${i} along X body axis
+#            type: float
+#            decimal: 2
+#            increment: 0.1
+#            unit: m
+#            num_instances: *max_num_vm_mc_motors
+#            min: -100
+#            max: 100
+#            default: 0.0
+#        VM_ROTOR${i}_PY:
+#            description:
+#                short: Position of rotor ${i} along Y body axis
+#            type: float
+#            decimal: 2
+#            increment: 0.1
+#            unit: m
+#            num_instances: *max_num_vm_mc_motors
+#            min: -100
+#            max: 100
+#            default: 0.0
+#        VM_ROTOR${i}_PZ:
+#            description:
+#                short: Position of rotor ${i} along Z body axis
+#            type: float
+#            decimal: 2
+#            increment: 0.1
+#            unit: m
+#            num_instances: *max_num_vm_mc_motors
+#            min: -100
+#            max: 100
+#            default: 0.0
+#
+#        VM_ROTOR${i}_AX:
+#            description:
+#                short: Axis of rotor ${i} thrust vector, X body axis component
+#                long: Only the direction is considered (the vector is normalized).
+#            type: float
+#            decimal: 2
+#            increment: 0.1
+#            num_instances: *max_num_vm_mc_motors
+#            min: -100
+#            max: 100
+#            default: 0.0
+#        VM_ROTOR${i}_AY:
+#            description:
+#                short: Axis of rotor ${i} thrust vector, Y body axis component
+#                long: Only the direction is considered (the vector is normalized).
+#            type: float
+#            decimal: 2
+#            increment: 0.1
+#            num_instances: *max_num_vm_mc_motors
+#            min: -100
+#            max: 100
+#            default: 0.0
+#        VM_ROTOR${i}_AZ:
+#            description:
+#                short: Axis of rotor ${i} thrust vector, Z body axis component
+#                long: Only the direction is considered (the vector is normalized).
+#            type: float
+#            decimal: 2
+#            increment: 0.1
+#            num_instances: *max_num_vm_mc_motors
+#            min: -100
+#            max: 100
+#            default: -1.0
+        VM_ROTOR${i}_CTS:
+            description:
+                short: Thrust scale of rotor ${i}
+                long: |
+                  The thrust scale if defined as Thrust (N) = CT * CTS * u^2,
+                  where u (with value between actuator minimum (VM_MOTOR_MIN_PWM) and maximum)
+                  is the output signal sent to the motor controller.
+            type: float
+            decimal: 3
+            increment: 0.01
+            reboot_required: true
+            num_instances: *max_num_vm_mc_motors
+            min: 0
+            max: 100
+            default: 1.0
+        VM_ROTOR${i}_TRS:
+            description:
+                short: Thrust roll scale of rotor ${i}
+                long: |
+                  Thrust roll scale is defined as RollTorque = TRS * Thrust.
+            type: float
+            decimal: 3
+            increment: 0.01
+            reboot_required: true
+            num_instances: *max_num_vm_mc_motors
+            min: 0.0
+            max: 100
+            default: 1.0
+        VM_ROTOR${i}_TPS:
+            description:
+                short: Thrust pitch scale of rotor ${i}
+                long: |
+                  Thrust pitch scale is defined as PitchTorque = TPS * Thrust.
+            type: float
+            decimal: 3
+            increment: 0.01
+            reboot_required: true
+            num_instances: *max_num_vm_mc_motors
+            min: 0.0
+            max: 100
+            default: 1.0
+        VM_ROTOR${i}_KMS:
+            description:
+                short: Moment coefficient scale of rotor ${i}
+                long: |
+                  The moment coefficient if defined as Torque = KM * Thrust.  (TODO: FIXME)
+            type: float
+            decimal: 3
+            increment: 0.01
+            reboot_required: true
+            num_instances: *max_num_vm_mc_motors
+            min: 0.0
+            max: 100
+            default: 1.0
+        VM_ROTOR${i}_KRP:
+            description:
+                short: Combined moment coefficient of rotor ${i} and propeller
+                long: |
+                  (TODO: FIXME) The moment coefficient if defined as SpinTorque = KRP * du.
+                  where du (u with value between actuator minimum (VM_MOTOR_MIN_PWM) and maximum)
+                  is the change of the output signal sent to the motor controller.
+            type: float
+            decimal: 3
+            increment: 0.01
+            reboot_required: true
+            num_instances: *max_num_vm_mc_motors
+            min: -1.0
+            max: 100
+            default: -1.0
+

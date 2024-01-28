@@ -38,5 +38,6 @@ px4_add_library(VirtualIMU
 		VirtualIMU.hpp
 		VirtualIMU.cpp
 )
+set_property(GLOBAL APPEND PROPERTY PX4_MODULE_CONFIG_FILES ${CMAKE_CURRENT_SOURCE_DIR}/module.yaml)
 
 target_link_libraries(VirtualIMU PRIVATE mathlib geo fault_detector px4_work_queue)

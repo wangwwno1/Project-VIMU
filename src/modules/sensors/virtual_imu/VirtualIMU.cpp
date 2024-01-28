@@ -41,6 +41,8 @@ VirtualIMU::VirtualIMU():
     _param_vm_mass(_phys_model_params.mass),
     _param_vm_thr_factor(_phys_model_params.Ct),
     _param_vm_motor_tau(_phys_model_params.motor_time_constant),
+    _param_vm_tcoef_vi_xy(_phys_model_params.Ct_vxy),
+    _param_vm_tcoef_vi_z(_phys_model_params.Ct_vz),
     _param_vm_drag_factor(_phys_model_params.Cd),
     _param_vm_ang_acc_noise(_ekf_params->process_noise),
     _param_iv_imu_delay_us(_ekf_params->imu_fuse_delay_us),
@@ -68,6 +70,31 @@ VirtualIMU::VirtualIMU():
     _accel_integrator.set_reset_samples(integral_samples);
 
     _voltage_scaler.reset(1.0f);
+
+    // Load rotor parameters
+    char param_name[17];
+
+    for (unsigned i = 0; i < noutputs; ++i) {
+        snprintf(param_name, sizeof(param_name), "VM_ROTOR%u_CTS", i);
+        if (param_find(param_name) == PARAM_INVALID) {
+            PX4_ERR("Could not find parameter with name %s", param_name);
+        }
+
+        param_get(param_find(param_name), &_rotor_param[i].thrust_scale);
+
+        snprintf(param_name, sizeof(param_name), "VM_ROTOR%u_TRS", i);
+        param_get(param_find(param_name), &_rotor_param[i].roll_scale);
+
+        snprintf(param_name, sizeof(param_name), "VM_ROTOR%u_TPS", i);
+        param_get(param_find(param_name), &_rotor_param[i].pitch_scale);
+
+        snprintf(param_name, sizeof(param_name), "VM_ROTOR%u_KMS", i);
+        param_get(param_find(param_name), &_rotor_param[i].yaw_scale);
+
+        snprintf(param_name, sizeof(param_name), "VM_ROTOR%u_KRP", i);
+        param_get(param_find(param_name), &_rotor_param[i].yaw_delta_state_scale);
+
+    }
 }
 
 VirtualIMU::~VirtualIMU()
@@ -332,6 +359,7 @@ void VirtualIMU::UpdateBiasAndAerodynamicWrench() {
     // update aerodynamic drag
     estimator_aero_wrench_s aero_wrench;
     if (_estimator_aero_wrench_sub.update(&aero_wrench)) {
+        _rel_wind_body = static_cast<Vector3f>(aero_wrench.rel_wind_body);
         _external_accel = static_cast<Vector3f>(aero_wrench.acceleration);
         _external_angular_accel = static_cast<Vector3f>(aero_wrench.angular_acceleration);
     }
@@ -341,16 +369,13 @@ void VirtualIMU::UpdateVirtualIMU(const hrt_abstime &now) {
     const float dt = (now - _last_state_update_us) * 1.e-6f;
     if (dt > 1.e-6f) {
         // Greater than 1 microsecond
-        CalculateActuatorState(dt, _current_actuator_state, _current_actuator_setpoint);
-
-        _control_torque.zero();
-        _control_acceleration.zero();
+        Vector3f control_thrust{};
+        CalculateThrustAndTorque(_current_actuator_state, _current_actuator_setpoint, dt, control_thrust, _control_torque, true);
         if (_copter_status.in_air) {
-            Vector3f control_thrust{};
-            const float thr_mdl_fac = _param_vm_motor_mdl_fac.get();
-            const VectorThrust scaled_actuator_state = (1 - thr_mdl_fac) * _current_actuator_state + thr_mdl_fac * _current_actuator_state.emult(_current_actuator_state);
-            CalculateThrustAndTorque(scaled_actuator_state, control_thrust, _control_torque);
             _control_acceleration = control_thrust / fmaxf(_phys_model_params.mass, 1.e-5f);
+        } else {
+            _control_acceleration.zero();
+            _control_torque.zero();
         }
 
         // State Estimation
@@ -543,14 +568,9 @@ void VirtualIMU::PublishAngularVelocityAndAcceleration() {
 void VirtualIMU::ForecastAndPublishDetectionReference() {
     // Forecast the acceleration and torque after one actuator interval.
     const float dt = 1.e-6f * _actuator_outputs_interval_us;
-    VectorThrust forecast_actuator_state{_current_actuator_state};
-    CalculateActuatorState(dt, forecast_actuator_state, _current_actuator_setpoint);
-
     Vector3f forecast_thrust{};
     Vector3f forecast_torque{};
-    const float thr_mdl_fac = _param_vm_motor_mdl_fac.get();
-    const VectorThrust scaled_actuator_state = (1 - thr_mdl_fac) * forecast_actuator_state + thr_mdl_fac * forecast_actuator_state.emult(forecast_actuator_state);
-    CalculateThrustAndTorque(scaled_actuator_state, forecast_thrust, forecast_torque);
+    CalculateThrustAndTorque(_current_actuator_state, _current_actuator_setpoint, dt, forecast_thrust, forecast_torque, false);
 
     // Publish Reference Accelerometer & Gyroscope for IMU Detection
     const Vector3f accels = forecast_thrust / math::max(_phys_model_params.mass, 1.e-5f) + _external_accel - _accel_bias;
