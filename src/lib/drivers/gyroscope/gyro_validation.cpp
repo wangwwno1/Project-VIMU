@@ -66,18 +66,16 @@ void PX4Gyroscope::validateGyro(sensor_gyro_s &gyro) {
         gyro.error_count = fmaxf(gyro.error_count + NORETURN_ERRCOUNT, NORETURN_ERRCOUNT + 1U);
     }
 
-    if (_param_iv_debug_log.get()) {
-        // Record error ratio and test ratio for debug and post-mortem analysis
-        sensor_gyro_errors_s gyro_error{};
+    // Record error ratio and test ratio for debug and post-mortem analysis
+    sensor_gyro_errors_s gyro_error{};
 
-        gyro_error.device_id = gyro.device_id;
-        gyro_error.samples = gyro.samples;
-        gyro_error.x = error_residuals(0);
-        gyro_error.y = error_residuals(1);
-        gyro_error.z = error_residuals(2);
-        gyro_error.test_ratio = _gyro_validator.test_ratio();
-        gyro_error.timestamp_reference = _curr_ref_gyro.timestamp_sample;
-        gyro_error.timestamp = hrt_absolute_time();
-        _sensor_gyro_errors_pub.publish(gyro_error);
-    }
+    gyro_error.device_id = gyro.device_id;
+    gyro_error.samples = gyro.samples;
+    gyro_error.x = error_residuals(0);
+    gyro_error.y = error_residuals(1);
+    gyro_error.z = error_residuals(2);
+    gyro_error.test_ratio = _gyro_validator.test_ratio();
+    gyro_error.timestamp_reference = _curr_ref_gyro.timestamp_sample;
+    gyro_error.timestamp = hrt_absolute_time();
+    _sensor_gyro_errors_pub.publish(gyro_error);
 }

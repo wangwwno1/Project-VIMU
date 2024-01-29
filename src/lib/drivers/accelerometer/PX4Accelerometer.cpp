@@ -78,6 +78,7 @@ PX4Accelerometer::PX4Accelerometer(uint32_t device_id, enum Rotation rotation) :
 {
 	// advertise immediately to keep instance numbering in sync
 	_sensor_pub.advertise();
+    _sensor_accel_errors_pub.advertise();
 
 	param_get(param_find("IMU_GYRO_RATEMAX"), &_imu_gyro_rate_max);
 }
@@ -86,6 +87,7 @@ PX4Accelerometer::~PX4Accelerometer()
 {
 	_sensor_pub.unadvertise();
 	_sensor_fifo_pub.unadvertise();
+    _sensor_accel_errors_pub.unadvertise();
 }
 
 void PX4Accelerometer::set_device_type(uint8_t devtype)

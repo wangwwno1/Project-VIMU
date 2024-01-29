@@ -67,6 +67,7 @@ VehicleGPSPosition::VehicleGPSPosition() :
     _param_iv_gps_v_ema_cap(_vel_validator_params.ema_params.cap)
 {
 	_vehicle_gps_position_pub.advertise();
+    _sensors_status_gps_pub.advertise();
 }
 
 VehicleGPSPosition::~VehicleGPSPosition()

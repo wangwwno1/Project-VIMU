@@ -133,7 +133,6 @@ private:
             (ParamFloat<px4::params::ATK_GYR_FREQ>) _param_atk_gyr_freq,
             (ParamFloat<px4::params::ATK_GYR_PHASE>) _param_atk_gyr_phase,
 
-            (ParamInt<px4::params::IV_DEBUG_LOG>) _param_iv_debug_log,
             (ParamInt<px4::params::IV_DELAY_MASK>) _param_iv_delay_mask,
             (ParamInt<px4::params::IV_TTD_DELAY_MS>) _param_iv_ttd_delay_ms,
             (ParamFloat<px4::params::IV_GYR_NOISE>) _param_iv_gyr_noise,
