@@ -50,6 +50,7 @@ public:
     Vector3f getVariances() const { return P.diag(); }
     AuxEKFParam *getParamHandle() { return &_param; }
     Vector3f getGyroBias() { return _gyro_bias; }
+    void setAngularRate(const Vector3f &angular_rate) { _output_state.angular_rate = angular_rate; }
     void setGyroBias(const Vector3f &bias) { _gyro_bias = bias; }
     void setExtAngularAcceleration(const Vector3f &ext_ang_accel) { _external_angular_acceleration = ext_ang_accel; }
 
@@ -160,18 +161,18 @@ public:
         OutputSample newest_output_sample = _output_buffer.get_newest();
         _output_buffer.pop_first_older_than(newest_output_sample.time_us, &newest_output_sample);
         for (uint8_t i = 0; i < MAX_SENSOR_COUNT; ++i) {
-            reset_imu_buffer(i);
+            if (_imu_buffers[i] != nullptr) {
+                RateSample newest_imu_sample = _imu_buffers[i]->buffer.get_newest();
+                _imu_buffers[i]->buffer.pop_first_older_than(newest_imu_sample.time_us, &newest_imu_sample);
+                _imu_buffers[i]->sampler.getAverageRateAndTriggerReset();
+            }
         }
     }
 
-    bool reset_imu_buffer(const uint8_t index) {
+    void reset_imu_buffer(const uint8_t index, const hrt_abstime timestamp_sample) {
         if (_imu_buffers[index] != nullptr) {
-            RateSample newest_imu_sample = _imu_buffers[index]->buffer.get_newest();
-            _imu_buffers[index]->buffer.pop_first_older_than(newest_imu_sample.time_us, &newest_imu_sample);
-            _imu_buffers[index]->sampler.getAverageRateAndTriggerReset();
-            return true;
-        } else {
-            return false;
+            // update valid timestamp - postpone fusion until this timestamp
+            _imu_valid_timestamp[index] = timestamp_sample + _param.imu_fuse_delay_us + _param.filter_update_interval_us;
         }
     }
 
@@ -204,6 +205,7 @@ private:
     uint8_t _output_buffer_length{12};
     RingBuffer<OutputSample> _output_buffer{_output_buffer_length};
     imuBuffer* _imu_buffers[MAX_SENSOR_COUNT] {nullptr, nullptr, nullptr, nullptr};
+    hrt_abstime  _imu_valid_timestamp[MAX_SENSOR_COUNT] {0, 0, 0, 0};
 
     bool allocateBuffer() {
         const float imu_delay_s = _param.imu_fuse_delay_us * 1.e-6f;
@@ -283,6 +285,7 @@ private:
 
             RateSample imu_sample_delayed{};
             if (_imu_buffers[i]->buffer.pop_first_older_than(output_sample_delayed.time_us, &imu_sample_delayed)
+                && imu_sample_delayed.time_us > _imu_valid_timestamp[i]
                 && output_sample_delayed.time_us < imu_sample_delayed.time_us + _param.imu_fuse_delay_us) {
                 for (uint8_t dim = 0; dim < _k_num_states; ++dim) {
                     const float innov = _state(dim) - imu_sample_delayed.angular_rate(dim);

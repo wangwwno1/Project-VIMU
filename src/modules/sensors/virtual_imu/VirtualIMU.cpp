@@ -317,25 +317,28 @@ void VirtualIMU::UpdateIMUData() {
         _all_imu_compromised = (!has_available_imu) && (imu_counts != 0);
     }
 
-    // Check imu status & bias, fuse healthy gyro state.
-    for (uint8_t uorb_idx = 0; uorb_idx < MAX_SENSOR_COUNT; ++uorb_idx) {
-        vehicle_imu_s imu{};
-        if (_vehicle_imu_sub[uorb_idx].update(&imu)) {
-            // We need to call the subscription once, so it won't take previously unreceived data as an update.
-            // Only fuse sample that has passed validation
-            if ((_copter_status.at_rest || _copter_status.landed || (_param_vimu_fuse_gyro.get() && _imu_health_status[uorb_idx]))) {
-                // IMU OK, or we are on the ground, continue calculation
-                imuSample imu_sample{};
-                imu_sample.time_us = imu.timestamp_sample;
-                imu_sample.delta_ang_dt = imu.delta_angle_dt * 1.e-6f;
-                imu_sample.delta_ang = Vector3f{imu.delta_angle};
-                imu_sample.delta_vel_dt = imu.delta_velocity_dt * 1.e-6f;
-                imu_sample.delta_vel = Vector3f{imu.delta_velocity};
+    vehicle_angular_velocity_s rate{};
+    if (_vehicle_angular_velocity_sub.update(&rate)) {
+        // Only fuse sample that has passed validation
+        const float dt = _actuator_outputs_interval_us * 1.e-6f;
+        const Vector3f ang_rate = static_cast<Vector3f>(rate.xyz);
 
-                _ekf.setGyroData(imu_sample, uorb_idx);
-            } else {
-                // Discard imu update, also clear up its buffer.
-                _ekf.reset_imu_buffer(uorb_idx);
+        imuSample imu_sample{};
+        imu_sample.time_us = rate.timestamp_sample;
+        imu_sample.delta_ang_dt = dt;
+        imu_sample.delta_ang = ang_rate * dt;
+        imu_sample.delta_vel_dt = 0.f;
+
+        _ekf.setGyroData(imu_sample, 0);
+        if (!_copter_status.at_rest && !_copter_status.landed && !(_param_vimu_fuse_gyro.get() && !_all_imu_compromised)) {
+            // Set timestamp to stop update.
+            _ekf.reset_imu_buffer(0, rate.timestamp_sample);
+        } else {
+            // IMU OK, or we are on the ground, continue calculation
+
+            // Reset angular rate if VIMU is not ready and its angular rate has deviated from actual values
+            if (!_copter_status.publish && (ang_rate - _ekf.getAngularRate()).norm() > 0.05f) {
+                _ekf.setAngularRate(ang_rate);
             }
         }
     }

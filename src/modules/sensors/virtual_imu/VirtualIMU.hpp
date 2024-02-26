@@ -307,6 +307,7 @@ private:
     uORB::Subscription                                  _estimator_sensor_bias_sub{ORB_ID(estimator_sensor_bias)};
 	uORB::Subscription                                  _estimator_aero_wrench_sub{ORB_ID(estimator_aero_wrench)};
     uORB::Subscription                                  _vehicle_land_detected_sub{ORB_ID(vehicle_land_detected)};
+    uORB::Subscription                                  _vehicle_angular_velocity_sub{ORB_ID(vehicle_angular_velocity)};
     uORB::Subscription                                  _sensors_status_imu_sub{ORB_ID(sensors_status_imu)};
 
     // Performance (perf) counters  // TODO Perf Counters
