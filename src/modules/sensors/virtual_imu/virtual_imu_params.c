@@ -37,3 +37,14 @@ PARAM_DEFINE_INT32(VIMU_PREDICT_US, 50000);
 * @boolean
 */
 PARAM_DEFINE_INT32(VIMU_FUSE_GYRO, 1);
+
+/**
+* Bitmask determine if VIMU should take bias from EKF2
+*
+* @group Vehicle Model
+* @min 0
+* @max 3
+* @bit 0 Gyro Bias
+* @bit 1 Accel Bias
+*/
+PARAM_DEFINE_INT32(VIMU_TAKE_BIAS, 3);

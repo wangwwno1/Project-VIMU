@@ -347,6 +347,7 @@ private:
             (ParamFloat<px4::params::VM_BAT_REF_VOLT>)      _param_vm_bat_ref_volt,
             (ParamExtInt<px4::params::IV_IMU_DELAY_US>)     _param_iv_imu_delay_us,
             (ParamExtInt<px4::params::VIMU_PREDICT_US>)     _param_vimu_predict_us,
-            (ParamInt<px4::params::VIMU_FUSE_GYRO>)         _param_vimu_fuse_gyro
+            (ParamInt<px4::params::VIMU_FUSE_GYRO>)         _param_vimu_fuse_gyro,
+            (ParamInt<px4::params::VIMU_TAKE_BIAS>)         _param_vimu_take_bias
     )
 };

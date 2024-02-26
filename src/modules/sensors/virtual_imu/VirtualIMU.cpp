@@ -350,11 +350,11 @@ void VirtualIMU::UpdateBiasAndAerodynamicWrench() {
     if (_copter_status.in_air && _estimator_sensor_bias_sub.update(&bias)) {
         // Update gyro bias after in air
         // todo estimate angular acceleration bias
-        if (bias.gyro_device_id == VIMU_GYRO_DEVICE_ID) {
+        if (bias.gyro_device_id == VIMU_GYRO_DEVICE_ID && _param_vimu_take_bias.get() & 0) {
             _ekf.setGyroBias(static_cast<Vector3f>(bias.gyro_bias));
         }
 
-        if (bias.accel_device_id == VIMU_ACCEL_DEVICE_ID) {
+        if (bias.accel_device_id == VIMU_ACCEL_DEVICE_ID && _param_vimu_take_bias.get() & 1) {
             _accel_bias = static_cast<Vector3f>(bias.accel_bias);
         }
     }
