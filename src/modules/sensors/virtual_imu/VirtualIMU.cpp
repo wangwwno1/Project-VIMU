@@ -314,7 +314,15 @@ void VirtualIMU::UpdateIMUData() {
         }
 
         // Declare faulty if we have imu, but none of them is available.
-        _all_imu_compromised = (!has_available_imu) && (imu_counts != 0);
+        const bool all_imu_compromised = (!has_available_imu || !_param_vimu_fuse_gyro.get()) && (imu_counts != 0);
+        if (_all_imu_compromised != all_imu_compromised) {
+            if (all_imu_compromised) {
+                PX4_WARN("%" PRIu64 " - All hardware IMU compromised, switching to recovery model", hrt_absolute_time());
+            } else {
+                PX4_WARN("%" PRIu64 " - Operational IMU detected, back to normal", hrt_absolute_time());
+            }
+        }
+        _all_imu_compromised = all_imu_compromised;
     }
 
     vehicle_angular_velocity_s rate{};
