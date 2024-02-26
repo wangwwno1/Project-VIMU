@@ -288,8 +288,8 @@ void VirtualIMU::UpdateCopterStatus() {
     } else if (!_copter_status.in_air && !(_copter_status.at_rest || _copter_status.landed)){
         _copter_status.in_air = true;
         _last_takeoff_us = hrt_absolute_time();
-        PX4_INFO("Takeoff confirmed, start publish reference imu 5 second later");
-    } else if (_copter_status.in_air && hrt_elapsed_time(&_last_takeoff_us) > 5_s) {
+        PX4_INFO("Takeoff confirmed, start publish reference imu 10 second later");
+    } else if (_copter_status.in_air && hrt_elapsed_time(&_last_takeoff_us) > 10_s) {
         _copter_status.publish = true;
     }
 }
