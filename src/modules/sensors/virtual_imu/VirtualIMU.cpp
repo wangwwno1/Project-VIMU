@@ -53,6 +53,7 @@ VirtualIMU::VirtualIMU():
     _reference_angular_velocity_pub.advertise();
     _reference_accel_pub.advertise();
     _reference_gyro_pub.advertise();
+    _recovery_gyro_pub.advertise();
     _reference_imu_pub.advertise();
     _reference_combined_pub.advertise();
 
@@ -110,6 +111,7 @@ bool VirtualIMU::multi_init(int instance) {
     _reference_angular_velocity_pub.advertise();
     _reference_accel_pub.advertise();
     _reference_gyro_pub.advertise();
+    _recovery_gyro_pub.advertise();
     _reference_imu_pub.advertise();
     _reference_combined_pub.advertise();
 
@@ -119,7 +121,8 @@ bool VirtualIMU::multi_init(int instance) {
     if ((status_instance >= 0) && changed_instance
         && (_reference_angular_velocity_pub.get_instance() == status_instance)
         && (_reference_accel_pub.get_instance() == status_instance)
-        && (_reference_gyro_pub.get_instance() == status_instance)) {
+        && (_reference_gyro_pub.get_instance() == status_instance)
+        && (_recovery_gyro_pub.get_instance() == status_instance)) {
 
         _instance = status_instance;
 
@@ -127,8 +130,9 @@ bool VirtualIMU::multi_init(int instance) {
         return true;
     }
 
-    PX4_ERR("publication instance problem: %d ref-rate: %d ref-accel: %d ref-gyro: %d", status_instance,
-            _reference_angular_velocity_pub.get_instance(), _reference_accel_pub.get_instance(), _reference_gyro_pub.get_instance());
+    PX4_ERR("publication instance problem: %d ref-rate: %d ref-accel: %d ref-gyro: %d recovery_gyro: %d", status_instance,
+            _reference_angular_velocity_pub.get_instance(), _reference_accel_pub.get_instance(), _reference_gyro_pub.get_instance(),
+            _recovery_gyro_pub.get_instance());
 
     return false;
 }
@@ -567,11 +571,23 @@ void VirtualIMU::PublishAngularVelocityAndAcceleration() {
     _reference_angular_acceleration_pub.publish(v_angular_acceleration);
 
     // Publish vehicle_angular_velocity
+    const Vector3f rates = _ekf.getAngularRate();
     vehicle_angular_velocity_s v_angular_velocity;
     v_angular_velocity.timestamp_sample = _last_state_update_us;
-    _ekf.getAngularRate().copyTo(v_angular_velocity.xyz);
+    rates.copyTo(v_angular_velocity.xyz);
     v_angular_velocity.timestamp = hrt_absolute_time();
     _reference_angular_velocity_pub.publish(v_angular_velocity);
+
+    // Publish recovery_gyro
+    sensor_gyro_s recovery_gyro{};
+    recovery_gyro.timestamp_sample = _last_state_update_us;
+    recovery_gyro.device_id = VIMU_GYRO_DEVICE_ID;
+    recovery_gyro.x = rates(0);
+    recovery_gyro.y = rates(1);
+    recovery_gyro.z = rates(2);
+    recovery_gyro.samples = 1;
+    recovery_gyro.timestamp = hrt_absolute_time();
+    _recovery_gyro_pub.publish(recovery_gyro);
 
     _last_rate_ctrl_reference_publish = v_angular_velocity.timestamp;
 }

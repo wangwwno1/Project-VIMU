@@ -15,4 +15,4 @@ uint8 samples             # number of raw samples that went into this message
 
 uint8 ORB_QUEUE_LENGTH = 8
 
-# TOPICS sensor_gyro reference_gyro
+# TOPICS sensor_gyro reference_gyro recovery_gyro

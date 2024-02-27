@@ -296,6 +296,7 @@ private:
     uORB::PublicationMulti<vehicle_angular_velocity_s>       _reference_angular_velocity_pub{ORB_ID(reference_angular_velocity)};
     uORB::PublicationMulti<sensor_accel_s>                   _reference_accel_pub{ORB_ID(reference_accel)};
     uORB::PublicationMulti<sensor_gyro_s>                    _reference_gyro_pub{ORB_ID(reference_gyro)};
+    uORB::PublicationMulti<sensor_gyro_s>                    _recovery_gyro_pub{ORB_ID(recovery_gyro)};
     uORB::PublicationMulti<sensor_combined_s>                _reference_combined_pub{ORB_ID(reference_combined)};
     uORB::PublicationMulti<vehicle_imu_s>                    _reference_imu_pub{ORB_ID(reference_imu)};
 
