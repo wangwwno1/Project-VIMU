@@ -330,7 +330,7 @@ private:
         }
 
         for (int i = 0; i < _k_num_states; ++i) {
-            P(i, i) = math::constrain(P(i, i), 0.f, 1.f);
+            P(i, i) = math::constrain(P(i, i), 0.f, 100.f);
         }
 
     }
