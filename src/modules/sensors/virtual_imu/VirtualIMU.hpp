@@ -53,6 +53,8 @@
 #include <uORB/SubscriptionCallback.hpp>
 #include <uORB/SubscriptionMultiArray.hpp>
 #include <uORB/topics/actuator_outputs.h>
+#include <uORB/topics/aux_ekf_states.h>
+#include <uORB/topics/aux_ekf_innovations.h>
 #include <uORB/topics/battery_status.h>
 #include <uORB/topics/estimator_aero_wrench.h>
 #include <uORB/topics/estimator_sensor_bias.h>
@@ -65,6 +67,7 @@
 #include <uORB/topics/vehicle_angular_acceleration.h>
 #include <uORB/topics/vehicle_land_detected.h>
 #include <uORB/topics/vehicle_imu.h>
+#include <uORB/topics/virtual_imu_status.h>
 
 #include "../vehicle_imu/Integrator.hpp"
 #include "AuxEKF.hpp"
@@ -135,6 +138,8 @@ private:
     void PublishAngularVelocityAndAcceleration();
     void PublishReferenceIMU();
     void ForecastAndPublishDetectionReference();
+    void PublishAuxEkfStates();
+    void PublishVIMUStatus();
 
     void CalculateThrustAndTorque(VectorThrust &actuator_state, const VectorThrust &setpoint, const float dt,
                                   Vector3f &thrust, Vector3f &torque, bool update_state = true) {
@@ -299,6 +304,10 @@ private:
     uORB::PublicationMulti<sensor_gyro_s>                    _recovery_gyro_pub{ORB_ID(recovery_gyro)};
     uORB::PublicationMulti<sensor_combined_s>                _reference_combined_pub{ORB_ID(reference_combined)};
     uORB::PublicationMulti<vehicle_imu_s>                    _reference_imu_pub{ORB_ID(reference_imu)};
+    uORB::PublicationMulti<aux_ekf_states_s>                 _aux_ekf_states_pub{ORB_ID(aux_ekf_states)};
+    uORB::PublicationMulti<aux_ekf_innovations_s>            _aux_ekf_innovations_pub{ORB_ID(aux_ekf_innovations)};
+    uORB::PublicationMulti<aux_ekf_innovations_s>            _aux_ekf_innovation_variances_pub{ORB_ID(aux_ekf_innovation_variances)};
+    uORB::PublicationMulti<virtual_imu_status_s>             _virtual_imu_status_pub{ORB_ID(virtual_imu_status)};
 
 	// Subscriptions
     uORB::SubscriptionCallbackWorkItem                  _actuator_outputs_sub{this, ORB_ID(actuator_outputs)};      // subscription that schedules VirtualIMU when updated

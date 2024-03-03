@@ -265,6 +265,8 @@ void VirtualIMU::Run()
         }
     }
 
+    PublishVIMUStatus();
+    PublishAuxEkfStates();
 }
 
 void VirtualIMU::UpdateCopterStatus() {
@@ -676,6 +678,40 @@ void VirtualIMU::PublishReferenceIMU() {
             _last_imu_reference_publish = imu.timestamp;
         }
     }
+}
+
+void VirtualIMU::PublishVIMUStatus() {
+    // Publish virtual imu 
+    virtual_imu_status_s vimu_status;
+    vimu_status.timestamp_actuator_output = _current_act_sp_timestamp;
+    vimu_status.timestamp_takeoff = _last_takeoff_us;
+    vimu_status.timestamp_landed = _last_landed_us;
+
+    vimu_status.at_rest = _copter_status.at_rest;
+    vimu_status.landed = _copter_status.landed;
+    vimu_status.in_air = _copter_status.in_air;
+    vimu_status.publish = _copter_status.publish;
+    vimu_status.all_imu_compromised = _all_imu_compromised;
+
+    _control_acceleration.copyTo(vimu_status.control_acceleration);
+    _control_torque.copyTo(vimu_status.control_torque);
+    _external_accel.copyTo(vimu_status.external_acceleration);
+    _external_angular_accel.copyTo(vimu_status.external_angular_acceleration);
+
+    vimu_status.timestamp_sample = _last_state_update_us;
+    vimu_status.timestamp = hrt_absolute_time();
+    _virtual_imu_status_pub.publish(vimu_status);
+}
+
+void VirtualIMU::PublishAuxEkfStates() {
+    // Publish states and covariances of auxiliary ekf
+    aux_ekf_states_s aux_ekf_states{};
+
+    aux_ekf_states.timestamp_sample = _last_state_update_us;
+    _ekf.getStateAtFusionHorizonAsVector().copyTo(aux_ekf_states.states);
+    _ekf.covariances_diagonal().copyTo(aux_ekf_states.covariances);
+    aux_ekf_states.timestamp = hrt_absolute_time();
+    _aux_ekf_states_pub.publish(aux_ekf_states);
 }
 
 void VirtualIMU::PrintStatus() {

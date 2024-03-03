@@ -51,6 +51,8 @@ set(msg_files
 	airspeed_validated.msg
 	airspeed_wind.msg
 	autotune_attitude_control_status.msg
+    aux_ekf_states.msg
+    aux_ekf_innovations.msg
 	battery_status.msg
 	button_event.msg
 	camera_capture.msg
@@ -208,6 +210,7 @@ set(msg_files
 	vehicle_torque_setpoint.msg
 	vehicle_trajectory_bezier.msg
 	vehicle_trajectory_waypoint.msg
+    virtual_imu_status.msg
 	vtol_vehicle_status.msg
 	wheel_encoders.msg
 	wind.msg

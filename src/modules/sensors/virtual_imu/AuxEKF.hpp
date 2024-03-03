@@ -46,8 +46,10 @@ public:
     };
 
     Vector3f getAngularAcceleration() const { return _angular_acceleration; }
-    Vector3f getAngularRate() const { return _output_state.angular_rate - _gyro_bias; }
-    Vector3f getVariances() const { return P.diag(); }
+    Vector3f getAngularRate() const { return _output_state.angular_rate; }
+    Vector3f getCorrectedAngularRate() const { return _output_state.angular_rate - _gyro_bias; }
+    Vector3f getStateAtFusionHorizonAsVector() const { return _state; }
+    Vector3f covariances_diagonal() const { return P.diag(); }
     AuxEKFParam *getParamHandle() { return &_param; }
     Vector3f getGyroBias() { return _gyro_bias; }
     void setAngularRate(const Vector3f &angular_rate) { _output_state.angular_rate = angular_rate; }
@@ -233,16 +235,16 @@ private:
     }
 
     void predictCovariances() {
-        const Vector3f corrected_state = _state - _gyro_bias;
+        const Vector3f state = _state;
         const Vector3f main_inertia = _inertia_matrix.diag();
         const Vector3f inertia_term = main_inertia.cross(Vector3f{1.f, 1.f, 1.f}).edivide(main_inertia);
         // Iyy - Izz, Izz - Ixx, Ixx - Iyy
 
         // Jacobian derivative matrix of estimation vs. previous state.
         const float F_array[3][3] = {
-                {0.f,                corrected_state(2), corrected_state(1)},
-                {corrected_state(2), 0.f,                corrected_state(0)},
-                {corrected_state(1), corrected_state(0), 0.f}
+                {0.f,      state(2), state(1)},
+                {state(2), 0.f,      state(0)},
+                {state(1), state(0), 0.f}
         };
 
         SquareMatrix3f F(F_array);
