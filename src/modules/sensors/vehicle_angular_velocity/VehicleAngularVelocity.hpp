@@ -78,7 +78,6 @@ private:
 
 	bool CalibrateAndPublish(const hrt_abstime &timestamp_sample, const matrix::Vector3f &angular_velocity_uncalibrated,
 				 const matrix::Vector3f &angular_acceleration_uncalibrated);
-    bool PublishReference();
 
 	inline float FilterAngularVelocity(int axis, float data[], int N = 1);
 	inline float FilterAngularAcceleration(int axis, float inverse_dt_s, float data[], int N = 1);
@@ -111,7 +110,6 @@ private:
 
 	uORB::Subscription _estimator_selector_status_sub{ORB_ID(estimator_selector_status)};
 	uORB::Subscription _estimator_sensor_bias_sub{ORB_ID(estimator_sensor_bias)};
-    uORB::Subscription _reference_angular_acceleration_sub{ORB_ID(reference_angular_acceleration)};
 #if !defined(CONSTRAINED_FLASH)
 	uORB::Subscription _esc_status_sub {ORB_ID(esc_status)};
 	uORB::Subscription _sensor_gyro_fft_sub {ORB_ID(sensor_gyro_fft)};
@@ -122,7 +120,7 @@ private:
 	uORB::SubscriptionCallbackWorkItem _sensor_selection_sub{this, ORB_ID(sensor_selection)};
 	uORB::SubscriptionCallbackWorkItem _sensor_sub{this, ORB_ID(sensor_gyro)};
 	uORB::SubscriptionCallbackWorkItem _sensor_fifo_sub{this, ORB_ID(sensor_gyro_fifo)};
-    uORB::SubscriptionCallbackWorkItem _reference_angular_velocity_sub{this, ORB_ID(reference_angular_velocity)};
+    uORB::SubscriptionCallbackWorkItem _recovery_sub{this, ORB_ID(recovery_gyro)};
 
 	calibration::Gyroscope _calibration{};
 
