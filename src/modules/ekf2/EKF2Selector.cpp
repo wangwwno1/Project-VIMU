@@ -730,6 +730,8 @@ void EKF2Selector::Run()
 
 		// update parameters from storage
 		updateParams();
+
+        _sel_norm_interval_us = _param_ekf2_sel_norm_ms.get() * 1000;
 	}
 
 	// update combined test ratio for all estimators
@@ -815,7 +817,7 @@ void EKF2Selector::Run()
 			}
 		}
 
-        if (_selected_instance == _selected_reference && hrt_elapsed_time(&_last_instance_change) > 10_s) {
+        if (_selected_instance == _selected_reference && hrt_elapsed_time(&_last_instance_change) > _sel_norm_interval_us) {
             // prefer the best healthy instance using a different IMU
             SelectInstance(best_ekf_different_imu);
         } else if (!_instance[_selected_instance].healthy.get_state()) {

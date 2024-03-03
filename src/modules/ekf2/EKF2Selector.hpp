@@ -190,6 +190,7 @@ private:
 
 	uint32_t _instance_changed_count{0};
 	hrt_abstime _last_instance_change{0};
+    hrt_abstime _sel_norm_interval_us{0};
 
 	hrt_abstime _last_status_publish{0};
 	bool _selector_status_publish{false};
@@ -268,7 +269,8 @@ private:
 		(ParamFloat<px4::params::EKF2_SEL_IMU_RAT>) _param_ekf2_sel_imu_angle_rate,
 		(ParamFloat<px4::params::EKF2_SEL_IMU_ANG>) _param_ekf2_sel_imu_angle,
 		(ParamFloat<px4::params::EKF2_SEL_IMU_ACC>) _param_ekf2_sel_imu_accel,
-		(ParamFloat<px4::params::EKF2_SEL_IMU_VEL>) _param_ekf2_sel_imu_velocity
+		(ParamFloat<px4::params::EKF2_SEL_IMU_VEL>) _param_ekf2_sel_imu_velocity,
+        (ParamInt<px4::params::EKF2_SEL_NORM_MS>)   _param_ekf2_sel_norm_ms
 	)
 };
 #endif // !EKF2SELECTOR_HPP

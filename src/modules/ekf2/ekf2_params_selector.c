@@ -79,3 +79,14 @@ PARAM_DEFINE_FLOAT(EKF2_SEL_IMU_ACC, 1.0f);
  * @unit m/s
  */
 PARAM_DEFINE_FLOAT(EKF2_SEL_IMU_VEL, 2.0f);
+
+/**
+ * Selector time duration before switch back to normal instance.
+ *
+ * EKF2 selector time duration for switching back from reference instance to normal instance, calculated from last instance changes.
+ *
+ * @group EKF2
+ * @unit ms
+ * @min 1
+ */
+PARAM_DEFINE_INT32(EKF2_SEL_NORM_MS, 10000);
