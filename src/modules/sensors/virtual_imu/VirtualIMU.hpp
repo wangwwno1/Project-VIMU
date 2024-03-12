@@ -214,6 +214,7 @@ private:
     struct CopterStatus {
         bool at_rest{true};
         bool landed{true};
+        bool takeoff{false};
         bool in_air{false};
         bool publish{false};
     };
@@ -311,13 +312,13 @@ private:
 
 	// Subscriptions
     uORB::SubscriptionCallbackWorkItem                  _actuator_outputs_sub{this, ORB_ID(actuator_outputs)};      // subscription that schedules VirtualIMU when updated
+    uORB::SubscriptionCallbackWorkItem                  _sensor_combined_sub{this, ORB_ID(sensor_combined)};      // subscription that schedules VirtualIMU when updated
     uORB::SubscriptionMultiArray<vehicle_imu_s>         _vehicle_imu_sub{ORB_ID::vehicle_imu};
 	uORB::SubscriptionInterval                          _parameter_update_sub{ORB_ID(parameter_update), 1_s};       // subscription limited to 1 Hz updates
     uORB::Subscription                                  _battery_status_sub{ORB_ID(battery_status), 0};             // todo which battery?
     uORB::Subscription                                  _estimator_sensor_bias_sub{ORB_ID(estimator_sensor_bias)};
 	uORB::Subscription                                  _estimator_aero_wrench_sub{ORB_ID(estimator_aero_wrench)};
     uORB::Subscription                                  _vehicle_land_detected_sub{ORB_ID(vehicle_land_detected)};
-    uORB::Subscription                                  _vehicle_angular_velocity_sub{ORB_ID(vehicle_angular_velocity)};
     uORB::Subscription                                  _sensors_status_imu_sub{ORB_ID(sensors_status_imu)};
 
     // Performance (perf) counters  // TODO Perf Counters
@@ -338,6 +339,7 @@ private:
             (ParamExtFloat<px4::params::VM_TCOEF_VI_Z>)     _param_vm_tcoef_vi_z,
             (ParamExtFloat<px4::params::VM_DRAG_FACTOR>)    _param_vm_drag_factor,
             (ParamExtFloat<px4::params::VM_ANG_ACC_NOISE>)  _param_vm_ang_acc_noise,
+            (ParamExtFloat<px4::params::VM_MDL_B_NOISE>)    _param_vm_mdl_b_noise,
             (ParamFloat<px4::params::VM_INERTIA_XX>)        _param_vm_inertia_xx,
             (ParamFloat<px4::params::VM_INERTIA_YY>)        _param_vm_inertia_yy,
             (ParamFloat<px4::params::VM_INERTIA_ZZ>)        _param_vm_inertia_zz,

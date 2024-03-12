@@ -212,6 +212,17 @@ PARAM_DEFINE_FLOAT(VM_DRAG_FACTOR, 0.05f);
 PARAM_DEFINE_FLOAT(VM_ANG_ACC_NOISE, 0.075f);
 
 /**
+ * Process noise for vehicle model bias of angular acceleration
+ *
+ * @unit rad/s^2
+ * @decimal 5
+ * @min 0.00001
+ * @increment 0.00001
+ * @group Vehicle Model
+ */
+PARAM_DEFINE_FLOAT(VM_MDL_B_NOISE, 0.015f);
+
+/**
  * X-axis length Scale used for motor position matrix
  *
  * @unit m

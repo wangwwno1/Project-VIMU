@@ -11,7 +11,9 @@ RateDownSampler::RateDownSampler(int32_t &target_dt_us) : _target_dt_us(target_d
 
 bool RateDownSampler::update(const imuSample &imu) {
     _last_timestamp_sample = imu.time_us;
+    _rate_down_sampled.time_us = imu.time_us;
     _rate_down_sampled.angular_rate += imu.delta_ang / math::max(imu.delta_ang_dt, 1e-4f);
+    _rate_down_sampled.delta_ang_dt += imu.delta_ang_dt;
     _timestamp_sum += (imu.time_us - hrt_abstime((double) imu.delta_ang_dt * (1e6 * 0.5))) / 1000;
     _sample_count++;
 

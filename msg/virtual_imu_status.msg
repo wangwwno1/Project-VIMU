@@ -6,6 +6,7 @@ uint64 timestamp_landed
 
 bool at_rest
 bool landed
+bool takeoff
 bool in_air
 bool publish
 bool all_imu_compromised
@@ -14,3 +15,5 @@ float32[3] control_acceleration
 float32[3] control_torque
 float32[3] external_acceleration
 float32[3] external_angular_acceleration
+
+float32[3] model_bias

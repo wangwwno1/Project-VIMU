@@ -20,20 +20,30 @@ struct OutputSample {
     hrt_abstime time_us{0};
     matrix::Vector3f angular_rate{0.f, 0.f, 0.f};
     matrix::Vector3f delta_rate{0.f, 0.f, 0.f};
+    float delta_rate_dt{0.f};
 };
 
 struct AuxEKFParam {
     float gyro_noise{1.5e-2f};
-    float process_noise{0.075f};
+    float model_p_noise{0.075f};
+    float model_bias_p_noise{0.001f};
     int32_t imu_fuse_delay_us{500000};
     int32_t filter_update_interval_us{50000};  // ekf prediction period in microseconds - this should ideally be an integer multiple of the IMU time delta
+};
+
+struct AuxEKFStateSample {
+    matrix::Vector3f    angular_rate{0.f, 0.f, 0.f};
+    matrix::Vector3f    delta_rate_bias{0.f, 0.f, 0.f};
 };
 
 class AuxEKF
 {
 public:
-    static constexpr uint8_t _k_num_states{3};		///< number of EKF states
+    static constexpr uint8_t _k_num_states{6};		///< number of EKF states
     static constexpr uint8_t MAX_SENSOR_COUNT = 4;
+
+    using SquareMatrixKf = SquareMatrix<float, _k_num_states>;
+    using VectorKf = Vector<float, _k_num_states>;
 
     AuxEKF() { reset(); };
     ~AuxEKF() {
@@ -48,12 +58,19 @@ public:
     Vector3f getAngularAcceleration() const { return _angular_acceleration; }
     Vector3f getAngularRate() const { return _output_state.angular_rate; }
     Vector3f getCorrectedAngularRate() const { return _output_state.angular_rate - _gyro_bias; }
-    Vector3f getStateAtFusionHorizonAsVector() const { return _state; }
-    Vector3f covariances_diagonal() const { return P.diag(); }
+    Vector3f getGyroBias() const { return _gyro_bias; }
+    Vector3f getModelBias() const { return _state.delta_rate_bias / _dt_ekf_avg; }
+    VectorKf getStateAtFusionHorizonAsVector() const {
+        VectorKf state;
+        state.slice<3, 1>(0, 0) = _state.angular_rate;
+        state.slice<3, 1>(3, 0) = _state.delta_rate_bias;
+        return state;
+    }
+    VectorKf covariances_diagonal() const {return P.diag(); }
     AuxEKFParam *getParamHandle() { return &_param; }
-    Vector3f getGyroBias() { return _gyro_bias; }
     void setAngularRate(const Vector3f &angular_rate) { _output_state.angular_rate = angular_rate; }
     void setGyroBias(const Vector3f &bias) { _gyro_bias = bias; }
+    void set_in_air_status(const bool in_air) { _is_in_air = in_air; }
     void setExtAngularAcceleration(const Vector3f &ext_ang_accel) { _external_angular_acceleration = ext_ang_accel; }
 
     SquareMatrix3f &InertiaMatrix() { return _inertia_matrix; }
@@ -62,7 +79,7 @@ public:
         if (!mat.I(_inertia_matrix_inv)) {
             // Fallback to main inertia inverse
             _inertia_matrix_inv.setIdentity();
-            for (int i = 0; i < _k_num_states; ++i) {
+            for (int i = 0; i < 3; ++i) {
                 _inertia_matrix_inv(i, i) = 1.f / math::max(mat(i, i), 1e-5f);
             }
         }
@@ -102,8 +119,10 @@ public:
             }
         }
 
+        // calculate output state at current time horizon
         setExtAngularAcceleration(ext_angular_accel);
-        _angular_acceleration = CalculateAngularAcceleration(torque, getAngularRate());
+        _dt_imu_avg = 0.8f * _dt_imu_avg + 0.2f * dt;
+        _angular_acceleration = CalculateAngularAcceleration(torque, getCorrectedAngularRate());
 
         _output_state.time_us = now;
         _output_state.angular_rate += _angular_acceleration * dt;
@@ -113,11 +132,18 @@ public:
         const float filter_update_period_s = _param.filter_update_interval_us * 1.e-6f;
         if (_down_sampled_time > filter_update_period_s - _down_sample_time_correction) {
             _output_state.delta_rate = _delta_rate;
+            _output_state.delta_rate_dt = _down_sampled_time;
             _output_buffer.push(_output_state);
             const OutputSample &output_state_delayed = _output_buffer.get_oldest();
 
             // Predict State
-            _state += output_state_delayed.delta_rate;
+            _state.angular_rate += output_state_delayed.delta_rate;
+
+            // calculate an average filter update time
+            float input = output_state_delayed.delta_rate_dt;
+            // filter and limit input between -50% and +100% of nominal value
+            input = math::constrain(input, 0.5f * filter_update_period_s, 2.f * filter_update_period_s);
+            _dt_ekf_avg = 0.99f * _dt_ekf_avg + 0.01f * input;
 
             predictCovariances();
             MeasurementUpdate();
@@ -130,7 +156,8 @@ public:
 
             const float time_delay = fmaxf((_output_state.time_us - output_state_delayed.time_us) * 1e-6f, filter_update_period_s);
             const float rate_gain = filter_update_period_s / time_delay;
-            const Vector3f rate_correction = rate_gain * (_state - output_state_delayed.angular_rate);
+            const Vector3f rate_error = _state.angular_rate - output_state_delayed.angular_rate;
+            const Vector3f rate_correction = rate_gain * rate_error;
             applyCorrectionToOutputBuffer(rate_correction);
 
             _down_sampled_time = 0.f;
@@ -140,21 +167,22 @@ public:
 
     Vector3f CalculateAngularAcceleration(const Vector3f &torque, const Vector3f &angular_velocity) const {
         const Vector3f inv_main_inertia = _inertia_matrix_inv.diag();
-        return (torque - angular_velocity.cross(_inertia_matrix * angular_velocity)).emult(inv_main_inertia) + _external_angular_acceleration;
+        return (torque - angular_velocity.cross(_inertia_matrix * angular_velocity)).emult(inv_main_inertia) + _external_angular_acceleration - getModelBias();
     }
 
     void reset_state() {
         // Reset estimator states
-        _state.zero();
+        _state.angular_rate.zero();
         _gyro_bias.zero();
         _angular_acceleration.zero();
         _external_angular_acceleration.zero();
         _output_state.time_us = 0;
         _output_state.angular_rate.zero();
+        _output_state.delta_rate.zero();
+        _output_state.delta_rate_dt = 0;
 
         // Reset angular acceleration integrator
         _delta_rate.zero();
-        _rate_error_integ.zero();
         _down_sampled_time = 0.f;
         _down_sample_time_correction = 0.f;
     }
@@ -179,22 +207,25 @@ public:
     }
 
 private:
-    Vector3f _state{0.f, 0.f, 0.f};
+    AuxEKFStateSample _state{};
     OutputSample _output_state;
     RateSample _imu_sample_delayed;
     AuxEKFParam _param;
     bool _filter_initialised{false};
+    bool _is_in_air{false};
 
     Vector3f _gyro_bias{0.f, 0.f, 0.f};
     Vector3f _angular_acceleration{0.f, 0.f, 0.f};
     Vector3f _external_angular_acceleration{0.f, 0.f, 0.f};
-    SquareMatrix3f P;
+    SquareMatrixKf P;
     SquareMatrix3f _inertia_matrix;
     SquareMatrix3f _inertia_matrix_inv;
     float _down_sampled_time{0.f};
     float _down_sample_time_correction{0.f};
     Vector3f _delta_rate{0.f, 0.f, 0.f};
-    Vector3f _rate_error_integ{0.f, 0.f, 0.f};
+
+    float _dt_ekf_avg{0.005f}; ///< average update rate of the ekf in s
+    float _dt_imu_avg{0.010f}; ///< average update rate of the ekf in s
 
     struct imuBuffer {
         imuBuffer(int32_t &target_dt_us) : sampler(target_dt_us) {}
@@ -235,7 +266,7 @@ private:
     }
 
     void predictCovariances() {
-        const Vector3f state = _state;
+        const Vector3f state = _state.angular_rate;
         const Vector3f main_inertia = _inertia_matrix.diag();
         const Vector3f inertia_term = main_inertia.cross(Vector3f{1.f, 1.f, 1.f}).edivide(main_inertia);
         // Iyy - Izz, Izz - Ixx, Ixx - Iyy
@@ -248,28 +279,27 @@ private:
         };
 
         SquareMatrix3f F(F_array);
-        for (uint8_t row = 0; row < _k_num_states; ++row) {
-            const float fac = inertia_term(row);
-            for (uint8_t column = 0; column < _k_num_states; ++column) {
-                F(row, column) *= fac;
-            }
+        for (uint8_t row = 0; row < 3; ++row) {
+            F.row(row) *= inertia_term(row);
         }
 
-        const float rate_var = math::sq(_param.process_noise);
-        for (uint8_t row = 0; row < _k_num_states; ++row) {
-            for (uint8_t column = 0; column < _k_num_states; ++column) {
+        const float rate_var = math::sq(_param.model_p_noise);
+        const float bias_var = math::sq(_param.model_bias_p_noise * _dt_ekf_avg);
+        for (uint8_t row = 0; row < 3; ++row) {
+            for (uint8_t column = row; column < 3; ++column) {
                 // Omit non-diagonal process noise
                 float P_rate = F(row, column) * P(row, column) + P(row, column) * F(column, row);
                 if (row == column) {
                     P_rate += rate_var;
                 }
                 P(row, column) += P_rate * _down_sampled_time;
-
             }
+            P(row, row+3) -= P(row, row+3) * _down_sampled_time;
+            P(row+3, row+3) += bias_var * _down_sampled_time;
         }
 
         // Ensure P matrix is symmetric
-        for (int row = 0; row < _k_num_states; ++row) {
+        for (int row = 1; row < _k_num_states; ++row) {
             for (int column = 0; column < row; ++column) {
                 P(row, column) = P(column, row);
             }
@@ -289,23 +319,29 @@ private:
             if (_imu_buffers[i]->buffer.pop_first_older_than(output_sample_delayed.time_us, &imu_sample_delayed)
                 && imu_sample_delayed.time_us > _imu_valid_timestamp[i]
                 && output_sample_delayed.time_us < imu_sample_delayed.time_us + _param.imu_fuse_delay_us) {
-                for (uint8_t dim = 0; dim < _k_num_states; ++dim) {
-                    const float innov = _state(dim) - imu_sample_delayed.angular_rate(dim);
-                    const float innov_var = P(dim, dim) + math::sq(_param.gyro_noise);
-                    fuse(innov, innov_var, dim);
+                // Fuse gyroscope sample
+                for (uint8_t dim = 0; dim < 3; ++dim) {
+                    const float innov = _state.angular_rate(dim) - imu_sample_delayed.angular_rate(dim);
+                    fuseGyroscope(innov, P(dim, dim) + math::sq(_param.gyro_noise), dim);
+                    if (_is_in_air) {
+                        // update model bias
+                        fuseGyroscope(-innov, P(dim+3, dim+3) + math::sq(_param.gyro_noise), dim+3);
+                    }
                 }
+
+                break;
             }
         }
     }
 
-    void fuse(const float innov, const float innov_var, const uint8_t state_index) {
-        Vector3f Kfusion;
+    void fuseGyroscope(const float innov, const float innov_var, const uint8_t state_index) {
+        VectorKf Kfusion;
         for (uint8_t row = 0; row < _k_num_states; ++row) {
             // K = PHS' = PH(P + Measurement Noise)'
             Kfusion(row) = P(row, state_index) / innov_var;
         }
 
-        SquareMatrix3f KHP;
+        SquareMatrixKf KHP;
         for (int row = 0; row < _k_num_states; ++row) {
             for (int column = 0; column < _k_num_states; ++column) {
                 // We omit the H matrix, the 1st order derivative between estimation and current state given all previous observations
@@ -315,11 +351,18 @@ private:
         }
 
         bool healthy = true;
-        for (int i = 0; i < _k_num_states; ++i) {
+        for (int i = 0; i < 3; ++i) {
             if (P(i, i) < KHP(i, i)) {
                 // zero rows and columns
-                P.uncorrelateCovarianceSetVariance<1>(i, math::sq(_param.process_noise));
+                P.uncorrelateCovarianceSetVariance<1>(i, math::sq(_param.model_p_noise * _dt_ekf_avg));
+                healthy = false;
+            }
+        }
 
+        for (int i = 3; i < 6; ++i) {
+            if (P(i, i) < KHP(i, i)) {
+                // zero rows and columns
+                P.uncorrelateCovarianceSetVariance<1>(i, math::sq(_param.model_bias_p_noise));
                 healthy = false;
             }
         }
@@ -328,13 +371,18 @@ private:
             // P(k) = P(k-1) - KHP(k-1)
             P -= KHP;
             // x(k|k) = x(k|k-1) - K * (x(k|k-1) - z(k))
-            _state -= Kfusion * innov;
+            fuse(Kfusion, innov);
         }
 
         for (int i = 0; i < _k_num_states; ++i) {
             P(i, i) = math::constrain(P(i, i), 0.f, 100.f);
         }
 
+    }
+
+    void fuse(const VectorKf &K, float innovation) {
+        _state.angular_rate -= K.slice<3, 1>(0, 0) * innovation;
+        _state.delta_rate_bias -= K.slice<3, 1>(3, 0) * innovation;
     }
 
     void applyCorrectionToOutputBuffer(const Vector3f &rate_correction) {

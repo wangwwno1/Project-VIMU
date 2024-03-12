@@ -13,6 +13,7 @@ using estimator::imuSample;
 struct RateSample {
     hrt_abstime time_us{0};
     matrix::Vector3f angular_rate{0.f, 0.f, 0.f};
+    float delta_ang_dt{0.f};
 };
 
 class RateDownSampler
@@ -26,8 +27,9 @@ public:
     RateSample getAverageRateAndTriggerReset()
     {
         RateSample rate{};
-        rate.time_us = 1000 * (_timestamp_sum / _sample_count);
+        rate.time_us = _rate_down_sampled.time_us;
         rate.angular_rate = _rate_down_sampled.angular_rate / float(_sample_count);
+        rate.delta_ang_dt = _rate_down_sampled.delta_ang_dt;
 
         reset();
 
