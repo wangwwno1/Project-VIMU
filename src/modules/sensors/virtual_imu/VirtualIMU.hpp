@@ -177,7 +177,7 @@ private:
             const float rel_signal = (1.f - thr_mdl_fac) * actuatorState + thr_mdl_fac * actuatorState * actuatorState;
             float ith_thrust = thrust_coef * rel_signal;
             if (using_induced_thrust) {
-                const Vector3f ith_induced_vel = _rel_wind_body + _ekf.getAngularRate().cross(rel_pos_to_cog);
+                const Vector3f ith_induced_vel = _rel_wind_body;
                 if (using_induced_vel_xy) {
                     ith_thrust += _phys_model_params.Ct_vxy * ith_induced_vel.xy().norm_squared();
                 }
