@@ -196,7 +196,7 @@ private:
             thrust_torque(1) = thrust_torque(1) * _rotor_param[i].pitch_scale;
             torque_tmp += thrust_torque;
             torque_tmp += _phys_model_params.Cd * _rotor_param[i].yaw_scale * rel_signal * rot_axis;
-            if (fabsf(_rotor_param[i].yaw_delta_state_scale) > 1.e-6f) {
+            if (_rotor_param[i].yaw_delta_state_scale > 1.e-6f) {
                 torque_tmp += _rotor_param[i].yaw_delta_state_scale * delta_state * rot_axis;
             }
         }
