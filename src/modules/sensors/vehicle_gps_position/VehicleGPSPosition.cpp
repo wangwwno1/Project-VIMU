@@ -63,6 +63,7 @@ VehicleGPSPosition::VehicleGPSPosition() :
     _param_iv_gps_v_cd_cnt(_vel_validator_params.safe_count)
 {
 	_vehicle_gps_position_pub.advertise();
+    _sensors_status_gps_pub.advertise();
 }
 
 VehicleGPSPosition::~VehicleGPSPosition()
@@ -95,6 +96,16 @@ void VehicleGPSPosition::Stop()
 	for (auto &sub : _sensor_gps_sub) {
 		sub.unregisterCallback();
 	}
+
+	if (_pos_deviation.load()) {
+		delete _pos_deviation.load();
+		_pos_deviation.store(nullptr);
+	}
+
+	if (_vel_deviation.load()) {
+		delete _vel_deviation.load();
+		_vel_deviation.store(nullptr);
+	}
 }
 
 void VehicleGPSPosition::ParametersUpdate(bool force)
@@ -124,7 +135,7 @@ void VehicleGPSPosition::ParametersUpdate(bool force)
 
         if (_param_atk_apply_type.get() != _attack_flag_prev) {
             const int next_attack_flag = _param_atk_apply_type.get();
-            if (next_attack_flag & (sensor_attack::ATK_GPS_VEL | sensor_attack::ATK_GPS_POS)) {
+            if (next_attack_flag & (sensor_attack::ATK_GPS_VEL | sensor_attack::ATK_GPS_POS | sensor_attack::ATK_GPS_V_P)) {
                 // Enable attack, calculate new timestamp
                 _attack_timestamp = param_update.timestamp + (hrt_abstime) (_param_atk_countdown_ms.get() * 1000);
                 if (next_attack_flag & sensor_attack::ATK_GPS_POS) {
@@ -139,9 +150,18 @@ void VehicleGPSPosition::ParametersUpdate(bool force)
                     PX4_INFO("Debug - GPS VEL attack disabled.");
                 }
 
-            } else if (_attack_flag_prev & (sensor_attack::ATK_GPS_VEL | sensor_attack::ATK_GPS_POS)) {
+                if (next_attack_flag & sensor_attack::ATK_GPS_V_P) {
+                    _pos_record = 1;
+                    PX4_INFO("Debug - Enable GPS V_P attack, expect start timestamp: %" PRIu64, _attack_timestamp);
+                } else if (_attack_flag_prev & sensor_attack::ATK_GPS_V_P) {
+                    _pos_record = 0;
+                    PX4_INFO("Debug - GPS V_P attack disabled.");
+                }
+
+            } else if (_attack_flag_prev & (sensor_attack::ATK_GPS_VEL | sensor_attack::ATK_GPS_POS | sensor_attack::ATK_GPS_V_P)) {
                 // Disable attack, reset timestamp
                 _attack_timestamp = 0;
+                _pos_record = 0;
                 PX4_INFO("Debug - GPS attack disabled , reset attack timestamp.");
             }
 

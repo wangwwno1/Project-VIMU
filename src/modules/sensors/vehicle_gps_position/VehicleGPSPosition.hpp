@@ -33,7 +33,6 @@
 
 #pragma once
 
-#include <memory>
 #include <lib/fault_detector/fault_detector.hpp>
 #include <lib/mathlib/math/Limits.hpp>
 #include <lib/matrix/matrix/math.hpp>
@@ -62,6 +61,7 @@ using namespace time_literals;
 using fault_detector::GPSPosValidator;
 using fault_detector::GPSVelValidator;
 using matrix::Quatf;
+using matrix::Vector3f;
 
 namespace sensors
 {
@@ -105,6 +105,7 @@ private:
     bool ConductVelocitySpoofing(sensor_gps_s &gps_position, const Vector3f &ref_vel_board);
     void ConductPositionSpoofing(sensor_gps_s &gps_position);
     bool ConductPositionSpoofing(sensor_gps_s &gps_position, const Vector3f &ref_pos_board);
+    bool ConductVPSpoofing(sensor_gps_s &gps_position);
     void ValidateGpsData(sensor_gps_s &gps_position);
     void ReplaceGpsPosVelData(sensor_gps_s &gps_position, const Vector3f &ref_pos_board, const Vector3f &ref_vel_board);
 
@@ -159,14 +160,22 @@ private:
     RingBuffer<RefGpsSample> *_ref_gps_buffer{nullptr};
     RefGpsSample        _ref_gps_delayed{};
 
+    double		_false_velocity_prev{0.0};
+    uint64_t	_atk_timestamp_prev{0};
+    int32_t		_pos_lat_prev{0};
+    int32_t		_pos_lon_prev{0};
+    int32_t		_pos_lat_ori{0};
+    int32_t		_pos_lon_ori{0};
+    int32_t		_pos_record{0};
+
 	perf_counter_t _cycle_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": cycle")};
 
 	GpsBlending _gps_blending;
 
-    sensor_attack::DeviationParams              _pos_atk_params{};
-	std::unique_ptr<sensor_attack::Deviation>   _pos_deviation = nullptr;
-    sensor_attack::DeviationParams              _vel_atk_params{};
-    std::unique_ptr<sensor_attack::Deviation>   _vel_deviation = nullptr;
+    sensor_attack::DeviationParams                  _pos_atk_params{};
+    px4::atomic<sensor_attack::Deviation *>  _pos_deviation {nullptr};
+    sensor_attack::DeviationParams                  _vel_atk_params{};
+    px4::atomic<sensor_attack::Deviation *>  _vel_deviation {nullptr};
 
 	DEFINE_PARAMETERS(
 		(ParamInt<px4::params::SENS_GPS_MASK>)          _param_sens_gps_mask,

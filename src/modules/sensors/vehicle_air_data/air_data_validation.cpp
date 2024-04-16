@@ -93,7 +93,7 @@ namespace sensors {
                 variance += _ref_baro_delayed.alt_var;
             }
 
-            _baro_validators[instance]->validate(hgt_error / sqrt(variance));
+            _baro_validators[instance]->validate(hgt_error / sqrtf(variance));
 
             _baro_error_status.timestamp_reference[instance] = _ref_baro_delayed.time_us;
             _baro_error_status.error[instance] = hgt_error;
