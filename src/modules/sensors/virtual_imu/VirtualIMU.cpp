@@ -249,7 +249,7 @@ void VirtualIMU::UpdateIMUData() {
 
     // Check imu status & bias, fuse healthy gyro state.
     for (uint8_t uorb_idx = 0; uorb_idx < MAX_SENSOR_COUNT; ++uorb_idx) {
-        vehicle_imu_s imu;
+        vehicle_imu_s imu{};
         if (_vehicle_imu_sub[uorb_idx].update(&imu)) {
             // We need to call the subscription once, so it won't take previously unreceived data as an update.
             // Only fuse sample that has passed validation
@@ -403,8 +403,8 @@ void VirtualIMU::PublishReferenceIMU() {
         // Add timestamp check to guard against double publish in SITL
         Vector3f delta_velocity;
         Vector3f delta_angle;
-        uint16_t delta_angle_dt;
-        uint16_t delta_velocity_dt;
+        uint16_t delta_angle_dt{};
+        uint16_t delta_velocity_dt{};
 
         // Even without publish, we still reset integrator
         // because we need to synchronize the reset timestamp with the IMU timestamp

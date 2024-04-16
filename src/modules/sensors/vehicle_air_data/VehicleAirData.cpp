@@ -322,9 +322,6 @@ void VehicleAirData::Run()
 
                         float altitude = PressureToAltitude(pressure_pa, temperature);
 
-                        uint32_t device_id = _calibration[instance].device_id();
-                        uint8_t calibration_count = _calibration[instance].calibration_count();
-
 						// calculate air density
 						float air_density = pressure_pa / (CONSTANTS_AIR_GAS_CONST * (_air_temperature_celsius -
 										   CONSTANTS_ABSOLUTE_NULL_CELSIUS));
@@ -332,12 +329,12 @@ void VehicleAirData::Run()
 						// populate vehicle_air_data with and publish
 						vehicle_air_data_s out{};
 						out.timestamp_sample = timestamp_sample;
-						out.baro_device_id = device_id;
+						out.baro_device_id = _calibration[instance].device_id();
 						out.baro_alt_meter = altitude;
 						out.baro_temp_celcius = temperature;
 						out.baro_pressure_pa = pressure_pa;
 						out.rho = air_density;
-						out.calibration_count = calibration_count;
+						out.calibration_count = _calibration[instance].calibration_count();
 						out.timestamp = hrt_absolute_time();
 
 						_vehicle_air_data_pub.publish(out);
