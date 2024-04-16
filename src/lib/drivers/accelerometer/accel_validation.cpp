@@ -40,25 +40,23 @@ void PX4Accelerometer::validateAccel(sensor_accel_s &accel) {
         // Use delay for precise Time to Detection
         if (hrt_elapsed_time(&_attack_timestamp) >= (hrt_abstime) (_param_iv_ttd_delay_ms.get() * 1000)) {
             // Declare accel failure immediately by add error count
-            accel.error_count = math::max(accel.error_count + NORETURN_ERRCOUNT, NORETURN_ERRCOUNT + 1U);
+            accel.error_count = fmaxf(accel.error_count + NORETURN_ERRCOUNT, NORETURN_ERRCOUNT + 1U);
         }
     } else if (_accel_validator.test_ratio() >= 1.f) {
         // Declare accel failure immediately by add error count
-        accel.error_count = math::max(accel.error_count + NORETURN_ERRCOUNT, NORETURN_ERRCOUNT + 1U);
+        accel.error_count = fmaxf(accel.error_count + NORETURN_ERRCOUNT, NORETURN_ERRCOUNT + 1U);
     }
 
-    if (_param_iv_debug_log.get()) {
-        // Record error ratio and test ratio for debug and post-mortem analysis
-        sensor_accel_errors_s accel_error{};
+    // Record error ratio and test ratio for debug and post-mortem analysis
+    sensor_accel_errors_s accel_error{};
 
-        accel_error.device_id = accel.device_id;
-        accel_error.samples = accel.samples;
-        accel_error.x = error_residuals(0);
-        accel_error.y = error_residuals(1);
-        accel_error.z = error_residuals(2);
-        accel_error.test_ratio = _accel_validator.test_ratio();
-        accel_error.timestamp_reference = _curr_ref_accel.timestamp_sample;
-        accel_error.timestamp = hrt_absolute_time();
-        _sensor_accel_errors_pub.publish(accel_error);
-    }
+    accel_error.device_id = accel.device_id;
+    accel_error.samples = accel.samples;
+    accel_error.x = error_residuals(0);
+    accel_error.y = error_residuals(1);
+    accel_error.z = error_residuals(2);
+    accel_error.test_ratio = _accel_validator.test_ratio();
+    accel_error.timestamp_reference = _curr_ref_accel.timestamp_sample;
+    accel_error.timestamp = hrt_absolute_time();
+    _sensor_accel_errors_pub.publish(accel_error);
 }

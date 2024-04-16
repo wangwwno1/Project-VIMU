@@ -69,6 +69,7 @@ PX4Gyroscope::~PX4Gyroscope()
 {
 	_sensor_pub.unadvertise();
 	_sensor_fifo_pub.unadvertise();
+    _sensor_gyro_errors_pub.unadvertise();
 }
 
 void PX4Gyroscope::set_device_type(uint8_t devtype)

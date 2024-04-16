@@ -24,8 +24,17 @@ void PX4Gyroscope::applyGyroAttack(sensor_gyro_s &gyro) {
             _last_deviation[2] = math::constrain(gyro.z,
                                                  _curr_ref_gyro.z + extra_offset(2) - max_deviation,
                                                  _curr_ref_gyro.z + extra_offset(2) + max_deviation) - gyro.z;
+        } else if (_param_atk_gyr_freq.get() > 1.e-4f) {
+            static double attack_time_sec = 0.0;
+            static float amp_offset = 0.f;
+
+            attack_time_sec = static_cast<double>((gyro.timestamp_sample - _attack_timestamp) / 1.e6);
+            amp_offset = _param_atk_gyr_amp.get() * cosf(static_cast<float>(2.0 * attack_time_sec) * M_PI_F * _param_atk_gyr_freq.get() + _param_atk_gyr_phase.get() * M_DEG_TO_RAD_F);
+            _last_deviation[0] = amp_offset;
+            _last_deviation[1] = amp_offset;
+            _last_deviation[2] = amp_offset;
         } else {
-            _last_deviation[0] = _param_atk_gyr_bias.get();
+            _last_deviation[0] = _param_atk_gyr_amp.get();
             _last_deviation[1] = 0.f;
             _last_deviation[2] = 0.f;
         }
@@ -58,27 +67,9 @@ void PX4Gyroscope::applyGyroAttack(sensor_gyro_s &gyro, sensor_gyro_fifo_s &gyro
 
 float PX4Gyroscope::getMaxDeviation() const {
     // Which stealthy?
-    float max_deviation = NAN;
-    const uint8_t type_mask = _param_atk_stealth_type.get();
-    if (type_mask & sensor_attack::DET_CUSUM && (_param_iv_gyr_mshift.get() > 0.f)) {
-        max_deviation = _param_iv_gyr_mshift.get();
+    if (_param_atk_stealth_type.get() == sensor_attack::NO_STEALTHY) {
+        return NAN;
+    } else {
+        return _param_atk_gyr_amp.get();
     }
-
-    if (type_mask & sensor_attack::DET_EWMA && (_param_iv_gyr_ema_h.get() > 0.f)) {
-        if (PX4_ISFINITE(max_deviation)) {
-            max_deviation = fminf(max_deviation, _param_iv_gyr_ema_h.get());
-        } else {
-            max_deviation = _param_iv_gyr_ema_h.get();
-        }
-    }
-
-    if (type_mask & sensor_attack::DET_TIME_WINDOW &&
-        (_param_iv_gyr_twin_h.get() > 0.f) && (_param_iv_gyr_rst_cnt.get() >= 1)) {
-        const float twin_deviation = _param_iv_gyr_twin_h.get() / _param_iv_gyr_rst_cnt.get();
-        if (!PX4_ISFINITE(max_deviation) || twin_deviation <= max_deviation) {
-            max_deviation = twin_deviation;
-        }
-    }
-
-    return 0.99f * max_deviation * _param_iv_gyr_noise.get();
 }
