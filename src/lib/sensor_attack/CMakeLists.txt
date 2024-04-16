@@ -42,5 +42,3 @@ add_dependencies(sensor_attack prebuild_targets)
 
 set_target_properties(sensor_attack PROPERTIES PUBLIC_HEADER "sensor_attack.hpp")
 set_target_properties(sensor_attack PROPERTIES LINKER_LANGUAGE CXX)
-
-
