@@ -956,7 +956,7 @@ bool VehicleAngularVelocity::CalibrateAndPublish(const hrt_abstime &timestamp_sa
 	return false;
 }
 
-    void VehicleAngularVelocity::PrintStatus()
+void VehicleAngularVelocity::PrintStatus()
 {
 	PX4_INFO_RAW("[vehicle_angular_velocity] selected sensor: %" PRIu32
 		     ", rate: %.1f Hz %s, estimated bias: [%.5f %.5f %.5f]\n",

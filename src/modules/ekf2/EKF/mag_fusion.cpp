@@ -659,7 +659,7 @@ bool Ekf::updateQuaternion(const float innovation, const float variance, const f
 	}
 
 	// innovation test ratio
-    _mag_validator.validate(innovation / sqrt(_heading_innov_var));
+    _mag_validator.validate(innovation / sqrtf(_heading_innov_var));
 	_yaw_test_ratio = fmaxf(_mag_validator.test_ratio(), sq(innovation) / (sq(gate_sigma) * _heading_innov_var));
 
 	// we are no longer using 3-axis fusion so set the reported test levels to zero

@@ -46,6 +46,7 @@ PARAM_DEFINE_FLOAT(VM_MASS, 1.f);
  *
  * @unit kg m^2
  * @decimal 5
+ * @min 0.00001
  * @increment 0.00001
  * @group Vehicle Model
  */
@@ -56,6 +57,7 @@ PARAM_DEFINE_FLOAT(VM_INERTIA_XX, 0.01f);
  *
  * @unit kg m^2
  * @decimal 5
+ * @min 0.00001
  * @increment 0.00001
  * @group Vehicle Model
  */
@@ -66,6 +68,7 @@ PARAM_DEFINE_FLOAT(VM_INERTIA_YY, 0.01f);
  *
  * @unit kg m^2
  * @decimal 5
+ * @min 0.00001
  * @increment 0.00001
  * @group Vehicle Model
  */
@@ -102,7 +105,9 @@ PARAM_DEFINE_FLOAT(VM_INERTIA_XZ, 0.f);
 PARAM_DEFINE_FLOAT(VM_INERTIA_YZ, 0.f);
 
 /**
+ * Thrust Coefficient of motors
  *
+ * Defined as thrust = VM_THR_FACTOR * rel_signal
  *
  * @group Vehicle Model
  * @min 0.01
@@ -138,6 +143,7 @@ PARAM_DEFINE_FLOAT(VM_DRAG_FACTOR, 0.05f);
  *
  * @unit rad/s^2
  * @decimal 5
+ * @min 0.00001
  * @increment 0.00001
  * @group Vehicle Model
  */
