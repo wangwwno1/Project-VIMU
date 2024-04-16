@@ -135,11 +135,13 @@ void SoftwareSensor::UpdateCopterStatus() {
     }
 
     // Always check land status even vehicle_land_detected is not updated.
-    if (_copter_status.landed && _copter_status.in_air) {
+    if (_copter_status.landed) {
+        if (_copter_status.in_air) {
+            PX4_INFO("Vehicle landed, disarm software sensor");
+        }
         _copter_status.in_air = false;
         _copter_status.publish = false;
         reset();
-        PX4_INFO("Vehicle landed, disarm software sensor");
 
     } else if (!_copter_status.in_air && !(_copter_status.at_rest || _copter_status.landed)){
         _copter_status.in_air = true;
