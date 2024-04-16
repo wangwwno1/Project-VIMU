@@ -48,31 +48,10 @@ namespace sensors
         bool attack_applied = false;
         const uint8_t type_mask = _param_atk_stealth_type.get();
         if (type_mask != sensor_attack::NO_STEALTHY && attack_enabled(sensor_attack::ATK_GPS_VEL)) {
-            float max_deviation = NAN;
-
-            if (_param_iv_gps_v_mshift.get() > 0.f && type_mask & sensor_attack::DET_CUSUM) {
-                max_deviation = _param_iv_gps_v_mshift.get();
-            }
-
-            if (_param_iv_gps_v_ema_h.get() > 0.f && type_mask & sensor_attack::DET_EWMA) {
-                // Consider set the max deviation to EMA if we attempt to circumvent them
-                // If not (stealthy_attack_flag & sensor_attack::DET_CUSUM) then we replace cusum limit with ema
-                max_deviation = (PX4_ISFINITE(max_deviation)) ?
-                                fminf(max_deviation, _param_iv_gps_v_ema_h.get()) : _param_iv_gps_v_ema_h.get();
-            }
-
-            if (type_mask & sensor_attack::DET_TIME_WINDOW &&
-                _param_iv_gps_v_twin_h.get() > 0.f && _param_iv_gps_v_rst_cnt.get() >= 1) {
-                const float twin_deviation = _param_iv_gps_v_twin_h.get() / _param_iv_gps_v_rst_cnt.get();
-                if (!PX4_ISFINITE(max_deviation) || twin_deviation <= max_deviation) {
-                    max_deviation = twin_deviation;
-                }
-            }
-
+            const float max_deviation = _param_atk_gps_v_iv.get();
             if (PX4_ISFINITE(max_deviation)) {
                 const float vel_gate = fmaxf(_param_ekf2_gps_v_gate.get(), 1.f);
                 const float vel_noise = fmaxf(_param_ekf2_gps_v_noise.get(), 0.01f);
-                max_deviation *= 0.99f * vel_noise;
                 
                 // Apply stealthy attack to east axis (positive deviation will make drone fly west)
                 gps_position.vel_n_m_s = math::constrain(gps_position.vel_n_m_s,
@@ -148,28 +127,9 @@ namespace sensors
         bool attack_applied = false;
         const uint8_t type_mask = _param_atk_stealth_type.get();
         if (type_mask != sensor_attack::NO_STEALTHY && attack_enabled(sensor_attack::ATK_GPS_POS)) {
-            float max_deviation = NAN;
-
-            if (_param_iv_gps_p_mshift.get() > 0.f && (type_mask & sensor_attack::DET_CUSUM)) {
-                max_deviation = _param_iv_gps_p_mshift.get();
-            }
-
-            if (_param_iv_gps_p_ema_h.get() > 0.f && type_mask & sensor_attack::DET_EWMA) {
-                // Consider set the max deviation to EMA if we attempt to circumvent them
-                // If not (stealthy_attack_flag & sensor_attack::DET_CUSUM) then we replace cusum limit with ema
-                max_deviation = (PX4_ISFINITE(max_deviation)) ?
-                                fminf(max_deviation, _param_iv_gps_p_ema_h.get()) : _param_iv_gps_p_ema_h.get();
-            }
+            const float max_deviation = _param_atk_gps_p_iv.get();
 
             Vector3f extra_offset{0.f, 0.f, 0.f};
-            if (type_mask & sensor_attack::DET_TIME_WINDOW &&
-                (_param_iv_gps_p_twin_h.get() > 0.f) && (_param_iv_gps_p_rst_cnt.get() >= 1)) {
-                const float twin_deviation = _param_iv_gps_p_twin_h.get() / _param_iv_gps_p_rst_cnt.get();
-                if (!PX4_ISFINITE(max_deviation) || twin_deviation <= max_deviation) {
-                    max_deviation = twin_deviation;
-                }
-            }
-
             if (PX4_ISFINITE(max_deviation)) {
                 Vector2f horz_pos{};
                 const float pos_gate = fmaxf(_param_ekf2_gps_p_gate.get(), 1.f);
@@ -179,7 +139,6 @@ namespace sensors
                 float relative_alt = gps_position.alt * 1.e-3f - _gps_alt_ref;
                 _global_origin.project(lat, lon, horz_pos(0), horz_pos(1));
 
-                max_deviation *= 0.99f * pos_noise;
                 // Apply stealthy attack to East axis, positive deviation will cause the vehicle fly west.
                 horz_pos(1) = ref_pos_board(1) + max_deviation;
 

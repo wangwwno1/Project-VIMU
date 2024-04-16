@@ -50,7 +50,6 @@ void PX4Accelerometer::applyAccelAttack(sensor_accel_s &accel, sensor_accel_fifo
 
 float PX4Accelerometer::getMaxDeviation() const {
     // Which stealthy?
-    // Which stealthy?
     if (_param_atk_stealth_type.get() == sensor_attack::NO_STEALTHY) {
         return NAN;
     } else {
