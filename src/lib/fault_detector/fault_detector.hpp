@@ -19,7 +19,7 @@ namespace fault_detector {
     using GPSPosValidator = fault_detector::SquareErrorTimeWindowVector3f;
     using GPSVelValidator = fault_detector::SquareErrorTimeWindowVector3f;
     using MagValidator = fault_detector::SquareErrorTimeWindowVector3f;
-    using BaroValidator = fault_detector::SquareErrorTimeWindowVectorf;
+    using BaroValidator = fault_detector::SquareErrorTimeWindowf;
     using GyroValidator = fault_detector::SquareErrorTimeWindowVector3f;
     using AccelValidator = fault_detector::SquareErrorTimeWindowVector3f;
 }
