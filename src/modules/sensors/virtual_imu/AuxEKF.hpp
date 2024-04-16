@@ -173,6 +173,7 @@ public:
     void reset_state() {
         // Reset estimator states
         _state.angular_rate.zero();
+        _state.delta_rate_bias.zero();
         _gyro_bias.zero();
         _angular_acceleration.zero();
         _external_angular_acceleration.zero();

@@ -220,7 +220,7 @@ PARAM_DEFINE_FLOAT(VM_ANG_ACC_NOISE, 0.075f);
  * @increment 0.00001
  * @group Vehicle Model
  */
-PARAM_DEFINE_FLOAT(VM_MDL_B_NOISE, 0.015f);
+PARAM_DEFINE_FLOAT(VM_MDL_B_NOISE, 0.001f);
 
 /**
  * X-axis length Scale used for motor position matrix

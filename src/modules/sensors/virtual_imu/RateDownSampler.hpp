@@ -27,7 +27,7 @@ public:
     RateSample getAverageRateAndTriggerReset()
     {
         RateSample rate{};
-        rate.time_us = _rate_down_sampled.time_us;
+        rate.time_us = 1000 * (_timestamp_sum / _sample_count);
         rate.angular_rate = _rate_down_sampled.angular_rate / float(_sample_count);
         rate.delta_ang_dt = _rate_down_sampled.delta_ang_dt;
 

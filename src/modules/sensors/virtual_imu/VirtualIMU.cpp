@@ -201,18 +201,11 @@ void VirtualIMU::Run()
     // backup schedule
     ScheduleDelayed(_backup_schedule_timeout_us);
 
-    // Update copter status to control the calculation & publish behaviors.
-    // Note: Always update land status before actuator output & angular velocity
-    UpdateCopterStatus();
-
-    // Measurement Update
-    UpdateIMUData();
-
     if (_param_vm_bat_intr_cell.get() > -1.0f){
         battery_status_s  battery_status{};
         if (_battery_status_sub.update(&battery_status)
-            && (battery_status.voltage_v > -1.f)
-            && (battery_status.current_a > -1.f)
+            && (battery_status.voltage_v > -0.f)
+            && (battery_status.current_a > -0.f)
             && (battery_status.cell_count > 0)) {
             const int cell_count = battery_status.cell_count;
             const float internal_resistance = _param_vm_bat_intr_cell.get() * cell_count;
@@ -221,6 +214,14 @@ void VirtualIMU::Run()
             _voltage_scaler.update(voltage_unload / voltage_reference);
         }
     }
+
+    // Update copter status to control the calculation & publish behaviors.
+    // Note: Always update land status before actuator output & angular velocity
+    UpdateCopterStatus();
+
+    // Measurement Update
+    UpdateIMUData();
+    UpdateBiasAndAerodynamicWrench();
 
     // Run() will be invoked when actuator_output receive update.
     // Update Actuator Outputs
@@ -260,7 +261,6 @@ void VirtualIMU::Run()
 
     // Update VIMU-SE (the Reference EKF)
     PublishReferenceIMU();
-    UpdateBiasAndAerodynamicWrench();
     if (now > _last_rate_ctrl_reference_publish + _publish_interval_min_us) {
         PublishAngularVelocityAndAcceleration();
     }

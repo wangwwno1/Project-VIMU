@@ -255,7 +255,12 @@ bool VehicleAngularVelocity::SensorSelectionUpdate(const hrt_abstime &time_now_u
 			}
 		}
 
-		// if no gyro selected or healthy then use fallback
+        // if select vimu, use it
+        if (device_id == VIMU_DEVICE_ID) {
+            selected_device_id_valid = true;
+        }
+
+        // if no gyro selected or healthy then use fallback
 		if ((device_id == 0) || !selected_device_id_valid) {
 			device_id = device_id_first_valid_imu;
 		}
@@ -818,22 +823,6 @@ void VehicleAngularVelocity::Run()
 
 	ParametersUpdate();
 
-//    fixme block corrupted sample at once, not after the imu status update
-//      how to fix simulation poll out issue?
-//    if (!_recovery_mode) {
-//        const uint8_t instance_id = _fifo_available ? _sensor_fifo_sub.get_instance(): _sensor_sub.get_instance();
-//        uORB::SubscriptionData<sensor_gyro_s> sensor_gyro_sub{ORB_ID(sensor_gyro), instance_id};
-//
-//        const bool advertised = sensor_gyro_sub.advertised()
-//                                && (sensor_gyro_sub.get().timestamp != 0)
-//                                && (sensor_gyro_sub.get().device_id != 0);
-//
-//        if (advertised && sensor_gyro_sub.get().error_count >= 10000) {
-//            // Enable recovery gyro, update selection
-//            selection_updated = EnableRecoveryGyro();
-//        }
-//    }
-
 	_calibration.SensorCorrectionsUpdate(selection_updated);
 	SensorBiasUpdate(selection_updated);
 
@@ -947,26 +936,6 @@ bool VehicleAngularVelocity::CalibrateAndPublish(const hrt_abstime &timestamp_sa
 		const Vector3f &angular_velocity_uncalibrated, const Vector3f &angular_acceleration_uncalibrated)
 {
 	if (timestamp_sample >= _last_publish + _publish_interval_min_us) {
-        // fixme block corrupted sample at once, not after the imu status update
-//        // Sensor Selection may lag behind detector report, so we publish reference by the error_count
-//        {
-//            const uint8_t instance_id = _fifo_available ? _sensor_fifo_sub.get_instance(): _sensor_sub.get_instance();
-//            uORB::SubscriptionData<sensor_gyro_s> sensor_gyro_sub{ORB_ID(sensor_gyro), instance_id};
-//
-//            if (sensor_gyro_sub.advertised()
-//                && (sensor_gyro_sub.get().timestamp != 0)
-//                && (sensor_gyro_sub.get().device_id != 0)) {
-//                if (sensor_gyro_sub.get().error_count >= 10000) {
-//                    // Update internal state, but publish from reference instead
-//                    _angular_acceleration = _calibration.rotation() * angular_acceleration_uncalibrated;
-//                    _angular_velocity = _calibration.Correct(angular_velocity_uncalibrated) - _bias;
-//
-//                    // Publish Reference Instead, defer reset until selector report faulty
-//                    return PublishReference();
-//                }
-//            }
-//        }
-
 		// Publish vehicle_angular_acceleration
 		vehicle_angular_acceleration_s v_angular_acceleration;
 		v_angular_acceleration.timestamp_sample = timestamp_sample;

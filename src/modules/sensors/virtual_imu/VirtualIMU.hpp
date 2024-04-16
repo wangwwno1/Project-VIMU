@@ -112,11 +112,16 @@ public:
 
     static constexpr uint8_t MAX_SENSOR_COUNT = 4;
 
+#ifdef CONFIG_ARCH_BOARD_PX4_SITL
+    // We don't know why, but the simulation will pollout if the device id is not 0
+    static const constexpr uint32_t VIMU_DEVICE_ID = 0;
+#else
     // This device id is corresponding to
     // 11111111       00000001  00001  000
     // which decodes to
     // DEVTYPE_UNUSED dev 1     bus 1  DeviceBusType_UNKNOWN
-    static const constexpr unsigned VIMU_DEVICE_ID = 16711944;
+    static const constexpr uint32_t VIMU_DEVICE_ID = 16711944;
+#endif /* CONFIG_ARCH_BOARD_PX4_SITL */
     static const constexpr unsigned VIMU_ACCEL_DEVICE_ID = 0;   // fixme replace with VIMU_DEVICE_ID - require modification in VehicleAcceleration module
     static const constexpr unsigned VIMU_GYRO_DEVICE_ID = VIMU_DEVICE_ID;
 

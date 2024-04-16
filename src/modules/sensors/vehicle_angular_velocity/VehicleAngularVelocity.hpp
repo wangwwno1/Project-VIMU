@@ -99,11 +99,16 @@ private:
 
 	static constexpr int MAX_SENSOR_COUNT = 4;
 
+#ifdef CONFIG_ARCH_BOARD_PX4_SITL
+    // We don't know why, but the simulation will pollout if the device id is not 0
+    static const constexpr uint32_t VIMU_DEVICE_ID = 0;
+#else
     // This device id is corresponding to
     // 11111111       00000001  00001  000
     // which decodes to
     // DEVTYPE_UNUSED dev 1     bus 1  DeviceBusType_UNKNOWN
     static const constexpr uint32_t VIMU_DEVICE_ID = 16711944;
+#endif /* CONFIG_ARCH_BOARD_PX4_SITL */
 
 	uORB::Publication<vehicle_angular_acceleration_s> _vehicle_angular_acceleration_pub{ORB_ID(vehicle_angular_acceleration)};
 	uORB::Publication<vehicle_angular_velocity_s>     _vehicle_angular_velocity_pub{ORB_ID(vehicle_angular_velocity)};
