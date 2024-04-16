@@ -161,7 +161,7 @@ namespace sensors
                 _last_pos_error(2) = ref_pos_board(2) + (gps_position.alt * 1.e-3f - _gps_alt_ref);
 
                 // test ratio = residual / std_error = residual / sqrt(vars)
-                // Error offset will be applied internally in the SquareErrorTimeWindow detector
+                // Error offset will be applied internally in the AbsErrorTimeWindow detector
                 const Vector3f pos_std_var = _last_pos_vars.sqrt();
                 const Vector3f vel_std_var = _last_vel_vars.sqrt();
                 _pos_validator.validate(_last_pos_error.edivide(pos_std_var));
