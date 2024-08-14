@@ -131,11 +131,6 @@ private:
             (ParamInt<px4::params::IV_DELAY_MASK>) _param_iv_delay_mask,
             (ParamInt<px4::params::IV_TTD_DELAY_MS>) _param_iv_ttd_delay_ms,
             (ParamFloat<px4::params::IV_GYR_NOISE>) _param_iv_gyr_noise,
-            (ParamFloat <px4::params::IV_GYR_CSUM_H>) _param_iv_gyr_csum_h,
-            (ParamFloat <px4::params::IV_GYR_MSHIFT>) _param_iv_gyr_mshift,
-            (ParamFloat<px4::params::IV_GYR_EMA_H>) _param_iv_gyr_ema_h,
-            (ParamFloat<px4::params::IV_GYR_ALPHA>) _param_iv_gyr_alpha,
-            (ParamFloat<px4::params::IV_GYR_EMA_CAP>) _param_iv_gyr_ema_cap,
             (ParamExtFloat <px4::params::IV_GYR_TWIN_H>) _param_iv_gyr_twin_h,
             (ParamExtInt <px4::params::IV_GYR_RST_CNT>) _param_iv_gyr_rst_cnt,
             (ParamExtInt <px4::params::IV_GYR_CD_CNT>) _param_iv_gyr_cd_cnt
