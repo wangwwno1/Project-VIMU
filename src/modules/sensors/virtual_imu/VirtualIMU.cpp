@@ -235,8 +235,9 @@ void VirtualIMU::Run()
                 UpdateVirtualIMU(act.timestamp);
             }
 
+            const float scale = _voltage_scaler.getState();
             for (int i = 0; i < noutputs; ++i) {
-                _current_actuator_setpoint(i) = _voltage_scaler.getState() * (act.output[i] - _param_vm_motor_min_pwm.get()) / 1000.f;
+                _current_actuator_setpoint(i) = scale * (act.output[i] - _param_vm_motor_min_pwm.get()) / 1000.f;
                 _current_actuator_setpoint(i) = math::constrain(_current_actuator_setpoint(i), 0.f, 2.5f);
             }
 
@@ -356,7 +357,7 @@ void VirtualIMU::UpdateIMUData() {
         if (_vehicle_imu_sub[uorb_idx].update(&imu)) {
             // We need to call the subscription once, so it won't take previously unreceived data as an update.
             // Only fuse sample that has passed validation
-            if ((_copter_status.at_rest || _copter_status.landed || (_param_vimu_fuse_gyro.get() && _imu_health_status[uorb_idx]))) {
+            if ((_copter_status.at_rest || _copter_status.landed || (_imu_health_status[uorb_idx]))) {
                 // IMU OK, or we are on the ground, continue calculation
                 imuSample imu_sample{};
                 imu_sample.time_us = imu.timestamp_sample;
@@ -611,16 +612,10 @@ void VirtualIMU::PublishAngularVelocityAndAcceleration() {
 }
 
 void VirtualIMU::ForecastAndPublishDetectionReference() {
-    // Forecast the acceleration and torque after one actuator interval.
-    const float dt = 1.e-6f * _actuator_outputs_interval_us;
-    Vector3f forecast_thrust{};
-    Vector3f forecast_torque{};
-    CalculateThrustAndTorque(_current_actuator_state, _current_actuator_setpoint, dt, forecast_thrust, forecast_torque, false);
-
     // Publish Reference Accelerometer & Gyroscope for IMU Detection
-    const Vector3f accels = forecast_thrust / math::max(_phys_model_params.mass, 1.e-5f) + _external_accel - _accel_bias;
+    const Vector3f accels = getBodyAcceleration();
     sensor_accel_s ref_accel{};
-    ref_accel.timestamp_sample = _last_state_update_us + _actuator_outputs_interval_us;
+    ref_accel.timestamp_sample = _last_state_update_us;
     ref_accel.device_id = VIMU_ACCEL_DEVICE_ID;
     ref_accel.x = accels(0);
     ref_accel.y = accels(1);
@@ -630,10 +625,9 @@ void VirtualIMU::ForecastAndPublishDetectionReference() {
     _reference_accel_pub.publish(ref_accel);
 
     // forecast with current angular rate and acceleration
-    const Vector3f current_rates = _ekf.getCorrectedAngularRate();
-    const Vector3f rates = current_rates + _ekf.CalculateAngularAcceleration(forecast_torque, current_rates) * dt;
+    const Vector3f rates = _ekf.getCorrectedAngularRate();
     sensor_gyro_s ref_gyro{};
-    ref_gyro.timestamp_sample = _last_state_update_us + _actuator_outputs_interval_us;
+    ref_gyro.timestamp_sample = _last_state_update_us;
     ref_gyro.device_id = VIMU_GYRO_DEVICE_ID;
     ref_gyro.x = rates(0);
     ref_gyro.y = rates(1);
