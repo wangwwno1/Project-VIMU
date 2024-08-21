@@ -192,8 +192,9 @@ bool PX4Gyroscope::ParametersUpdate()
                          get_instance(), _attack_timestamp);
 
             } else if (_attack_timestamp != 0) {
-                // Disable attack, reset timestamp
+                // Disable attack, reset timestamp and attack_has_start flag
                 _attack_timestamp = 0;
+                _attack_has_start = 0;
                 PX4_INFO("Debug - Attack is disabled for GYRO%d, reset attack timestamp.", get_instance());
             }
 

@@ -121,6 +121,7 @@ private:
     vehicle_angular_velocity_s  _last_angular_rates{};
 
     int  _attack_flag_prev{0};
+    int  _attack_has_start{0};
     hrt_abstime _attack_timestamp{0};
     float   _last_deviation[3] {};
 
