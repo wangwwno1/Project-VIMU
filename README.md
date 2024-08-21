@@ -1,122 +1,209 @@
-# PX4 Drone Autopilot
+# Artifacts Evaluation Guide
 
-[![Releases](https://img.shields.io/github/release/PX4/PX4-Autopilot.svg)](https://github.com/PX4/PX4-Autopilot/releases) [![DOI](https://zenodo.org/badge/22634/PX4/PX4-Autopilot.svg)](https://zenodo.org/badge/latestdoi/22634/PX4/PX4-Autopilot)
+## Download Virtual Machines
 
-[![Nuttx Targets](https://github.com/PX4/PX4-Autopilot/workflows/Nuttx%20Targets/badge.svg)](https://github.com/PX4/PX4-Autopilot/actions?query=workflow%3A%22Nuttx+Targets%22?branch=master) [![SITL Tests](https://github.com/PX4/PX4-Autopilot/workflows/SITL%20Tests/badge.svg?branch=master)](https://github.com/PX4/PX4-Autopilot/actions?query=workflow%3A%22SITL+Tests%22)
+- [VIMU VM](https://drive.google.com/file/d/118Sk78zISWRNgpKZb1bsWmwDCUwysrk9/view?usp=sharing). Login password: 123456
+- [Baseline VM](https://drive.google.com/file/d/1BtuiCU9zZqTv3zz1eGBje_bi8ps0Ll1J/view?usp=sharing). Login password: 123456
 
-[![Slack](/.github/slack.svg)](https://join.slack.com/t/px4/shared_invite/zt-si4xo5qs-R4baYFmMjlrT4rQK5yUnaA)
+## Primary Functionality Evaluation
 
-This repository holds the [PX4](http://px4.io) flight control solution for drones, with the main applications located in the [src/modules](https://github.com/PX4/PX4-Autopilot/tree/master/src/modules) directory. It also contains the PX4 Drone Middleware Platform, which provides drivers and middleware to run drones.
+- VIMU
+    - Following `VIMU-README.md` on the desktop of VIMU VM to evaluate the primary usage of VIMU against typical sensor attacks.
+- Baselines
+    - Following `CI-README.md` on the desktop of Baseline VM to evaluate the primary usage of CI against typical sensor attacks.
+    - Following `SRR-README.md` on the desktop of Baseline VM to evaluate the primary usage of SRR against typical sensor attacks.
+    - Following `SAVIOR-README.md` on the desktop of Baseline VM to evaluate the primary usage of SAVIOR against typical sensor attacks.
+    - Following `VIMU-CS-README.md` on the desktop of Baseline VM to evaluate the primary usage of VIMU-CS against typical sensor attacks.
+    - Following `SAVIOR-Buffer-README.md` on the desktop of Baseline VM to evaluate the primary usage of SAVIOR-Buffer against typical sensor attacks.
+    - Following `VIMU-NoBuffer-README.md` on the desktop of Baseline VM to evaluate the primary usage of VIMU-NoBuffer against typical sensor attacks.
 
-PX4 is highly portable, OS-independent and supports Linux, NuttX and MacOS out of the box.
+## Download Raw Data for Results Reproduction
 
-* Official Website: http://px4.io (License: BSD 3-clause, [LICENSE](https://github.com/PX4/PX4-Autopilot/blob/master/LICENSE))
-* [Supported airframes](https://docs.px4.io/master/en/airframes/airframe_reference.html) ([portfolio](http://px4.io/#airframes)):
-  * [Multicopters](https://docs.px4.io/master/en/frames_multicopter/)
-  * [Fixed wing](https://docs.px4.io/master/en/frames_plane/)
-  * [VTOL](https://docs.px4.io/master/en/frames_vtol/)
-  * [Autogyro](https://docs.px4.io/master/en/frames_autogyro/)
-  * [Rover](https://docs.px4.io/master/en/frames_rover/)
-  * many more experimental types (Blimps, Boats, Submarines, High altitude balloons, etc)
-* Releases: [Downloads](https://github.com/PX4/PX4-Autopilot/releases)
+- Download the following raw (flight) data INSIDE the VIMU virtual machine.
+    - [Fig.5&6&7 Overt Gyro Attacks.zip volume-1](https://drive.google.com/file/d/10MNZyT7W_uZOrnxczbiv6u36_L_6aSg_/view?usp=sharing).
+    - [Fig.5&6&7 Overt Gyro Attacks.zip volume-2](https://drive.google.com/file/d/1-JovCd7mFmTeyp_REZ_9TLQBxloxJ1i3/view?usp=sharing).
+    - [Fig.5&6&7 Overt Gyro Attacks.zip volume-3](https://drive.google.com/file/d/1-I9mYPKSFyUfXIRhbssPnIQP1WYd6QNT/view?usp=sharing).
+    - [Fig.5&6&7 Overt Gyro Attacks.zip volume-4](https://drive.google.com/file/d/1-GqU0fjnemI5_hlXNVMXD7RF0Dy3OVsi/view?usp=sharing).
+    - [Fig.5&6&7 Overt Gyro Attacks.zip volume-5](https://drive.google.com/file/d/10JURv1wjKnDvcfgH_BfFfRqVqdNJvjn-/view?usp=sharing).
+    - [Fig.8 TTD on GPS-PV.zip](https://drive.google.com/file/d/1WG5ZQ83BodtMzFkDGGxYNC-NG-KrnfKh/view?usp=sharing).
+    - [Fig.9 TTD on Stealthy Attacks.zip](https://drive.google.com/file/d/11BsYnSsuGjsFDIapA2Fc5ZilZqY5Yb6M/view?usp=sharing).
+    - [Fig.10 Recovery Durations vs. SRR.zip](https://drive.google.com/file/d/1-bqZPEvtn0ozecWNVanuZm-x9rpPLUko/view?usp=sharing).
+    - [Fig.11 Recovery Duration (SAVIOR-Buffer vs. VIMU-CS).zip](https://drive.google.com/file/d/1yDUoJdLO7ug6C_STmoQzQPZNmmvgABrz/view?usp=sharing).
+    - [Fig.17 SRR Supplementary Compensation.zip](https://drive.google.com/file/d/1GyrpVQizPG35vHG-xc7-G8i4oZH5V8k4/view?usp=drive_link).
+    - [Fig.18 Recovery Duration - Effect of Buffer.zip](https://drive.google.com/file/d/10Go_fxDjxlizN8jL6WozplONaq0LLibA/view?usp=sharing).
+    - [Fig.19 & Fig.21 Maneuver Gyro Attack.zip](https://drive.google.com/file/d/1-XBKpRrZVWO1zlwX8c1Bt6JfS88B6HtO/view?usp=sharing).
+    - [Fig.20 Maneuver Stealthy Attack.zip](https://drive.google.com/file/d/1-cOnDCepehMG83pwfdQB77QxYo0_3-Uo/view?usp=sharing).
+- Download the script package INSIDE the VIMU virtual machine for Results Reproduction.
+    - [VIMU-FigureScripts.zip](https://drive.google.com/file/d/11GJhhMrtUNpu8OT7E-Sqpw5-TlfEiQsK/view?usp=sharing).
+  - NOTE: The following reproducing steps will create a cache folder (located in `VIMU-FigureScripts/figure_data`). It stores the processed data to restore the extraction progress in case of the unwanted interruption (e.g., electrical blackout). The cache can be safely removed once all figures are plotted.
+- Reproduce Fig 5, Fig 6, and Fig 7. (Est. Time: 3-6 hours, heavy I/O and computation demand)
+  - Unzip `VIMU-FigureScripts.zip` and volumes of `Fig.5&6&7 Overt Gyro Attacks.zip` to the same folder (`'./VIMU-FigureScripts'` and `'./Fig.5&6&7 Overt Gyro Attacks'`).
+  - Open the terminal console and navigate into the script folder with `cd './VIMU-FigureScripts'`.
+  - Run `python3 preprocess_flight_logs.py '../Fig.5&6&7 Overt Gyro Attacks' './figure_data/Fig.5&6&7 Overt Gyro Attacks'` to process the raw flight logs. Note that this process would take several hours to finish and will consume **40 GB** to store the processed data. Make sure there is enough space.
+  - Run `python3 validate_detector.py './figure_data/Fig.5&6&7 Overt Gyro Attacks'` to generate data for Fig.6.
+  - Run `python3 plot_tpr_fpr_heatmap.py` to plot Fig.5 (`TPR_heatmap Overt Gyro Attacks - 4x2.pdf`).
+  - Run `python3 plot_roc_curve.py` to plot Fig.6 (`ROC Curves - Gyro.pdf`).
+  - Run `python3 plot_ttd_relplot.py` to plot Fig.7 (`Time to Detect - Gyroscope Overt Attack.pdf`).
+  - All figure files are located in the script directory.
+- Reproduce Fig 8. (Est. Time: < 5min)
+    - Unzip `Fig.8 TTD on GPS-PV.zip` and `VIMU-FigureScripts.zip` to the same folder.
+  - Open the terminal console and navigate into the script folder with `cd './VIMU-FigureScripts'`.
+    - Run `python3 preprocess_flight_logs.py '../Fig.8 TTD on GPS-PV' './figure_data/Fig.8 TTD on GPS-PV' --skip_threshold_data` to process the raw flight logs.
+    - Run `python3 plot_gps_pv_attack_ttd.py` to plot the figure.
+    - The figure file `Real GPS Attack TTD.pdf` is located in the script directory.
+- Reproduce Fig 9. (Est. Time: 30min with 4 CPU Cores)
+  - Unzip `Fig.9 TTD on Stealthy Attacks.zip` and `VIMU-FigureScripts.zip` to the same folder.
+  - Open the terminal console and navigate into the script folder with `cd './VIMU-FigureScripts'`.
+  - Run `python3 preprocess_flight_logs.py '../Fig.9 TTD on Stealthy Attacks' './figure_data/Fig.9 TTD on Stealthy Attacks' --skip_threshold_data` to process the raw flight logs.
+  - Run `python3 plot_stealthy_attack_chart.py` to plot the figure.
+  - The figure file `Stealthy Time to Detect.pdf` is located in the script directory.
+- Reproduce Fig 10. (Est. Time: 20~25min with 4 CPU Cores)
+    - Unzip `Fig.10 Recovery Durations vs. SRR.zip` and `VIMU-FigureScripts.zip` to the same folder.
+    - Open the terminal console and navigate into the script folder with `cd './VIMU-FigureScripts'`
+    - Run `python3 preprocess_flight_logs.py '../Fig.10 Recovery Durations vs. SRR' './figure_data/Fig.10 Recovery Durations vs. SRR' --skip_threshold_data` to process the raw flight logs.
+    - Run `python3 plot_recovery_duration_chart.py` to plot the figure.
+    - The figure file `Recovery Time Histogram.pdf` is located in the script directory.
+- Reproduce Fig 11. (Est. Time: 20~25min with 4 CPU Cores)
+    - Unzip `Fig.11 Recovery Duration (SAVIOR-Buffer vs. VIMU-CS).zip` and `VIMU-FigureScripts.zip` to the same folder.
+    - Open the terminal console and navigate into the script folder with `cd './VIMU-FigureScripts'`
+    - Run `python3 preprocess_flight_logs.py '../Fig.11 Recovery Duration (SAVIOR-Buffer vs. VIMU-CS)' './figure_data/Fig.11 Recovery Duration (SAVIOR-Buffer vs. VIMU-CS)' --skip_threshold_data` to process the raw flight logs.
+    - Run `python3 plot_recovery_duration_with_savior.py` to plot the figure.
+    - The figure file `Recovery Duration with SAVIOR.pdf` is located in the script directory.
+- Reproduce Fig 17. (Est. Time: < 5min)
+    - Unzip `Fig.17 SRR Supplementary Compensation.zip`.
+    - Open the terminal console and navigate into the folder with `cd './Fig.17 SRR Supplementary Compensation'`.
+    - Run the plotting script with `python3 plot_sup_compensation_error.py`.
+    - The figure file `Supplementary Compensation Error.pdf` is located in the script directory.
+- Reproduce Fig 18. (Est. Time: 20~25min with 4 CPU Cores)
+    - Unzip `Fig.18 Recovery Duration - Effect of Buffer.zip` and `VIMU-FigureScripts.zip` to the same folder.
+    - Open the terminal console and navigate into the script folder with `cd './VIMU-FigureScripts'`
+    - Run `python3 preprocess_flight_logs.py '../Fig.18 Recovery Duration - Effect of Buffer' './figure_data/Fig.18 Recovery Duration - Effect of Buffer' --skip_threshold_data` to process the raw flight logs.
+    - Run `python3 plot_recovery_duration_to_ttd_chart.py` to plot the figure.
+    - The figure file `Effect of Buffer and TTD.pdf` is located in the script directory.
+- Reproduce Fig 19 and Fig 21. (Est. Time: 30min with 4 CPU Cores)
+    - Unzip `Fig.19 & Fig.21 Maneuver Gyro Attack.zip` and `VIMU-FigureScripts.zip` to the same folder.
+    - Open the terminal console and navigate into the script folder with `cd './VIMU-FigureScripts'`
+    - Run `python3 preprocess_flight_logs.py '../Fig.19 & Fig.21 Maneuver Gyro Attack' './figure_data/Fig.19 & Fig.21 Maneuver Gyro Attack' --skip_threshold_data` to process the raw flight logs.
+    - Run `python3 plot_recovery_duration_with_savior_maneuver.py` to plot the Fig.19 (`Recovery Duration with SAVIOR - Maneuver.pdf`).
+    - Run `python3 plot_ttd_relplot_maneuver.py` to plot the Fig.21 (`Time to Detect - Moving vs Maneuver.pdf`).
+  - Both figure files are located in the script directory.
+- Reproduce Fig 20. (Est. Time: 10min with 4 CPU Cores)
+    - Unzip `Fig.20 Maneuver Stealthy Attack.zip` and `VIMU-FigureScripts.zip` to the same folder.
+    - Open the terminal console and navigate into the script folder with `cd './VIMU-FigureScripts'`
+    - Run `python3 preprocess_flight_logs.py '../Fig.20 Maneuver Stealthy Attack' './figure_data/Fig.20 Maneuver Stealthy Attack' --skip_threshold_data` to process the raw flight logs.
+    - Run `python3 plot_ttd_relplot_maneuver.py` to plot the figure.
+    - The figure file `Stealthy Time to Detect - Maneuver.pdf` is located in the script directory.
+
+# Install Guide for VIMU-PX4
+
+# PBAR-Enhanced PX4 Drone Autopilot
+
+This repository holds the PBAR-enhanced [PX4](http://px4.io/) flight control solution for drones, with the main applications located in the src/modules directory. It also contains the PX4 Drone Middleware Platform, which provides drivers and middleware to run drones.
+
+The PBAR enhancement modifies codes in the following locations:
+
+- Core: `src/modules/sensors/virtual_imu`
+- Sensor Attack & Anomaly Detection
+    - `sensor_attack` library: `src/lib/sensor_attack`
+    - `fault_detector` library: `src/lib/fault_detector`
+    - GPS: `src/modules/sensors/vehicle_gps_position`
+    - Barometer: `src/modules/sensors/vehicle_air_data`
+    - Magnetometer
+        - `src/modules/ekf2` (Detection)
+        - `src/modules/sensors/vehicle_magnetometer` (Attack)
+    - Accelerometer: `src/lib/drivers/accelerometer`
+    - Gyroscope: `src/lib/drivers/gyroscope`
+- Recovery: `src/modules/ekf2`
+
+## Getting Started
+
+PX4 firmware can be built from source code on the console or in an IDE, for both simulated and hardware targets. You need to build PX4 in order to use simulators, or if you want to modify PX4 and create a custom build.
+
+Before building the PX4, you must first install the **Developer Toolchain** for your host operating system and target hardware.
+
+### Install Developer Toolchain
+
+The following instructions use a bash script set up the PX4 development environment on Ubuntu Linux 18.04 amd 20.04.
+
+**NOTE:** The script is intended to be run on *clean* Ubuntu LTS installations, and may not work if run "on top" of an existing system, or on a different Ubuntu release.
+
+The environment includes:
+
+- Gazebo Classic Simulator on Ubuntu 20.04 and Ubuntu 18.04
+- Build toolchain for Pixhawk (and other NuttX-based hardware).
+
+This instruction is intended for **simulation and NuttX (Pixhawk) targets**. For other target platform please refer to [https://docs.px4.io/v1.13/en/dev_setup/dev_env_linux_ubuntu.html](https://docs.px4.io/v1.13/en/dev_setup/dev_env_linux_ubuntu.html).
+
+To install the toolchain:
+
+1. Choose an option to obtain **ubuntu.sh** and **requirements.txt**:
+    1. **Recommend**: Download PX4 source code from the repo. The environment setup scripts in the source usually work for recent releases.
+
+       Clone any branch in `baseline` (e.g., `baseline/Virtual-IMU` ) to folder `PX4-Autopilot`:
+
+        ```bash
+        git clone -b baseline/Virtual-IMU --recursive https://github.com/wangwwno1/Project-VIMU.git PX4-Autopilot
+        ```
+
+       Run the **ubuntu.sh** with no arguments (in a bash shell) to install everything:
+
+        ```bash
+        bash ./PX4-Autopilot/Tools/setup/ubuntu.sh
+        ```
+
+    2. Alternatively, if you just wanted to set up the development environment without getting all the source code, just download **ubuntu.sh** and **requirements.txt** and then run **ubuntu.sh**:
+
+        ```bash
+        wget https://raw.githubusercontent.com/wangwwno1/Project-VIMU/baseline/Virtual-IMU/Tools/setup/ubuntu.sh
+        wget https://raw.githubusercontent.com/wangwwno1/Project-VIMU/baseline/Virtual-IMU/Tools/setup/requirements.txt
+        bash ubuntu.sh
+        ```
+
+2. Restart the computer on completion.
+3. **IMPORTANT** Run the following command lines to install the specific version of empy.
+
+   PX4 1.13.3 relies on attributes that are removed in empy 4.x.
+
+   Rollback the package version with following commands:
+
+    ```bash
+    pip uninstall empy
+    pip install empy==3.3.4
+    ```
 
 
-## Building a PX4 based drone, rover, boat or robot
+### Building PX4 Software
 
-The [PX4 User Guide](https://docs.px4.io/master/en/) explains how to assemble [supported vehicles](https://docs.px4.io/master/en/airframes/airframe_reference.html) and fly drones with PX4.
-See the [forum and chat](https://docs.px4.io/master/en/#support) if you need help!
+The enhanced PX4 source code is stored on Github in the [wangwwno1/Project-VIMU](https://github.com/wangwwno1/Project-VIMU) repository. To get the VIMU-PX4 onto your computer, enter the following command into a terminal:
 
+```bash
+git clone -b baseline/Virtual-IMU --recursive https://github.com/wangwwno1/Project-VIMU.git PX4-Autopilot
+```
 
-## Changing code and contributing
+Note that you may already have done this when installing the **Developer Toolchain.** If needed you can also [**get the source code specific to a particular release**](https://docs.px4.io/main/en/contribute/git_examples.html#get-a-specific-release). [**GIT Examples**](https://docs.px4.io/main/en/contribute/git_examples.html) provides a lot more information working with releases and contributing to PX4.
 
-This [Developer Guide](https://docs.px4.io/master/en/development/development.html) is for software developers who want to modify the flight stack and middleware (e.g. to add new flight modes), hardware integrators who want to support new flight controller boards and peripherals, and anyone who wants to get PX4 working on a new (unsupported) airframe/vehicle.
+### First Build (Using a Simulator)
 
-Developers should read the [Guide for Contributions](https://docs.px4.io/master/en/contribute/).
-See the [forum and chat](https://dev.px4.io/master/en/#support) if you need help!
+First we'll build a simulated target using a console environment. This allows us to validate the system setup before moving on to real hardware and an IDE.
 
+Navigate into the **PX4-Autopilot** directory and start [**jMAVSim**](https://docs.px4.io/v1.13/en/simulation/jmavsim.html) using the following command:
 
-### Weekly Dev Call
+```bash
+make px4_sitl jmavsim
+```
 
-The PX4 Dev Team syncs up on a [weekly dev call](https://dev.px4.io/master/en/contribute/#dev_call).
+This will bring up the PX4 console. The first time build may invoke numerous warning message. Set parameter `IMU_GYRO_RATEMAX` to 250 and restart the autopilot will suppress them:
 
-> **Note** The dev call is open to all interested developers (not just the core dev team). This is a great opportunity to meet the team and contribute to the ongoing development of the platform. It includes a QA session for newcomers. All regular calls are listed in the [Dronecode calendar](https://www.dronecode.org/calendar/).
+```bash
+pxh> param set IMU_GYRO_RATEMAX 250
+```
 
+You may need to start *QGroundControl* before proceeding, as the default PX4 configuration requires a ground control connection before takeoff. This can be [**downloaded from here (opens new window)**](https://docs.qgroundcontrol.com/master/en/qgc-user-guide/getting_started/download_and_install.html). You also need to load the detector and model parameters. To do this, [download the `VIMU-PythonScript` repo](https://anonymous.4open.science/r/VIMU-PythonScripts-5E80) and [use *QGroundControl* to load the parameter](https://docs.qgroundcontrol.com/master/en/qgc-user-guide/setup_view/parameters.html) file located in the `data/flight_parameters`.
 
-## Maintenance Team
+The drone can then be flown by typing:
 
-  * Project: Founder
-    * [Lorenz Meier](https://github.com/LorenzMeier)
-  * Architecture
-    * [Daniel Agar](https://github.com/dagar)
-  * [Dev Call](https://github.com/PX4/PX4-Autopilot/labels/devcall)
-    * [Ramon Roche](https://github.com/mrpollo)
-  * Communication Architecture
-    * [Beat Kueng](https://github.com/bkueng)
-    * [Julian Oes](https://github.com/JulianOes)
-  * UI in QGroundControl
-    * [Gus Grubba](https://github.com/dogmaphobic)
-  * [Multicopter Flight Control](https://github.com/PX4/PX4-Autopilot/labels/multicopter)
-    * [Mathieu Bresciani](https://github.com/bresch)
-  * [Multicopter Software Architecture](https://github.com/PX4/PX4-Autopilot/labels/multicopter)
-    * [Matthias Grob](https://github.com/MaEtUgR)
-  * [VTOL Flight Control](https://github.com/PX4/PX4-Autopilot/labels/vtol)
-    * [Roman Bapst](https://github.com/RomanBapst)
-  * [Fixed Wing Flight Control](https://github.com/PX4/PX4-Autopilot/labels/fixedwing)
-    * [Roman Bapst](https://github.com/RomanBapst)
-  * OS / NuttX
-    * [David Sidrane](https://github.com/davids5)
-  * Driver Architecture
-    * [Daniel Agar](https://github.com/dagar)
-  * Commander Architecture
-    * [Julian Oes](https://github.com/julianoes)
-  * [UAVCAN](https://github.com/PX4/PX4-Autopilot/labels/uavcan)
-    * [Daniel Agar](https://github.com/dagar)
-  * [State Estimation](https://github.com/PX4/PX4-Autopilot/issues?q=is%3Aopen+is%3Aissue+label%3A%22state+estimation%22)
-    * [Paul Riseborough](https://github.com/priseborough)
-  * Vision based navigation and Obstacle Avoidance
-    * [Markus Achtelik](https://github.com/markusachtelik)
-  * RTPS/ROS2 Interface
-    * [Nuno Marques](https://github.com/TSC21)
+```bash
+pxh> commander takeoff
+```
 
-See also [maintainers list](https://px4.io/community/maintainers/) (px4.io) and the [contributors list](https://github.com/PX4/PX4-Autopilot/graphs/contributors) (Github).
-
-## Supported Hardware
-
-This repository contains code supporting Pixhawk standard boards (best supported, best tested, recommended choice) and proprietary boards.
-
-### Pixhawk Standard Boards
-  * FMUv6X and FMUv6U (STM32H7, 2021)
-    * Various vendors will provide FMUv6X and FMUv6U based designs Q3/2021
-  * FMUv5 and FMUv5X (STM32F7, 2019/20)
-    * [Pixhawk 4 (FMUv5)](https://docs.px4.io/master/en/flight_controller/pixhawk4.html)
-    * [Pixhawk 4 mini (FMUv5)](https://docs.px4.io/master/en/flight_controller/pixhawk4_mini.html)
-    * [CUAV V5+ (FMUv5)](https://docs.px4.io/master/en/flight_controller/cuav_v5_plus.html)
-    * [CUAV V5 nano (FMUv5)](https://docs.px4.io/master/en/flight_controller/cuav_v5_nano.html)
-    * [Auterion Skynode (FMUv5X)](https://docs.px4.io/master/en/flight_controller/auterion_skynode.html)
-  * FMUv4 (STM32F4, 2015)
-    * [Pixracer](https://docs.px4.io/master/en/flight_controller/pixracer.html)
-    * [Pixhawk 3 Pro](https://docs.px4.io/master/en/flight_controller/pixhawk3_pro.html)
-  * FMUv3 (STM32F4, 2014)
-    * [Pixhawk 2](https://docs.px4.io/master/en/flight_controller/pixhawk-2.html)
-    * [Pixhawk Mini](https://docs.px4.io/master/en/flight_controller/pixhawk_mini.html)
-    * [CUAV Pixhack v3](https://docs.px4.io/master/en/flight_controller/pixhack_v3.html)
-  * FMUv2 (STM32F4, 2013)
-    * [Pixhawk](https://docs.px4.io/master/en/flight_controller/pixhawk.html)
-    * [Pixfalcon](https://docs.px4.io/master/en/flight_controller/pixfalcon.html)
-
-### Manufacturer and Community supported
-  * [Holybro Durandal](https://docs.px4.io/master/en/flight_controller/durandal.html)
-  * [Hex Cube Orange](https://docs.px4.io/master/en/flight_controller/cubepilot_cube_orange.html)
-  * [Hex Cube Yellow](https://docs.px4.io/master/en/flight_controller/cubepilot_cube_yellow.html)
-  * [Airmind MindPX V2.8](http://www.mindpx.net/assets/accessories/UserGuide_MindPX.pdf)
-  * [Airmind MindRacer V1.2](http://mindpx.net/assets/accessories/mindracer_user_guide_v1.2.pdf)
-  * [Bitcraze Crazyflie 2.0](https://docs.px4.io/master/en/complete_vehicles/crazyflie2.html)
-  * [Omnibus F4 SD](https://docs.px4.io/master/en/flight_controller/omnibus_f4_sd.html)
-  * [Holybro Kakute F7](https://docs.px4.io/master/en/flight_controller/kakutef7.html)
-  * [Raspberry PI with Navio 2](https://docs.px4.io/master/en/flight_controller/raspberry_pi_navio2.html)
-
-Additional information about supported hardware can be found in [PX4 user Guide > Autopilot Hardware](https://docs.px4.io/master/en/flight_controller/).
-
-## Project Roadmap
-
-A high level project roadmap is available [here](https://github.com/orgs/PX4/projects/25).
+The drone can be landed by typing `commander land` and the whole simulation can be stopped by doing **CTRL+C** (or by entering `shutdown`).
