@@ -8,4 +8,7 @@ uint8 samples             # number of raw samples
 float32 x               # error ratio in the FRD board frame X-axis in rad/s
 float32 y               # error ratio in the FRD board frame Y-axis in rad/s
 float32 z               # error ratio in the FRD board frame Z-axis in rad/s
+float32 xc              # cusum error ratio in the FRD board frame X-axis in rad/s
+float32 yc              # cusum error ratio in the FRD board frame Y-axis in rad/s
+float32 zc              # cusum error ratio in the FRD board frame Z-axis in rad/s
 float32 test_ratio      # test ratio for accel detector

@@ -74,6 +74,9 @@ void PX4Gyroscope::validateGyro(sensor_gyro_s &gyro) {
     gyro_error.x = error_residuals(0);
     gyro_error.y = error_residuals(1);
     gyro_error.z = error_residuals(2);
+    gyro_error.xc = cusum_error_ratios(0);
+    gyro_error.yc = cusum_error_ratios(1);
+    gyro_error.zc = cusum_error_ratios(2);
     gyro_error.test_ratio = _gyro_validator.test_ratio();
     gyro_error.timestamp_reference = _curr_ref_gyro.timestamp_sample;
     gyro_error.timestamp = hrt_absolute_time();

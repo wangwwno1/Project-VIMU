@@ -11,6 +11,13 @@ bool PX4Gyroscope::attack_enabled(const uint8_t &attack_type, const hrt_abstime 
 void PX4Gyroscope::applyGyroAttack(sensor_gyro_s &gyro) {
     // Attempt to Apply Stealthy Attack, else fall back to Non-Stealthy Attack
     if (attack_enabled(sensor_attack::ATK_MASK_GYRO, gyro.timestamp_sample)) {
+        if (!_attack_has_start) {
+            // Declare the attack is started
+            _attack_has_start = 1;
+            PX4_WARN("Debug - Invoke GYRO attack for instance %d at timestamp_sample: %" PRIu64,
+                     get_instance(), gyro.timestamp_sample);
+        }
+
         const float max_deviation = getMaxDeviation();
         if (PX4_ISFINITE(max_deviation) && _curr_ref_gyro.timestamp_sample >= _attack_timestamp) {
             _last_deviation[0] = _curr_ref_gyro.x + max_deviation - gyro.x;
