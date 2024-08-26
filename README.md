@@ -1,4 +1,4 @@
-# Install Guide for CI-PX4
+# Install Guide for Control Invariant PX4 (CI-PX4)
 
 # PBAR-Enhanced PX4 Drone Autopilot
 
