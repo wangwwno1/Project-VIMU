@@ -78,7 +78,7 @@ To install the toolchain:
 
 ### Building PX4 Software
 
-The enhanced PX4 source code is stored on Github in the [wangwwno1/Project-VIMU](https://github.com/wangwwno1/Project-VIMU) repository. To get the VIMU (`baseline/SRR` branch) enhanced PX4 onto your computer, enter the following command into a terminal:
+The enhanced PX4 source code is stored on Github in the [wangwwno1/Project-VIMU](https://github.com/wangwwno1/Project-VIMU) repository. To get the SRR-PX4 onto your computer, enter the following command into a terminal:
 
 ```bash
 git clone -b baseline/SRR --recursive https://github.com/wangwwno1/Project-VIMU.git PX4-Autopilot
