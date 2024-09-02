@@ -2,8 +2,8 @@
 
 ## Download Virtual Machines
 
-- [VIMU VM](https://drive.google.com/file/d/118Sk78zISWRNgpKZb1bsWmwDCUwysrk9/view?usp=sharing). Login password: 123456
-- [Baseline VM](https://drive.google.com/file/d/1BtuiCU9zZqTv3zz1eGBje_bi8ps0Ll1J/view?usp=sharing). Login password: 123456
+- [VIMU VM](https://drive.google.com/file/d/118Sk78zISWRNgpKZb1bsWmwDCUwysrk9/view?usp=sharing).
+- [Baseline VM](https://drive.google.com/file/d/1BtuiCU9zZqTv3zz1eGBje_bi8ps0Ll1J/view?usp=sharing).
 
 ## Primary Functionality Evaluation
 
