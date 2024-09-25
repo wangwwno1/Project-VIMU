@@ -2,8 +2,8 @@
 
 ## Download Virtual Machines
 
-- [VIMU VM](https://drive.google.com/file/d/118Sk78zISWRNgpKZb1bsWmwDCUwysrk9/view?usp=sharing). Login password: 123456
-- [Baseline VM](https://drive.google.com/file/d/1BtuiCU9zZqTv3zz1eGBje_bi8ps0Ll1J/view?usp=sharing). Login password: 123456
+- [VIMU VM](https://drive.google.com/file/d/118Sk78zISWRNgpKZb1bsWmwDCUwysrk9/view?usp=sharing).
+- [Baseline VM](https://drive.google.com/file/d/1BtuiCU9zZqTv3zz1eGBje_bi8ps0Ll1J/view?usp=sharing).
 
 ## Primary Functionality Evaluation
 
@@ -198,132 +198,7 @@ This will bring up the PX4 console. The first time build may invoke numerous war
 pxh> param set IMU_GYRO_RATEMAX 250
 ```
 
-You may need to start *QGroundControl* before proceeding, as the default PX4 configuration requires a ground control connection before takeoff. This can be [**downloaded from here (opens new window)**](https://docs.qgroundcontrol.com/master/en/qgc-user-guide/getting_started/download_and_install.html).
-
-You also need to load the detector and model parameters. To do this, copy and paste the following commands to the PX4 console.
-
-- Setting parameters for physical model (Required)
-    ```bash
-    param set IV_IMU_DELAY_US 500000
-    param set VIMU_PREDICT_US 20000
-    param set VM_ANG_ACC_NOISE 0.075
-    param set VM_DRAG_FACTOR 0.05
-    param set VM_INERTIA_XX 0.005
-    param set VM_INERTIA_XY 0
-    param set VM_INERTIA_XZ 0
-    param set VM_INERTIA_YY 0.005
-    param set VM_INERTIA_YZ 0
-    param set VM_INERTIA_ZZ 0.009
-    param set VM_LEN_SCALE_X 0.233345
-    param set VM_LEN_SCALE_Y 0.233345
-    param set VM_LEN_SCALE_Z 1
-    param set VM_MASS 0.8
-    param set VM_MOTOR_TAU 0.005
-    param set VM_THR_FACTOR 4
-    param set EKF2_BCOEF_X 45.5
-    param set EKF2_BCOEF_Y 45.5
-    param set EKF2_MCOEF 0
-    ```
-- Setting other parameters for flight test (Required)
-    ```bash
-    param set CBRK_VELPOSERR 0
-    param set EKF2_AID_MASK 1
-    param set IMU_GYRO_RATEMAX 250
-    param set IMU_INTEG_RATE 250
-    param set SDLOG_MODE 0
-    param set SDLOG_PROFILE 0
-    param set MIS_DIST_1WP 2000
-    param set MIS_DIST_WPS 2000
-    param set CAL_GYRO0_XOFF 0
-    param set CAL_GYRO0_YOFF 0
-    param set CAL_GYRO0_ZOFF 0
-    param set CAL_GYRO1_XOFF 0
-    param set CAL_GYRO1_YOFF 0
-    param set CAL_GYRO1_ZOFF 0
-    param set CAL_GYRO2_XOFF 0
-    param set CAL_GYRO2_YOFF 0
-    param set CAL_GYRO2_ZOFF 0
-    ```
-- Setting VIMU's detector parameters (Optional, require restart the simulation)
-    ```bash
-    param set EKF2_BARO_NOISE 3.5
-    param set EKF2_GPS_P_NOISE 0.5
-    param set EKF2_GPS_V_NOISE 0.3
-    param set EKF2_MAG_NOISE 0.05
-    param set IV_ACC_NOISE 0.35
-    param set IV_GYR_NOISE 0.1
-
-    param set IV_ACC_ALPHA 0.01
-    param set IV_ACC_CSUM_H 3
-    param set IV_ACC_EMA_CAP 1.1
-    param set IV_ACC_EMA_H 0.95
-    param set IV_ACC_MSHIFT 1
-    param set IV_BARO_ALPHA 0.05
-    param set IV_BARO_CSUM_H 3
-    param set IV_BARO_EMA_CAP 0.52
-    param set IV_BARO_EMA_H 0.15
-    param set IV_BARO_MSHIFT 0.25
-    param set IV_GPS_P_ALPHA 0.01
-    param set IV_GPS_P_CSUM_H 3
-    param set IV_GPS_P_EMA_CAP 0.85
-    param set IV_GPS_P_EMA_H 0.45
-    param set IV_GPS_P_MSHIFT 0.5
-    param set IV_GPS_V_ALPHA 0.01
-    param set IV_GPS_V_EMA_CAP 1.1
-    param set IV_GPS_V_EMA_H 0.5
-    param set IV_GYR_ALPHA 0.01
-    param set IV_GYR_CSUM_H 3
-    param set IV_GYR_EMA_CAP 0.85
-    param set IV_GYR_EMA_H 0.25
-    param set IV_GYR_MSHIFT 0.5
-    param set IV_MAG_ALPHA 0.01
-    param set IV_MAG_CSUM_H 3
-    param set IV_MAG_EMA_CAP 0.52
-    param set IV_MAG_EMA_H 0.3
-    param set IV_MAG_MSHIFT 0.25
-    ```
-    To suppress the detector, input these command instead:
-    ```bash
-    param set IV_ACC_CSUM_H 0
-    param set IV_ACC_EMA_H 0
-    param set IV_BARO_CSUM_H 0
-    param set IV_BARO_EMA_H 0
-    param set IV_GPS_P_CSUM_H 0
-    param set IV_GPS_P_EMA_H 0
-    param set IV_GPS_V_EMA_H 0
-    param set IV_GYR_CSUM_H 0
-    param set IV_GYR_EMA_H 0
-    param set IV_MAG_CSUM_H 0
-    param set IV_MAG_EMA_H 0
-    ```
-- Reset the attack parameters to default (disable attack) (Optional)
-    ```bash
-    param set ATK_ACC_BIAS 0
-    param set ATK_APPLY_TYPE 0
-    param set ATK_COUNTDOWN_MS 5000
-    param set ATK_GPS_P_CAP 10
-    param set ATK_GPS_P_CLS 0
-    param set ATK_GPS_P_HDG 0
-    param set ATK_GPS_P_IV 0.01
-    param set ATK_GPS_P_PITCH 0
-    param set ATK_GPS_P_RATE 1
-    param set ATK_GPS_V_CAP 10
-    param set ATK_GPS_V_CLS 0
-    param set ATK_GPS_V_HDG 0
-    param set ATK_GPS_V_IV 0.01
-    param set ATK_GPS_V_PITCH 0
-    param set ATK_GPS_V_RATE 1
-    param set ATK_GYR_AMP 0
-    param set ATK_GYR_FREQ 250
-    param set ATK_GYR_PHASE 0
-    param set ATK_MULTI_BARO 0
-    param set ATK_MULTI_IMU 0
-    param set ATK_MULTI_MAG 0
-    param set ATK_STEALTH_TYPE 0
-    param set IV_DELAY_MASK 0
-    param set IV_TTD_DELAY_MS 0
-    param set IV_DEBUG_LOG 1
-    ```
+You may need to start *QGroundControl* before proceeding, as the default PX4 configuration requires a ground control connection before takeoff. This can be [**downloaded from here (opens new window)**](https://docs.qgroundcontrol.com/master/en/qgc-user-guide/getting_started/download_and_install.html). You also need to load the detector and model parameters. To do this, [download the `VIMU-PythonScript` repo](https://anonymous.4open.science/r/VIMU-PythonScripts-5E80) and [use *QGroundControl* to load the parameter](https://docs.qgroundcontrol.com/master/en/qgc-user-guide/setup_view/parameters.html) file located in the `data/flight_parameters`.
 
 The drone can then be flown by typing:
 
