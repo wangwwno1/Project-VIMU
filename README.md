@@ -102,18 +102,18 @@ This repository holds the PBAR-enhanced [PX4](http://px4.io/) flight control so
 
 The PBAR enhancement modifies codes in the following locations:
 
-- Core: `src/modules/sensors/virtual_imu`
+- Core: `src/modules/sensors/virtual_imu` (VIMU - Physical Model, EKF, and Buffer Safeguard)
 - Sensor Attack & Anomaly Detection
-    - `sensor_attack` library: `src/lib/sensor_attack`
-    - `fault_detector` library: `src/lib/fault_detector`
-    - GPS: `src/modules/sensors/vehicle_gps_position`
-    - Barometer: `src/modules/sensors/vehicle_air_data`
+    - `sensor_attack` library: `src/lib/sensor_attack` (Attack Implementation)
+    - `fault_detector` library: `src/lib/fault_detector` (Anomaly detector algorithm, VIMU-AD)
+    - GPS: `src/modules/sensors/vehicle_gps_position` (GPS Attack & Detector)
+    - Barometer: `src/modules/sensors/vehicle_air_data` (Baro Attack & Detector)
     - Magnetometer
         - `src/modules/ekf2` (Detection)
         - `src/modules/sensors/vehicle_magnetometer` (Attack)
-    - Accelerometer: `src/lib/drivers/accelerometer`
-    - Gyroscope: `src/lib/drivers/gyroscope`
-- Recovery: `src/modules/ekf2`
+    - Accelerometer: `src/lib/drivers/accelerometer` (Accel Attack & Detector)
+    - Gyroscope: `src/lib/drivers/gyroscope` (Gyro Attack & Detector)
+- Recovery: `src/modules/ekf2` (Recovery Monitor)
 
 ## Getting Started
 
