@@ -94,11 +94,12 @@
     - Run `python3 plot_ttd_relplot_maneuver.py` to plot the figure.
     - The figure file `Stealthy Time to Detect - Maneuver.pdf` is located in the script directory.
 
-# Install Guide for VIMU-PX4
 
 # PBAR-Enhanced PX4 Drone Autopilot
 
 This repository holds the PBAR-enhanced [PX4](http://px4.io/) flight control solution for drones, with the main applications located in the src/modules directory. It also contains the PX4 Drone Middleware Platform, which provides drivers and middleware to run drones.
+
+## Differences between VIMU-PX4 and the original PX4
 
 The PBAR enhancement modifies codes in the following locations:
 
