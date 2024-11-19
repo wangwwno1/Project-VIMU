@@ -80,7 +80,7 @@
     - Unzip `Fig.18 Recovery Duration - Effect of Buffer.zip` and `VIMU-FigureScripts.zip` to the same folder.
     - Open the terminal console and navigate into the script folder with `cd './VIMU-FigureScripts'`
     - Run `python3 preprocess_flight_logs.py '../Fig.18 Recovery Duration - Effect of Buffer' './figure_data/Fig.18 Recovery Duration - Effect of Buffer' --skip_threshold_data` to process the raw flight logs.
-    - Run `python3 plot_recovery_duration_to_ttd_chart.py` to plot the figure.
+    - Run `python3 plot_recovery_duration_to_ttd.py` to plot the figure.
     - The figure file `Effect of Buffer and TTD.pdf` is located in the script directory.
 - Reproduce Fig 19 and Fig 21. (Est. Time: 30min with 4 CPU Cores)
     - Unzip `Fig.19 & Fig.21 Maneuver Gyro Attack.zip` and `VIMU-FigureScripts.zip` to the same folder.
@@ -93,7 +93,7 @@
     - Unzip `Fig.20 Maneuver Stealthy Attack.zip` and `VIMU-FigureScripts.zip` to the same folder.
     - Open the terminal console and navigate into the script folder with `cd './VIMU-FigureScripts'`
     - Run `python3 preprocess_flight_logs.py '../Fig.20 Maneuver Stealthy Attack' './figure_data/Fig.20 Maneuver Stealthy Attack' --skip_threshold_data` to process the raw flight logs.
-    - Run `python3 plot_ttd_relplot_maneuver.py` to plot the figure.
+    - Run `python3 plot_stealthy_attack_chart_maneuver.py` to plot the figure.
     - The figure file `Stealthy Time to Detect - Maneuver.pdf` is located in the script directory.
 
 
