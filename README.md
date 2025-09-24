@@ -4,8 +4,8 @@
 
 ## Download Virtual Machines
 
-- [VIMU VM](https://drive.google.com/file/d/118Sk78zISWRNgpKZb1bsWmwDCUwysrk9/view?usp=sharing).
-- [Baseline VM](https://drive.google.com/file/d/1BtuiCU9zZqTv3zz1eGBje_bi8ps0Ll1J/view?usp=sharing).
+- [VIMU VM](https://pan.baidu.com/s/1jPUKIhcKWeXMEq9sFyqe9A?pwd=r329).
+- [Baseline VM](https://pan.baidu.com/s/1P0S6FdTnerwS-_d_6CYNTg?pwd=q664).
 
 ## Primary Functionality Evaluation
 
@@ -22,24 +22,20 @@
 ## Download Raw Data for Results Reproduction
 
 - Download the following raw (flight) data INSIDE the VIMU virtual machine.
-    - [Fig.5&6&7 Overt Gyro Attacks.zip volume-1](https://drive.google.com/file/d/10MNZyT7W_uZOrnxczbiv6u36_L_6aSg_/view?usp=sharing).
-    - [Fig.5&6&7 Overt Gyro Attacks.zip volume-2](https://drive.google.com/file/d/1-JovCd7mFmTeyp_REZ_9TLQBxloxJ1i3/view?usp=sharing).
-    - [Fig.5&6&7 Overt Gyro Attacks.zip volume-3](https://drive.google.com/file/d/1-I9mYPKSFyUfXIRhbssPnIQP1WYd6QNT/view?usp=sharing).
-    - [Fig.5&6&7 Overt Gyro Attacks.zip volume-4](https://drive.google.com/file/d/1-GqU0fjnemI5_hlXNVMXD7RF0Dy3OVsi/view?usp=sharing).
-    - [Fig.5&6&7 Overt Gyro Attacks.zip volume-5](https://drive.google.com/file/d/10JURv1wjKnDvcfgH_BfFfRqVqdNJvjn-/view?usp=sharing).
-    - [Fig.8 TTD on GPS-PV.zip](https://drive.google.com/file/d/1WG5ZQ83BodtMzFkDGGxYNC-NG-KrnfKh/view?usp=sharing).
-    - [Fig.9 TTD on Stealthy Attacks.zip](https://drive.google.com/file/d/11BsYnSsuGjsFDIapA2Fc5ZilZqY5Yb6M/view?usp=sharing).
-    - [Fig.10 Recovery Durations vs. SRR.zip](https://drive.google.com/file/d/1-bqZPEvtn0ozecWNVanuZm-x9rpPLUko/view?usp=sharing).
-    - [Fig.11 Recovery Duration (SAVIOR-Buffer vs. VIMU-CS).zip](https://drive.google.com/file/d/1yDUoJdLO7ug6C_STmoQzQPZNmmvgABrz/view?usp=sharing).
-    - [Fig.17 SRR Supplementary Compensation.zip](https://drive.google.com/file/d/1GyrpVQizPG35vHG-xc7-G8i4oZH5V8k4/view?usp=drive_link).
-    - [Fig.18 Recovery Duration - Effect of Buffer.zip](https://drive.google.com/file/d/10Go_fxDjxlizN8jL6WozplONaq0LLibA/view?usp=sharing).
-    - [Fig.19 & Fig.21 Maneuver Gyro Attack.zip](https://drive.google.com/file/d/1-XBKpRrZVWO1zlwX8c1Bt6JfS88B6HtO/view?usp=sharing).
-    - [Fig.20 Maneuver Stealthy Attack.zip](https://drive.google.com/file/d/1-cOnDCepehMG83pwfdQB77QxYo0_3-Uo/view?usp=sharing).
+    - [Fig.5&6&7 Overt Gyro Attacks](https://pan.baidu.com/s/12v6TrDMtumAS-2kNiqsZIg?pwd=ckfv).
+    - [Fig.8 TTD on GPS-PV](https://pan.baidu.com/s/1sReBjJSBeAuhgiGZkCgNdw?pwd=avr7).
+    - [Fig.9 TTD on Stealthy Attacks.zip](https://pan.baidu.com/s/1uiGk3mox03TGQzabmOCs4w?pwd=ttka).
+    - [Fig.10 Recovery Durations vs. SRR.zip](https://pan.baidu.com/s/136T-3QKBXBCOiPos6oUGxQ?pwd=9id9).
+    - [Fig.11 Recovery Duration (SAVIOR-Buffer vs. VIMU-CS).zip](https://pan.baidu.com/s/1uopp2psK7GHP69xYRFEu-g?pwd=ysjy).
+    - [Fig.17 SRR Supplementary Compensation.zip](https://pan.baidu.com/s/1qHx2kVQf9Te0gjePtIAKbA?pwd=e5md).
+    - [Fig.18 Recovery Duration - Effect of Buffer](https://pan.baidu.com/s/15w3vH8POEUWPKGFS7lHKCA?pwd=pevc).
+    - [Fig.19 & Fig.21 Maneuver Gyro Attack.zip](https://pan.baidu.com/s/1WysE5CBYTzvX2JthLtd8-g?pwd=nutv).
+    - [Fig.20 Maneuver Stealthy Attack.zip](https://pan.baidu.com/s/1mcR-9kCYDcCAc8dT2cPrtw?pwd=gcwj).
 - Download the script package INSIDE the VIMU virtual machine for Results Reproduction.
-    - [VIMU-FigureScripts.zip](https://drive.google.com/file/d/11GJhhMrtUNpu8OT7E-Sqpw5-TlfEiQsK/view?usp=sharing).
+    - [VIMU-FigureScripts.zip](https://pan.baidu.com/s/1-sJFPALstIF0058TltcjgA?pwd=dpud).
   - NOTE: The following reproducing steps will create a cache folder (located in `VIMU-FigureScripts/figure_data`). It stores the processed data to restore the extraction progress in case of the unwanted interruption (e.g., electrical blackout). The cache can be safely removed once all figures are plotted.
 - Reproduce Fig 5, Fig 6, and Fig 7. (Est. Time: 3-6 hours, heavy I/O and computation demand)
-  - Unzip `VIMU-FigureScripts.zip` and volumes of `Fig.5&6&7 Overt Gyro Attacks.zip` to the same folder (`'./VIMU-FigureScripts'` and `'./Fig.5&6&7 Overt Gyro Attacks'`).
+  - Unzip `VIMU-FigureScripts.zip` and volumes of `Fig.5&6&7 Overt Gyro Attacks` to the same folder (`'./VIMU-FigureScripts'` and `'./Fig.5&6&7 Overt Gyro Attacks'`).
   - Open the terminal console and navigate into the script folder with `cd './VIMU-FigureScripts'`.
   - Run `python3 preprocess_flight_logs.py '../Fig.5&6&7 Overt Gyro Attacks' './figure_data/Fig.5&6&7 Overt Gyro Attacks'` to process the raw flight logs. Note that this process would take several hours to finish and will consume **40 GB** to store the processed data. Make sure there is enough space.
   - Run `python3 validate_detector.py './figure_data/Fig.5&6&7 Overt Gyro Attacks'` to generate data for Fig.6.
@@ -48,7 +44,7 @@
   - Run `python3 plot_ttd_relplot.py` to plot Fig.7 (`Time to Detect - Gyroscope Overt Attack.pdf`).
   - All figure files are located in the script directory.
 - Reproduce Fig 8. (Est. Time: < 5min)
-    - Unzip `Fig.8 TTD on GPS-PV.zip` and `VIMU-FigureScripts.zip` to the same folder.
+    - Unzip `Fig.8 TTD on GPS-PV` and `VIMU-FigureScripts.zip` to the same folder.
   - Open the terminal console and navigate into the script folder with `cd './VIMU-FigureScripts'`.
     - Run `python3 preprocess_flight_logs.py '../Fig.8 TTD on GPS-PV' './figure_data/Fig.8 TTD on GPS-PV' --skip_threshold_data` to process the raw flight logs.
     - Run `python3 plot_gps_pv_attack_ttd.py` to plot the figure.
@@ -77,7 +73,7 @@
     - Run the plotting script with `python3 plot_sup_compensation_error.py`.
     - The figure file `Supplementary Compensation Error.pdf` is located in the script directory.
 - Reproduce Fig 18. (Est. Time: 20~25min with 4 CPU Cores)
-    - Unzip `Fig.18 Recovery Duration - Effect of Buffer.zip` and `VIMU-FigureScripts.zip` to the same folder.
+    - Unzip `Fig.18 Recovery Duration - Effect of Buffer` and `VIMU-FigureScripts.zip` to the same folder.
     - Open the terminal console and navigate into the script folder with `cd './VIMU-FigureScripts'`
     - Run `python3 preprocess_flight_logs.py '../Fig.18 Recovery Duration - Effect of Buffer' './figure_data/Fig.18 Recovery Duration - Effect of Buffer' --skip_threshold_data` to process the raw flight logs.
     - Run `python3 plot_recovery_duration_to_ttd.py` to plot the figure.
